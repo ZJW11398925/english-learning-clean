@@ -1731,6 +1731,13 @@ reader_exposure               # 读者暴露面（记录语义；本轮无 metag
   estimate），绝不与提交同事务充当 reader knowledge
 ```
 
+**V3-5 落表形（开工裁决 `DEC-OPI-be7b094f-…32`，2026-10-12；migration `0033`）**：
+
+- `narrative_passage`（正文，CANON 面不可变）：`passage_id` TEXT PK（**由 segment_key 派生** = `f"{scene_id}-p{segment_seq:04d}"`；派生只服务幂等重放，§26.2.2 的 lineage 纪律）、`scene_id` NOT NULL REFERENCES `world_scene`、`segment_seq` NOT NULL、`body` NOT NULL、`language` NOT NULL、`outcome_ref` NULL（V3-6 起引用已 committed action outcome；Writer 只呈现）、`created_at_tick` NOT NULL（= 其 SEGMENT COMMIT 的 actual_end_tick）、双 stamp、`state_version` CHECK>0；**`UNIQUE (scene_id, segment_seq)`**（§26.2.4 幂等键——同 segment_key 重放 = no-op）。
+- `reader_exposure`（读者暴露面，**与 SEGMENT COMMIT 解耦**——评审 #2 硬门的物理形）：`exposure_id` TEXT PK（派生 = `f"{passage_id}-x{reader_id}"`）、`passage_id` NOT NULL REFERENCES `narrative_passage`、`reader_id` NOT NULL（MVP = 本地用户词）、`exposed_at` NOT NULL（**ISO bookkeeping，不是 story time**）、双 stamp、`state_version` CHECK>0；**不在 NCP-3 原子组内**——passage commit ≠ 用户已看见；记录面 = 独立的 delivered/rendered 保守记录（MVP 显式调用，渲染 ack 后刀）；N-INV-005：不写 actor memory / belief（本刀无该表，曝光面 SQL 永不触之——扫描钉承重）。
+- `segment_commit`（**#1 lineage 显式面**——V3 事件 story-time attribution 的权威读路）：`commit_id` TEXT PK（派生 = `f"sg:{scene_id}:{segment_seq:04d}"`）、`kind` NOT NULL CHECK `('SEGMENT')`（V3-6 增 `'ACTION_OUTCOME'` 词）、`scene_id` NOT NULL、`segment_seq` NOT NULL、`passage_id` NOT NULL REFERENCES `narrative_passage`、`actual_start_tick` NOT NULL、`actual_end_tick` NOT NULL、`event_id` NOT NULL REFERENCES `world_event`（本段沉淀的非用户事实行）、双 stamp、`state_version` CHECK>0；**`UNIQUE (scene_id, segment_seq)`**（与 passage 同幂等键族）。**V3 事件的叙事时间 = 经本表归属的 actual 区间**（`story_time_of(event_id)` 读路）——**禁止以 opaque event-id 命名规则反推**（评审 #1 硬门）；V3 cognition 不得把 legacy `occurred_at`（Legacy V2 ISO 语义）当世界时间（§26.2.2 同句）。
+- **V3 事件的 `world_event.participants` 词表 = canonical identity**（`actor_id` ∪ `player_character_id`，participant_namespace 派生）；legacy 行（cast persona ids ∪ user id）**不回写、不同表混读**——区分靠本 lineage 面与读路过滤（V3-7 cognition 的职责），§26.2.3 的 V3-3R 注同义。
+
 **V3-3R identity/seed 冻结（外审，2026-10-12）**：
 
 - **canonical participant identity**：AI-controlled durable character = `world_actor.actor_id`；user-controlled character = `world_player_character.player_character_id`。**`persona_id` 是 CharacterCard / template identity，不作为 Narrative V3 canonical world participant identity**（V3 链不做 actor↔persona 转换）。

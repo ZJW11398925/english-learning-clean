@@ -209,3 +209,17 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 7. **执行者六项自报边界裁定**（评审专项裁定全采）：①revise 面 Bible fail-closed **追认**（外审 MH-1 是「禁止规划」，revise 是规划行为）；②context 悬空 world ValueError **追认+补钉**（F3）；③同位冲突律 **追认+登记**（F1）；④spine 钉强形 **追认可留+注记两分**（钉只防已知拼写，行为律由 e2e 承重——变异③实证）；⑤缺卡钉 FK-off 构造 **追认+措辞更正**（F4）；⑥「31 钉 vs 30」**口径澄清：无人记错**（V3-4 交付 29 + 处置 +2 = 全割聚合 31 = 5972−5941；本文件现役 30）。
 
 授权：独立评审（executor-pro 新上下文只读，2026-10-12）+ 总控处置（V3-1/V3-3/V3-4 处置先例：总控亲写，注释/钉级零行为为主）；处置提交随本条目同刀。
+
+### v1.4.0 — 2026-10-12 V3-5 开工裁决（#1/#2 硬门落法 + SEGMENT COMMIT 原子组 + Director crash/replay 关闭 + Writer 确定性基线；授权：总控开工四查，IP §20 刀序 V3-5 行）
+
+**结论**：V3-5（Scene + Dossier + POV Writer + `narrative_passage` + SEGMENT COMMIT）按 IP §20 刀序开工；**迁移 `0033` 三表**（`narrative_passage` / `reader_exposure` / `segment_commit`——#1 lineage 显式面与 #2 解耦的物理形）；**SEGMENT COMMIT 单事务**落 NCP-3 全臂；**Director crash/replay 本刀关闭**（v1.3.6 #4 硬门到期兑现）；Writer/Planner 交付**确定性基线**（LLM 生产面登记后刀，与 V3-4 LLM Blueprint 面同族）。
+
+1. **#1 lineage 硬门落法**：`segment_commit` 表（`commit_id` 派生 `f"sg:{scene_id}:{segment_seq:04d}"`/kind CHECK 'SEGMENT'/passage_id/actual_start/end_tick/event_id + `UNIQUE(scene_id, segment_seq)`）——V3 事件 story-time 经显式面归属（`story_time_of(event_id)` 读路）；**禁 opaque event-id 反推**；V3 cognition 不得把 legacy `occurred_at` 当世界时间。
+2. **#2 exposure 解耦物理形**：`reader_exposure` 随 0033 建表但**不在 NCP-3 原子组内**；记录面 = 独立 `record_exposure`（MVP 显式调用；exposed_at 是 ISO bookkeeping 非 story time）；N-INV-005 扫描钉（曝光面 SQL 永不触 actor memory 词表）。
+3. **SEGMENT COMMIT 落法（STATE §25 已收指针）**：一个短事务 = passage（id 派生 `-p{seq:04d}`，不可变）+ world_event（id 派生 `-e{seq:04d}`；participants = canonical identity；occurred_at=now 〔legacy ISO 语义，V3 不读〕）+ state 结算 + `segment_commit` 行 + `world.current_tick` 推进（actual_start=事务内读数、actual_end=+duration_ticks≥0）+ `is_last_segment` 时 scene ACTIVE→COMMITTED 同事务翻转（**SCENE COMMIT=别名**）+ 首段时章 PLANNED→ACTIVE 且 `opened_at_tick`=actual_start（**#3 tick authority 正式管线化——提交事务接管，不再调用方代书**）。幂等：同 segment_key 重放 = 全组 no-op。
+4. **Director crash/replay 关闭（v1.3.6 #4 兑现）**：`open_next_chapter` 对「PLANNED 无 plan 悬空章」**复用**（不跳新章）；`revise_blueprint` 对「悬空 PROPOSED revision」**复用**（不跳下一 revision）；stamping/reconcile 幂等续跑——重试不再自动跳到新 chapter/revision。
+5. **0029 章单 ACTIVE race-free 义务**：裁归本刀——`activate_chapter` 的 overlap 查+ADOPTED 查+CAS 移入同一 `BEGIN IMMEDIATE` 事务（取「查进事务」形，不另加 partial UNIQUE；store docstring 的登记句同刻清偿）。**V3-4 评审 F4「未 CLOSED 拒开新章」裁不做**（维持 v1.3.5 登记——PLANNED 章不挡是章间作者层的设计需要）。
+6. **Writer/Planner 确定性基线**：`elc/world/scene.py`（ScenePlanner：open_scene——读章 ADOPTED Blueprint 的 scenes JSON 对应元素+durable cast/context → 落 dossier rev1+adopt → activate_scene；dossier `planned_start_tick` 取自 `DirectorContext.current_tick`）+ `elc/world/writer.py`（PovWriter 结构面：一场一 POV 校验、revealable/must_hide 词面不注入正文护栏、正文 body 由调用方供〔LLM 后刀〕、校验后交 SEGMENT COMMIT）。**LLM Writer/Planner 生产面（prompt/provider/严格解析/声音库与工艺注入的 prompt 材料组装）登记为独立后刀**（与 V3-4 LLM Blueprint 面同批接线，V3-8 前置）。
+7. **迁移刀纪律**：0033 三表入 `GLOBAL_CONTENT_TABLES` keep 侧（15→18 员）+ `tests/deletion/test_deletion_surfaces.py` 钉随迁；conftest `MIGRATION_IDS`/`SCHEMA_HEAD_FILE`/`SCHEMA_HEAD_VERSION` 同刻（0033/33）；aoci_drift 迁移覆盖律会红 ⇒ 刀内随迁（0033 条目）。**旧链零改**；UI 不动；legacy `world_event.participants` 词表不回写（V3 事件 participants = canonical identity，区分靠 lineage 面与读路过滤）。
+
+授权：总控开工四查（IP §20 刀序 V3-5 行 + v1.3.2 #1/#2 硬门 + v1.3.6 #4 硬门到期）；DMCP 决策 `DEC-OPI-be7b094f-…32`（rev 787）。

@@ -240,28 +240,30 @@ def test_0025_is_the_registered_head() -> None:
     C1-a's 0027_chronicle_attribution and C2's 0028_world_storyline
     (the stamp-pin discipline every head move has followed since P8-4;
     the pin read "0025 is the head" while 0025 was the head); the shared
-    constants say so, and the stamp a fresh database carries is 32 (the
-    head literal moved with each later head, most recently V3-3R's
-    0032_actor_profile_world_fk)."""
+    constants say so, and the stamp a fresh database carries is 33 (the
+    head literal moved with each later head, most recently V3-5's
+    0033_segment_commit)."""
 
     # The head literal moves with each head (the P9-1 way); the
     # migration-shape claims in the sibling tests stay 0025's own.
-    assert MIGRATION_IDS[-1] == "0032_actor_profile_world_fk"
-    assert MIGRATION_IDS[-2] == "0031_world_cast"
-    assert MIGRATION_IDS[-3] == "0030_world_bible"
-    assert MIGRATION_IDS[-4] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-5] == "0028_world_storyline"
-    assert SCHEMA_HEAD_FILE == "0032_actor_profile_world_fk.sql"
+    assert MIGRATION_IDS[-1] == "0033_segment_commit"
+    assert MIGRATION_IDS[-2] == "0032_actor_profile_world_fk"
+    assert MIGRATION_IDS[-3] == "0031_world_cast"
+    assert MIGRATION_IDS[-4] == "0030_world_bible"
+    assert MIGRATION_IDS[-5] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-6] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0033_segment_commit.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "32"
+    assert SCHEMA_HEAD_VERSION == "33"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0032_actor_profile_world_fk"
-    assert applied[-2] == "0031_world_cast"
-    assert applied[-3] == "0030_world_bible"
-    assert applied[-4] == "0029_narrative_v3_foundations"
-    assert applied[-5] == "0028_world_storyline"
+    assert applied[-1] == "0033_segment_commit"
+    assert applied[-2] == "0032_actor_profile_world_fk"
+    assert applied[-3] == "0031_world_cast"
+    assert applied[-4] == "0030_world_bible"
+    assert applied[-5] == "0029_narrative_v3_foundations"
+    assert applied[-6] == "0028_world_storyline"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 
@@ -904,7 +906,7 @@ def test_the_registry_carries_the_six_world_objects() -> None:
     ]
 
 
-def test_global_content_tables_carry_the_fifteen_members() -> None:
+def test_global_content_tables_carry_the_eighteen_members() -> None:
     """W-1-2's run row joined the keep half (SEC-025's conservative
     reading) and W-1-3's reveal queue joins it the same way, while
     W-1-3's deletion face moves ``world_conversation`` out of this tuple
@@ -913,11 +915,13 @@ def test_global_content_tables_carry_the_fifteen_members() -> None:
     adds migration 0029's four narrative tables the same way, V3-2
     (TASK-OPI-bab4da9f…29) adds migration 0030's
     ``world_bible_revision`` (the instance Bible's sole authority row —
-    its FK chain names the shared world only) the same way, and V3-3
+    its FK chain names the shared world only) the same way, V3-3
     (TASK-OPI-bab4da9f…52) adds migration 0031's two cast tables
     (``world_player_character`` — the reader's own durable character,
     one per world — and ``world_actor_profile`` — each AI actor's
-    narrative profile) the same way: fifteen
+    narrative profile) the same way, and V3-5 (TASK-OPI-be7b094f…34)
+    adds migration 0033's three narrative-commit tables the same way:
+    eighteen
     members, and the
     classification is registration —
     no sweep walks the run or the reveal item, nothing keeps them as
@@ -939,6 +943,9 @@ def test_global_content_tables_carry_the_fifteen_members() -> None:
         "world_bible_revision",
         "world_player_character",
         "world_actor_profile",
+        "narrative_passage",
+        "reader_exposure",
+        "segment_commit",
     )
     assert "world_run" not in SWEPT_TABLES
     assert "world_run" not in RETAINED_TABLES

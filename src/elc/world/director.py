@@ -126,13 +126,23 @@ Scenario dependency). What ships here is what the contract spells:
   **no canon progress word at all**: what it lands is a plan revision
   plus identity anchors (the Plan≠Canon boundary of the L3 block).
 
-**Registered for V3-5 (not implemented here — the V3-4R review's item
-4)**: closing the Director operation's own crash / replay surface — a
-top-level idempotent planning operation, or resume / recovery — so
-that a retry never silently lands a new chapter or a new revision.
-The V3-4 review's F1 residues (a ``PLANNED`` chapter with no plan row,
-a dangling ``PROPOSED`` revision) are the concrete shapes; their
-discharge belongs to V3-5's opening inquiry.
+**Crash / replay closure (landed in V3-5 — the V3-4R review's item 4,
+DEC-OPI-be7b094f…32)**: both write faces are retry-safe against the two
+residue shapes the V3-4 review's F1 left open, so a retry never
+silently lands a new chapter or a new revision:
+
+- :meth:`Director.open_next_chapter` **reuses** a dangling chapter —
+  the world's ``PLANNED`` chapter holding no plan revision at all
+  (a crashed open before its Blueprint landed; the smallest
+  ``chapter_index`` wins when several exist) — instead of deriving the
+  next index and moving on;
+- :meth:`Director.revise_blueprint` **reuses** the chapter's dangling
+  ``PROPOSED`` latest revision: a payload whose shape matches the
+  residue adopts it and continues; a payload that differs rejects the
+  residue and mints the next revision (the same shape law the creation
+  face spells — plans are append-only, so a same-id replay with the
+  same shape is a no-op and a different shape is a ``CONFLICT``, and
+  the residue is resolved before either can happen).
 
 The derivation laws (DATA §26.2.1's L3 block, spelled word for word):
 ``chapter_id = f"{world_id}-ch{chapter_index:02d}"``,
@@ -183,6 +193,7 @@ from elc.world.cast import (
 from elc.world.narrative.store import SqliteNarrativeStore
 from elc.world.narrative.types import (
     ChapterStatus,
+    PlanRevisionStatus,
     SceneStatus,
     WorldChapterPlanRecord,
     WorldChapterRecord,
@@ -645,6 +656,46 @@ def _resolve_scene_targets(
 # ---------------------------------------------------------------------------
 # the strict Blueprint schema (the L3 landing; value semantics only)
 # ---------------------------------------------------------------------------
+
+
+def _plan_shape_matches(
+    plan: WorldChapterPlanRecord,
+    blueprint: ChapterBlueprint,
+    targets: tuple[_SceneTarget, ...],
+) -> bool:
+    """Whether one existing plan row's shape equals what this validated
+    Blueprint and its resolved targets would write — the residue-reuse
+    law's comparison (the same shape law the store's idempotent creation
+    spells: the same id with the same shape is a no-op, a different
+    shape is a ``CONFLICT``).
+
+    The compared fields are the ones :meth:`Director._create_and_adopt_plan`
+    writes: the eight chapter fields verbatim and the scenes table as
+    the resolution's own elements (fresh elements already carrying their
+    burned ``scene_id``), under the store's deterministic codec.
+    """
+
+    return (
+        plan.goal,
+        plan.dramatic_question,
+        plan.planned_start_tick,
+        plan.planned_end_tick,
+        plan.closing_pressure,
+        plan.desired_development,
+        plan.soft_outcomes,
+        plan.chapter_questions_to_advance,
+        encode_scenes(plan.scenes),
+    ) == (
+        blueprint.goal,
+        blueprint.dramatic_question,
+        blueprint.planned_start_tick,
+        blueprint.planned_end_tick,
+        blueprint.closing_pressure,
+        blueprint.desired_development,
+        blueprint.soft_outcomes,
+        blueprint.chapter_questions_to_advance,
+        encode_scenes(tuple(target.element for target in targets)),
+    )
 
 
 def _scene_refusal(
@@ -1257,20 +1308,27 @@ class Director:
         """Plan the world's next chapter — a Plan-face act only.
 
         The chapter index is the world's existing maximum plus one (the
-        first chapter is 1; §21's monotone ``+1``); the chapter id, the
-        plan id (revision 1) and every scene anchor id derive from the
-        L3 laws. The sequence, each step one store short transaction:
-        resolve the ``scenes[]`` identities first (the derived chapter
-        id cannot pre-exist — its index is the world's max + 1 — so
-        its anchor set is empty and every element is fresh, minting
-        array ordinals 1..N under ``max(existing) + 1`` with the
-        derived ``scene_id`` burned into the plan payload; a
-        ``scene_ref`` / ``scene_id`` reference is refused here, before
-        a single write), create the chapter (``PLANNED``), create plan
-        revision 1, adopt it (``ADOPTED`` — the #4 prerequisite the
-        lifecycle face will check), then reconcile the ``scenes[]``
-        table into ``PLANNED`` anchors (one row per fresh element — no
-        ghost rows).
+        first chapter is 1; §21's monotone ``+1``) — **except when a
+        replay residue exists**: the world's ``PLANNED`` chapter holding
+        no plan revision at all (a crashed open before its Blueprint
+        landed) is **reused** instead of skipped (its own
+        ``chapter_index``, its Blueprint minted as revision 1; the
+        smallest index wins when several residues exist) — a retry never
+        silently lands a new chapter (the V3-4R review's item 4, landed
+        in V3-5). The chapter id, the plan id (revision 1) and every
+        scene anchor id derive from the L3 laws. The sequence, each step
+        one store short transaction: resolve the ``scenes[]`` identities
+        first (a fresh chapter's anchor set is empty and every element
+        is fresh, minting array ordinals 1..N under ``max(existing) + 1``
+        with the derived ``scene_id`` burned into the plan payload; a
+        ``scene_ref`` / ``scene_id`` reference is refused here, before a
+        single write), create the chapter (``PLANNED``) — or reuse the
+        residue — create plan revision 1, adopt it (``ADOPTED`` — the #4
+        prerequisite the lifecycle face will check), then reconcile the
+        ``scenes[]`` table into ``PLANNED`` anchors (one row per fresh
+        element — no ghost rows; a residue may already carry anchors if
+        a crashed run reconciled partially, and the resolution matches
+        them by identity all the same).
 
         **The chapter is not opened** (``ACTIVE`` is the lifecycle
         face's move, with its prerequisites) and **no tick moves** (the
@@ -1283,10 +1341,6 @@ class Director:
         DATA §26.2.1's block); the payload fails the schema or its
         identity references do not resolve — ``VALIDATION_FAILED``
         (nothing is written); any store refusal rides out unchanged.
-
-        **Registered for V3-5**: this operation's own crash / replay
-        surface (a retry after a partial run derives the next chapter
-        index and moves on) — see the module docstring.
         """
 
         if self._worlds.get_world(world_id) is None:
@@ -1315,20 +1369,28 @@ class Director:
         if isinstance(validated, Err):
             return Err(validated.error)
         blueprint = validated.value
-        chapters = self._narrative.chapters_of(world_id)
-        chapter_index = chapters[-1].chapter_index + 1 if chapters else 1
-        chapter_id = chapter_id_for(world_id, chapter_index)
+        residue = self._residue_chapter(world_id)
+        if residue is not None:
+            chapter_id = residue.chapter_id
+            chapter_index = residue.chapter_index
+            chapter = residue
+        else:
+            chapters = self._narrative.chapters_of(world_id)
+            chapter_index = chapters[-1].chapter_index + 1 if chapters else 1
+            chapter_id = chapter_id_for(world_id, chapter_index)
         resolved = _resolve_scene_targets(
             chapter_id, blueprint.scenes, self._narrative.scenes_of(chapter_id)
         )
         if isinstance(resolved, Err):
             return Err(resolved.error)
         targets = resolved.value
-        created_chapter = self._narrative.create_chapter(
-            chapter_id, world_id, chapter_index, now
-        )
-        if isinstance(created_chapter, Err):
-            return Err(created_chapter.error)
+        if residue is None:
+            created_chapter = self._narrative.create_chapter(
+                chapter_id, world_id, chapter_index, now
+            )
+            if isinstance(created_chapter, Err):
+                return Err(created_chapter.error)
+            chapter = created_chapter.value
         created_plan = self._create_and_adopt_plan(
             chapter_id, 1, blueprint, targets, now
         )
@@ -1339,7 +1401,7 @@ class Director:
             return Err(reconciled.error)
         return Ok(
             ChapterOpening(
-                chapter=created_chapter.value,
+                chapter=chapter,
                 plan=created_plan.value,
                 scenes=reconciled.value,
             )
@@ -1355,8 +1417,17 @@ class Director:
         the ``scenes[]`` table reconciled against the existing anchors
         (the L3 Diff rules, V3-4R identity-keyed).
 
-        The new revision is the chapter's existing maximum plus one; it
-        is created and adopted in the same posture as
+        The new revision is the chapter's existing maximum plus one —
+        **except when a replay residue exists** (the V3-4R review's item
+        4, landed in V3-5): the chapter's dangling ``PROPOSED`` latest
+        revision (a crashed revise before its adoption) is reused — a
+        payload whose shape matches the residue is **adopted** and the
+        reconciliation continues (no new revision; the shape law is the
+        store's own: the same shape replays as a no-op); a payload that
+        differs **rejects** the residue and mints the next revision
+        (``residue.plan_revision + 1``). Either way the retry never
+        silently lands a second revision next to the residue. It is
+        created and adopted in the same posture as
         :meth:`open_next_chapter` (adoption supersedes the old revision
         in one store transaction — the Plan face is append-only, the
         old revision stays as history). The ``scenes[]`` identities
@@ -1453,7 +1524,42 @@ class Director:
             return Err(resolved.error)
         targets = resolved.value
         plans = self._narrative.plans_of(chapter_id)
-        plan_revision = plans[-1].plan_revision + 1 if plans else 1
+        latest = plans[-1] if plans else None
+        if latest is not None and latest.status is PlanRevisionStatus.PROPOSED:
+            # The dangling PROPOSED latest revision — the replay residue
+            # (a crashed revise before its adoption). The two branches
+            # the ruling spells (DEC-OPI-be7b094f…32): a payload whose
+            # shape matches the residue adopts it and continues — no new
+            # revision; a payload that differs rejects the residue and
+            # mints the next revision below.
+            if _plan_shape_matches(latest, blueprint, targets):
+                adopted = self._narrative.adopt_plan(
+                    latest.chapter_plan_id,
+                    now,
+                    expected_state_version=latest.state_version,
+                )
+                if isinstance(adopted, Err):
+                    return Err(adopted.error)
+                reconciled = self._reconcile_scenes(chapter_id, targets, now)
+                if isinstance(reconciled, Err):
+                    return Err(reconciled.error)
+                return Ok(
+                    ChapterOpening(
+                        chapter=chapter,
+                        plan=adopted.value,
+                        scenes=reconciled.value,
+                    )
+                )
+            rejected = self._narrative.reject_plan(
+                latest.chapter_plan_id,
+                now,
+                expected_state_version=latest.state_version,
+            )
+            if isinstance(rejected, Err):
+                return Err(rejected.error)
+            plan_revision = latest.plan_revision + 1
+        else:
+            plan_revision = plans[-1].plan_revision + 1 if plans else 1
         created_plan = self._create_and_adopt_plan(
             chapter_id, plan_revision, blueprint, targets, now
         )
@@ -1471,6 +1577,26 @@ class Director:
         )
 
     # -- shared write machinery ------------------------------------------------
+
+    def _residue_chapter(self, world_id: str) -> WorldChapterRecord | None:
+        """The replay residue :meth:`open_next_chapter` reuses: the
+        world's ``PLANNED`` chapter holding **no plan revision at all**
+        (the V3-4 review's F1 shape — a crashed open between
+        ``create_chapter`` and ``create_plan``). ``chapters_of`` reads in
+        ``chapter_index`` order, so the first match is the smallest
+        index when several residues exist; ``None`` when the world holds
+        none. A chapter that already carries any plan revision (even a
+        ``PROPOSED`` one) is not this residue — the dangling-revision
+        shape is :meth:`revise_blueprint`'s and the ADOPTED shape is a
+        chapter waiting for its lifecycle face."""
+
+        for chapter in self._narrative.chapters_of(world_id):
+            if chapter.status is not ChapterStatus.PLANNED:
+                continue
+            if self._narrative.plans_of(chapter.chapter_id):
+                continue
+            return chapter
+        return None
 
     def _create_and_adopt_plan(
         self,

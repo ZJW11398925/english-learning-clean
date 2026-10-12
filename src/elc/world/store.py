@@ -131,6 +131,7 @@ from elc.world.engine.types import MomentKind, RunStatus, WorldRunRecord
 from elc.world.types import (
     STORYLINE_EFFECT_KEY_PREFIX,
     STORYLINE_RESOLVED_STATEMENT,
+    StateEffect,
     WorldActorRecord,
     WorldConversationRecord,
     WorldEvent,
@@ -169,6 +170,55 @@ INTERACTION_SOURCE = "user_interaction"
 
 def _now() -> str:
     return datetime.now(tz=UTC).isoformat()
+
+
+def _settle_effects_in_transaction(
+    conn: sqlite3.Connection,
+    world_id: str,
+    event_id: str,
+    effects: tuple[StateEffect, ...],
+    recorded_at: str,
+) -> None:
+    """The one truth of the effect settlement (W-1-1, extracted by V3-5):
+    each effect supersedes its key's ``CURRENT`` fact, then this event's
+    claim lands as the new ``CURRENT`` row — at most one ``CURRENT`` row
+    per key is the invariant every write here maintains (the table keeps
+    no UNIQUE on the key — the superseded history is the design).
+
+    **The caller owns the transaction.** :meth:`SqliteWorldStore.record_event`
+    calls this inside its own short fenced transaction, and V3-5's SEGMENT
+    COMMIT (:func:`elc.world.settlement.commit_segment`) calls the same
+    function inside NCP-3's one short atomic group — one settlement face,
+    two callers, no second spelling of the SQL to drift. This helper
+    manages no BEGIN/COMMIT of its own (a nested BEGIN would break exactly
+    that composability, the :mod:`elc.world.time` posture).
+
+    ``fact_id`` derives ``<event_id>:<key>`` and ``recorded_at`` is the
+    event's own ``occurred_at`` (the projection is derived from the tree,
+    clock and all — record_event's own law, unchanged).
+    """
+
+    for effect in effects:
+        conn.execute(
+            "UPDATE world_state_fact SET status = 'SUPERSEDED'"
+            " WHERE world_id = ? AND canonical_key = ?"
+            " AND status = 'CURRENT'",
+            (world_id, effect.key),
+        )
+        conn.execute(
+            "INSERT INTO world_state_fact ("
+            " fact_id, world_id, source_event_id, canonical_key,"
+            " statement, status, recorded_at"
+            ") VALUES (?, ?, ?, ?, ?, 'CURRENT', ?)",
+            (
+                f"{event_id}:{effect.key}",
+                world_id,
+                event_id,
+                effect.key,
+                effect.statement,
+                recorded_at,
+            ),
+        )
 
 
 @dataclass(frozen=True)
@@ -651,33 +701,18 @@ class SqliteWorldStore:
                     event.run_id,
                 ),
             )
-            for effect in event.effects:
-                # The settlement: this key's CURRENT fact (if any) flips
-                # to SUPERSEDED, then the event's claim lands as the new
-                # CURRENT row. At most one CURRENT row per key is the
-                # invariant this face maintains (the table keeps no
-                # UNIQUE on the key — the superseded history is the
-                # design) — every write runs through here.
-                self._conn.execute(
-                    "UPDATE world_state_fact SET status = 'SUPERSEDED'"
-                    " WHERE world_id = ? AND canonical_key = ?"
-                    " AND status = 'CURRENT'",
-                    (event.world_id, effect.key),
-                )
-                self._conn.execute(
-                    "INSERT INTO world_state_fact ("
-                    " fact_id, world_id, source_event_id, canonical_key,"
-                    " statement, status, recorded_at"
-                    ") VALUES (?, ?, ?, ?, ?, 'CURRENT', ?)",
-                    (
-                        f"{event.event_id}:{effect.key}",
-                        event.world_id,
-                        event.event_id,
-                        effect.key,
-                        effect.statement,
-                        event.occurred_at,
-                    ),
-                )
+            # The settlement: one truth, two callers — this face and
+            # V3-5's SEGMENT COMMIT both run
+            # :func:`_settle_effects_in_transaction` inside their own
+            # short transaction (one settlement face, no second
+            # spelling of the SQL to drift).
+            _settle_effects_in_transaction(
+                self._conn,
+                event.world_id,
+                event.event_id,
+                event.effects,
+                event.occurred_at,
+            )
         except sqlite3.Error as exc:
             if began:
                 try:

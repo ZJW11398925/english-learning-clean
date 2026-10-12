@@ -990,17 +990,18 @@ def test_v3_writes_leave_the_legacy_surfaces_untouched(
 def test_the_shared_constants_and_a_fresh_db_say_the_chain_head() -> None:
     # The head literal moves with each head (the P9-1 way): this pin
     # read 0029's own names while 0029 was the head; V3-2's
-    # 0030_world_bible, V3-3's 0031_world_cast and V3-3R's
-    # 0032_actor_profile_world_fk moved them again —
+    # 0030_world_bible, V3-3's 0031_world_cast, V3-3R's
+    # 0032_actor_profile_world_fk and V3-5's 0033_segment_commit moved
+    # them again —
     # the migration-shape claims in
     # the sibling tests stay 0029's own.
-    assert MIGRATION_IDS[-1] == "0032_actor_profile_world_fk"
-    assert SCHEMA_HEAD_FILE == "0032_actor_profile_world_fk.sql"
-    assert SCHEMA_HEAD_VERSION == "32"
+    assert MIGRATION_IDS[-1] == "0033_segment_commit"
+    assert SCHEMA_HEAD_FILE == "0033_segment_commit.sql"
+    assert SCHEMA_HEAD_VERSION == "33"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0032_actor_profile_world_fk"
-    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "32"
+    assert applied[-1] == "0033_segment_commit"
+    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "33"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -1008,8 +1009,8 @@ def test_the_shared_constants_and_a_fresh_db_say_the_chain_head() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "32",
-        "runtime_schema_version": "32",
+        "schema_version": "33",
+        "runtime_schema_version": "33",
     }
 
 

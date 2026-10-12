@@ -754,6 +754,8 @@ story_tick actual 推进（该段 duration_ticks）
 
 **reader_exposure 不在本提交内（评审 #2 解耦）**：passage commit ≠ 用户已看见；exposure 需要独立的 delivered/rendered 记录或保守 estimate（RA §14 的 certainty 家族），绝不与提交同事务充当 reader knowledge。
 
+**V3-5 落法（开工裁决 `DEC-OPI-be7b094f-…32`）**：`segment_commit`（#1 lineage 面）随本提交同批落行——`commit_id` 由 segment_key 派生、携带 `actual_start_tick`/`actual_end_tick`/`event_id`/`passage_id`；**`SCENE COMMIT` = 场的最后一段 SEGMENT COMMIT 的别名**：`is_last_segment` 的 SEGMENT COMMIT 同事务翻转 `world_scene` `ACTIVE → COMMITTED`；章的 `opened_at_tick` 由本链正式管线化（首段提交事务内读 `world.current_tick`，章 PLANNED→ACTIVE 同批补章）——**lifecycle tick authority（评审 #3）自 V3-5 起由提交事务接管，不再由调用方代书**。
+
 幂等键：`segment_key = (scene_id, segment_seq)`；passage 与 event 的 id 由 segment_key 派生（重放写同一批 id）。
 
 ```text

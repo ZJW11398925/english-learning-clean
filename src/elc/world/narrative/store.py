@@ -10,8 +10,10 @@ planning engine. Every transition method below is a *lifecycle flip*;
 where a later cut's commit transaction must be the real mover (the
 scene's ``COMMITTED`` flip, the actual tick columns) the docstring says
 so plainly — the flip face exists so the state machine is testable and
-so the commit cut has a named word to call inside its own short
-transaction.
+so the commit cut has a named, composable arm inside its own short
+transaction (**since V3-5**: ``_flip_scene_committed_tx`` /
+``_flip_chapter_activated_tx`` are the arms
+:mod:`elc.world.settlement` calls inside NCP-3's one atomic group).
 
 Discipline (the house store law, :mod:`elc.world.store`'s posture):
 
@@ -212,7 +214,8 @@ class SqliteNarrativeStore:
         ``CLOSED`` chapter never reopens (§27's list).
 
         **The #4 prerequisites (enforced from V3-4, STATE §21 /
-        DEC-OPI-be7b094f…7)**, checked before anything is written:
+        DEC-OPI-be7b094f…7)**, judged inside this face's one short
+        ``BEGIN IMMEDIATE`` transaction:
 
         - the chapter must hold an ``ADOPTED`` plan revision — it enters
           ``ACTIVE`` only after its Blueprint is adopted (a chapter
@@ -226,72 +229,48 @@ class SqliteNarrativeStore:
           ACTIVE-only "where are we" read, the wider query lives in
           :meth:`_overlap_chapter`).
 
-        Both checks run *outside* the CAS transaction — under Local
-        V1's single-connection discipline the window is unreachable;
-        the race-free form — the checks inside the ``BEGIN
-        IMMEDIATE``, or a partial UNIQUE index — is a **registered
-        obligation for the commit cuts (V3-5/V3-6)**: the V3-1 review's
-        MEDIUM, its wording widened to the two overlap words.
-        ``opened_at_tick`` is the canon-face tick stamp — the caller's
-        value (in the full pipeline the chapter opens as its first
-        scene starts, and the value rides from the current actual tick
-        under the #3 lifecycle tick authority; this face writes the
-        caller's value, the commit cut takes over the pipeline); the
+        **The checks run inside the CAS transaction since V3-5** — the
+        registered obligation's discharge (the V3-1 review's MEDIUM;
+        DEC-OPI-be7b094f…32): the V3-1 staging read them outside the CAS
+        (a window Local V1's single-connection discipline made
+        unreachable, a window all the same), and the race-free form —
+        the checks inside the ``BEGIN IMMEDIATE``, not a partial UNIQUE
+        index — landed with the commit cut. The move itself is
+        :meth:`_flip_chapter_activated_tx`, the same composable arm
+        V3-5's SEGMENT COMMIT calls inside its own transaction.
+        ``opened_at_tick`` is the canon-face tick stamp — this explicit
+        face still writes the caller's value; in the full pipeline the
+        chapter opens as its first scene's first segment commits, and
+        the commit transaction takes the value from its own
+        in-transaction read of ``world.current_tick`` (the #3 lifecycle
+        tick authority — the commit cut took over the pipeline); the
         CAS counter makes the move stale-safe.
         """
 
-        row = self.get_chapter(chapter_id)
-        if row is None:
-            return self._missing("chapter", chapter_id)
-        if row.status != ChapterStatus.PLANNED:
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            flipped = self._flip_chapter_activated_tx(
+                chapter_id, opened_at_tick, now, expected_state_version
+            )
+            if isinstance(flipped, Err):
+                self._conn.execute("ROLLBACK")
+                began = False
+                return Err(flipped.error)
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
             return Err(
                 DomainError(
-                    code=DomainErrorCode.VALIDATION_FAILED,
-                    message=(
-                        f"chapter {chapter_id!r} is {row.status.value!r};"
-                        " only a PLANNED chapter opens"
-                    ),
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"chapter {chapter_id!r} not activated: {exc}",
                 )
             )
-        if self.adopted_plan(chapter_id) is None:
-            return Err(
-                DomainError(
-                    code=DomainErrorCode.VALIDATION_FAILED,
-                    message=(
-                        f"chapter {chapter_id!r} not opened: it holds no"
-                        " ADOPTED Blueprint (plan revision) — a chapter"
-                        " enters ACTIVE only after its plan is adopted"
-                        " (the #4 prerequisite)"
-                    ),
-                )
-            )
-        twin = self._overlap_chapter(row.world_id)
-        if twin is not None and twin.chapter_id != chapter_id:
-            return Err(
-                DomainError(
-                    code=DomainErrorCode.VALIDATION_FAILED,
-                    message=(
-                        f"chapter {chapter_id!r} not opened: world"
-                        f" {row.world_id!r} already holds a"
-                        f" {twin.status.value} chapter"
-                        f" ({twin.chapter_id!r}) — a world runs one"
-                        " chapter at a time (MVP), and the next chapter"
-                        " does not open before the previous one closes"
-                        " (§21)"
-                    ),
-                )
-            )
-        moved = self._cas_update(
-            "world_chapter",
-            "chapter_id",
-            chapter_id,
-            "status = 'ACTIVE', opened_at_tick = ?",
-            (opened_at_tick,),
-            now,
-            expected_state_version,
-        )
-        if isinstance(moved, Err):
-            return Err(moved.error)
+        self._conn.execute("COMMIT")
         updated = self.get_chapter(chapter_id)
         assert updated is not None  # the UPDATE above just touched it
         return Ok(updated)
@@ -523,9 +502,12 @@ class SqliteNarrativeStore:
         Dossier revision — it enters ``ACTIVE`` only after its dossier
         is adopted (a scene without one is refused
         ``VALIDATION_FAILED``, the message naming the missing Dossier).
-        The check runs *outside* the CAS transaction, the same posture
-        as :meth:`activate_chapter`'s overlap check — the registered
-        race-free obligation belongs to the commit cuts (V3-5/V3-6).
+        The check runs *outside* this face's CAS transaction — the
+        V3-1 registration named the **chapter-side** overlap check
+        (discharged by V3-5's transaction-isation,
+        DEC-OPI-be7b094f…32), and this scene-side prerequisite keeps
+        the V3-4 posture: its race is unreachable under Local V1's
+        single-connection discipline.
 
         The actual tick columns are deliberately not touched here: the
         scene's actual span is its commits' (§26), and the commit
@@ -584,11 +566,12 @@ class SqliteNarrativeStore:
         itself** — the SCENE COMMIT is the scene's last SEGMENT COMMIT
         (the alias law, STATE_MACHINES §22 / the disposition's M4), and
         the SEGMENT COMMIT transaction (passage + event + state + tick,
-        NCP-3) is V3-5's. This face is the status word that transaction
-        will call inside its own short transaction; the ``ACTIVE →
-        COMMITTED`` flip and that commit land in the same transaction
-        there. Legal only from ``ACTIVE`` — a committed scene's canon
-        face is settled, and an earlier word cannot jump there.
+        NCP-3) is V3-5's, which calls :meth:`_flip_scene_committed_tx` —
+        the same composable arm this explicit face wraps in its own
+        short transaction — inside its own. The ``ACTIVE → COMMITTED``
+        flip and that segment land in the same transaction there. Legal
+        only from ``ACTIVE`` — a committed scene's canon face is
+        settled, and an earlier word cannot jump there.
         """
 
         row = self.get_scene(scene_id)
@@ -605,17 +588,30 @@ class SqliteNarrativeStore:
                     ),
                 )
             )
-        moved = self._cas_status(
-            "world_scene",
-            "scene_id",
-            scene_id,
-            SceneStatus.COMMITTED,
-            now,
-            expected_state_version,
-            "scene",
-        )
-        if isinstance(moved, Err):
-            return Err(moved.error)
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            flipped = self._flip_scene_committed_tx(
+                scene_id, now, expected_state_version
+            )
+            if isinstance(flipped, Err):
+                self._conn.execute("ROLLBACK")
+                began = False
+                return Err(flipped.error)
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"scene {scene_id!r} not moved: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
         updated = self.get_scene(scene_id)
         assert updated is not None  # the UPDATE above just touched it
         return Ok(updated)
@@ -1371,6 +1367,112 @@ class SqliteNarrativeStore:
         chapter = self.get_chapter(str(rows[0][0]))
         assert chapter is not None  # selected from the same table
         return chapter
+
+    def _flip_chapter_activated_tx(
+        self,
+        chapter_id: str,
+        opened_at_tick: int,
+        now: str,
+        expected_state_version: int,
+    ) -> Result[None]:
+        """The chapter opening's whole move — the #4 prerequisites and the
+        CAS flip together — as a **no-transaction arm** (the V3-5 split,
+        DEC-OPI-be7b094f…32): :meth:`activate_chapter` wraps it in its own
+        ``BEGIN IMMEDIATE``, and V3-5's SEGMENT COMMIT
+        (:func:`elc.world.settlement.commit_segment`) calls it inside
+        NCP-3's one short atomic group — which is exactly the
+        composability this split exists for (the chapter opens as its
+        first scene's first segment commits, in that segment's own
+        transaction). The caller owns the transaction; this arm runs no
+        BEGIN/COMMIT of its own.
+
+        One truth, two callers: the status check, the ``ADOPTED``
+        Blueprint prerequisite, the overlap ban and the CAS update below
+        are :meth:`activate_chapter`'s checks and write, spelled once.
+        """
+
+        row = self.get_chapter(chapter_id)
+        if row is None:
+            return self._missing("chapter", chapter_id)
+        if row.status != ChapterStatus.PLANNED:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"chapter {chapter_id!r} is {row.status.value!r};"
+                        " only a PLANNED chapter opens"
+                    ),
+                )
+            )
+        if self.adopted_plan(chapter_id) is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"chapter {chapter_id!r} not opened: it holds no"
+                        " ADOPTED Blueprint (plan revision) — a chapter"
+                        " enters ACTIVE only after its plan is adopted"
+                        " (the #4 prerequisite)"
+                    ),
+                )
+            )
+        twin = self._overlap_chapter(row.world_id)
+        if twin is not None and twin.chapter_id != chapter_id:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"chapter {chapter_id!r} not opened: world"
+                        f" {row.world_id!r} already holds a"
+                        f" {twin.status.value} chapter"
+                        f" ({twin.chapter_id!r}) — a world runs one"
+                        " chapter at a time (MVP), and the next chapter"
+                        " does not open before the previous one closes"
+                        " (§21)"
+                    ),
+                )
+            )
+        cursor = self._conn.execute(
+            "UPDATE world_chapter SET status = 'ACTIVE',"
+            " opened_at_tick = ?, state_version = state_version + 1,"
+            " updated_at = ? WHERE chapter_id = ? AND state_version = ?",
+            (opened_at_tick, now, chapter_id, expected_state_version),
+        )
+        if cursor.rowcount != 1:
+            return self._cas_miss("world_chapter", chapter_id)
+        return Ok(None)
+
+    def _flip_scene_committed_tx(
+        self,
+        scene_id: str,
+        now: str,
+        expected_state_version: int,
+    ) -> Result[None]:
+        """The scene-commit flip — ``ACTIVE → COMMITTED`` — as a
+        **no-transaction arm** (the V3-5 split, DEC-OPI-be7b094f…32):
+        :meth:`commit_scene` wraps it in its own ``BEGIN IMMEDIATE``, and
+        V3-5's SEGMENT COMMIT calls it inside NCP-3's one short atomic
+        group when a segment is the scene's last (the alias law: the
+        scene's last SEGMENT COMMIT *is* the SCENE COMMIT — the flip and
+        the segment land in the same transaction). The caller owns the
+        transaction; this arm runs no BEGIN/COMMIT of its own.
+
+        The CAS guard is the one every transition rides (a rowcount of
+        zero answers ``NOT_FOUND`` / ``CONFLICT`` through
+        :meth:`_cas_miss`; the caller's re-read decides the retry). The
+        status-word check stays the callers' own (each of them has just
+        read the row inside its transaction).
+        """
+
+        cursor = self._conn.execute(
+            "UPDATE world_scene SET status = 'COMMITTED',"
+            " state_version = state_version + 1, updated_at = ?"
+            " WHERE scene_id = ? AND state_version = ?",
+            (now, scene_id, expected_state_version),
+        )
+        if cursor.rowcount != 1:
+            return self._cas_miss("world_scene", scene_id)
+        return Ok(None)
 
     def _cas_status(
         self,

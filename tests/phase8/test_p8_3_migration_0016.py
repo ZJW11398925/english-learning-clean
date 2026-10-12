@@ -130,8 +130,9 @@ def test_0016_is_0017s_predecessor_and_0015s_successor() -> None:
     # head 断言归最新的刀。veto-R 再随迁至 0022；W-1-0 再随迁至 0023；
     # W-1-1 再随迁至 0024；W-1-2 再随迁至 0025；W-1-3 再随迁至 0026；
     # C1-a 再随迁至 0027；C2 再随迁至 0028；V3-1 再随迁至 0029；
-    # V3-2 再随迁至 0030；V3-3 再随迁至 0031；V3-3R 再随迁至 0032。
-    assert MIGRATION_IDS[-1] == "0032_actor_profile_world_fk"
+    # V3-2 再随迁至 0030；V3-3 再随迁至 0031；V3-3R 再随迁至 0032；
+    # V3-5 再随迁至 0033。
+    assert MIGRATION_IDS[-1] == "0033_segment_commit"
 
 
 def test_the_pre_0016_lineage_did_not_move() -> None:
@@ -156,8 +157,9 @@ def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
     # 主线-3 随迁：head stamp 19 → 20；veto-R 再随迁 21 → 22；W-1-0 再随迁
     # 22 → 23；W-1-1 再随迁 23 → 24；W-1-2 再随迁 24 → 25；W-1-3 再随迁
     # 25 → 26；C1-a 再随迁 26 → 27；C2 再随迁 27 → 28；V3-1 再随迁 28 → 29；
-    # V3-2 再随迁 29 → 30；V3-3 再随迁 30 → 31；V3-3R 再随迁 31 → 32。
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "32"
+    # V3-2 再随迁 29 → 30；V3-3 再随迁 30 → 31；V3-3R 再随迁 31 → 32；
+    # V3-5 再随迁 32 → 33。
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "33"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

@@ -302,39 +302,110 @@ def test_the_six_touched_entries_are_single_lines() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_deletion_entry_counts_fifteen_global_content_tables() -> None:
+def test_deletion_entry_counts_eighteen_global_content_tables() -> None:
     """The disposition's fixed falsehood (review MEDIUM-1, one live lie
     found by the mechanical sweep): ``GLOBAL_CONTENT_TABLES`` gained
     ``world_storyline`` at C2 — the entry's 「七员」 was false; 「八员」
     was the truth then. V3-1 (DEC-OPI-bab4da9f…11/…16, the L5 ruling)
     adds migration 0029's four narrative tables, V3-2
     (TASK-OPI-bab4da9f…29) adds migration 0030's
-    ``world_bible_revision``, and V3-3 (TASK-OPI-bab4da9f…52) adds
+    ``world_bible_revision``, V3-3 (TASK-OPI-bab4da9f…52) adds
     migration 0031's two cast tables (``world_player_character`` /
-    ``world_actor_profile``) — 「十五员」 is the truth now, and the
-    source constant must carry the same fifteen."""
+    ``world_actor_profile``) and V3-5 (TASK-OPI-be7b094f…34) adds
+    migration 0033's three narrative-commit tables
+    (``narrative_passage`` / ``reader_exposure`` / ``segment_commit``)
+    — 「十八员」 is the truth now, and the source constant must carry
+    the same eighteen."""
 
     from elc.deletion.types import GLOBAL_CONTENT_TABLES
 
     entry = _entry_line_in_section(
         "===D:/english-learning-clean/src/elc/deletion/===", "types.py[DD7M]"
     )
-    assert "十五员" in entry
+    assert "十八员" in entry
+    assert "十五员" not in entry
     assert "十三员" not in entry
     assert "十二员" not in entry
-    assert "八员" not in entry
+    # 「八员」 lives only inside 「十八员」 now — a standalone stale claim
+    # would make the count two.
+    assert entry.count("八员") == 1
     assert "七员" not in entry
     assert "world_storyline" in entry
     assert "world_scene_dossier" in entry
     assert "world_bible_revision" in entry
     assert "world_player_character" in entry
     assert "world_actor_profile" in entry
-    assert len(GLOBAL_CONTENT_TABLES) == 15
+    assert "narrative_passage" in entry
+    assert "reader_exposure" in entry
+    assert "segment_commit" in entry
+    assert len(GLOBAL_CONTENT_TABLES) == 18
     assert "world_storyline" in GLOBAL_CONTENT_TABLES
     assert "world_scene_dossier" in GLOBAL_CONTENT_TABLES
     assert "world_bible_revision" in GLOBAL_CONTENT_TABLES
     assert "world_player_character" in GLOBAL_CONTENT_TABLES
     assert "world_actor_profile" in GLOBAL_CONTENT_TABLES
+    assert "narrative_passage" in GLOBAL_CONTENT_TABLES
+    assert "reader_exposure" in GLOBAL_CONTENT_TABLES
+    assert "segment_commit" in GLOBAL_CONTENT_TABLES
+
+
+def test_v3_5_entries_carry_the_segment_commit_faces() -> None:
+    """V3-5 (TASK-OPI-be7b094f…34): the three new modules and the 0033
+    migration ride their ledger entries with the faces this cut owns —
+    the SEGMENT COMMIT's atomic group, the lineage read path, the
+    decoupled exposure face, the scene planner's dossier chain and the
+    Writer's deterministic guards. The coverage law above keeps the
+    0033 entry present; this pin keeps the words true."""
+
+    section = "\n".join(_migrations_section())
+    assert "0033_segment_commit.sql[" in section
+    migration_entry = _entry_line("0033_segment_commit.sql[")
+    for keyword in (
+        "narrative_passage",
+        "reader_exposure",
+        "segment_commit",
+        "story_time_of",
+        "settlement",
+        "双 stamp '33'",
+    ):
+        assert keyword in migration_entry, keyword
+
+    world_section = "===D:/english-learning-clean/src/elc/world/==="
+    for tag, keywords in (
+        (
+            "settlement.py[",
+            (
+                "commit_segment",
+                "record_exposure",
+                "story_time_of",
+                "CommitOutcome",
+                "NCP-3",
+            ),
+        ),
+        (
+            "scene.py[",
+            (
+                "ScenePlanner",
+                "open_scene",
+                "SceneOpening",
+                "dossier",
+            ),
+        ),
+        (
+            "writer.py[",
+            (
+                "PovWriter",
+                "write_segment",
+                "must_hide",
+                "一场一 POV",
+            ),
+        ),
+    ):
+        # The section-scoped read is the ledger's own way (tags are not
+        # globally unique — the N-AOCI-disp-1 mechanism fact).
+        entry = _entry_line_in_section(world_section, tag)
+        for keyword in keywords:
+            assert keyword in entry, (tag, keyword)
 
 
 def test_the_widened_entries_carry_the_voice_face() -> None:

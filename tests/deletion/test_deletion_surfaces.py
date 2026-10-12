@@ -156,7 +156,11 @@ def test_no_global_content_table_lives_in_app_db() -> None:
     the same way, and V3-3 (TASK-OPI-bab4da9f…52) adds migration
     0031's two cast tables (``world_player_character`` — the reader's
     own durable character, one per world — and ``world_actor_profile``
-    — each AI actor's narrative profile) the same way — every one
+    — each AI actor's narrative profile) the same way, and V3-5
+    (TASK-OPI-be7b094f…34) adds migration 0033's three narrative
+    tables (``narrative_passage`` / ``reader_exposure`` /
+    ``segment_commit`` — the segment's prose, the decoupled exposure
+    record and the story-time lineage row) the same way — every one
     hangs off the
     shared world through keep-side FK chains.
 
@@ -193,6 +197,14 @@ def test_no_global_content_table_lives_in_app_db() -> None:
         # way.
         "world_player_character",
         "world_actor_profile",
+        # V3-5 (TASK-OPI-be7b094f…34): migration 0033's three narrative
+        # tables — the segment's prose (CANON), the decoupled reader
+        # exposure record and the V3 story-time lineage row — append at
+        # the tail (the chronological law 0029 → 0030 → 0031 → 0033);
+        # every FK chain hangs off keep-side tables, zero sweep face.
+        "narrative_passage",
+        "reader_exposure",
+        "segment_commit",
     )
     for table in GLOBAL_CONTENT_TABLES:
         assert table not in SWEPT_TABLES

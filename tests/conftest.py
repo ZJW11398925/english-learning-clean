@@ -123,12 +123,18 @@ MIGRATION_IDS: tuple[str, ...] = (
     # UNIQUE; the data face and the CHECK vocabulary unchanged; the
     # store's precheck stays the human-words layer).
     "0032_actor_profile_world_fk",
+    # V3-5 (TASK-OPI-be7b094f…34): the SEGMENT COMMIT — the segment's
+    # prose (narrative_passage), the decoupled reader-exposure record
+    # (reader_exposure) and the V3 story-time lineage row
+    # (segment_commit); elc.world.settlement is the commit transaction's
+    # face.
+    "0033_segment_commit",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0032_actor_profile_world_fk.sql"
-SCHEMA_HEAD_VERSION = "32"
+SCHEMA_HEAD_FILE = "0033_segment_commit.sql"
+SCHEMA_HEAD_VERSION = "33"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

@@ -362,6 +362,19 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: ``world``) are keep-side at every link, so no sweep can be refused
 #: through them, and they add no consequential FK to the registered
 #: deletion face.
+#:
+#: V3-5 (TASK-OPI-be7b094f…34) adds migration 0033's three tables —
+#: ``narrative_passage`` (a segment's prose, the CANON face's immutable
+#: row), ``reader_exposure`` (the decoupled reader-exposure record) and
+#: ``segment_commit`` (the V3 story-time lineage row) — to the same
+#: keep rule, same conservative reading (registration, not deletion
+#: semantics; zero sweep face). Every FK chain hangs off keep-side
+#: tables (passage → ``world_scene`` → ``world_chapter`` → ``world``;
+#: exposure → passage; lineage → passage and ``world_event`` — all
+#: keep-side at every link), so no sweep can be refused through any of
+#: them, and they add no consequential FK to the registered deletion
+#: face. The three join at the tuple's tail, the chronological append
+#: law every V3 cut before them followed (0029 → 0030 → 0031 → 0033).
 GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_lore_fact",
     "world",
@@ -378,6 +391,9 @@ GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_bible_revision",
     "world_player_character",
     "world_actor_profile",
+    "narrative_passage",
+    "reader_exposure",
+    "segment_commit",
 )
 
 
