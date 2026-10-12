@@ -329,11 +329,7 @@ class SqliteWorldStore:
         try:
             self._conn.execute("BEGIN IMMEDIATE")
             began = True
-            self._conn.execute(
-                "INSERT INTO world (world_id, name, template_world_id, created_at)"
-                " VALUES (?, ?, ?, ?)",
-                (world_id, name, template_world_id, now),
-            )
+            self._create_world_tx(world_id, name, template_world_id, now)
         except sqlite3.Error as exc:
             # The ml3R LOW-1 judgement (elc.world_lore.store): when BEGIN
             # itself failed, nothing of ours began — in_transaction then
@@ -379,6 +375,31 @@ class SqliteWorldStore:
             )
         )
 
+    def _create_world_tx(
+        self,
+        world_id: str,
+        name: str,
+        template_world_id: str | None,
+        now: str,
+    ) -> None:
+        """The creation face's own INSERT, inside the caller's transaction
+        (the no-transaction arm pattern V3-5's narrative store split
+        first: an owner/arm split, the public face above owning the short
+        transaction byte for byte as before). V3-8a's atomic creation
+        service (:func:`elc.world.bootstrap.create_world_with_bible`)
+        calls this arm so the world row lands in *its* one short
+        transaction beside the Bible seed and the cast seeds — one group,
+        all or nothing. Raises ``sqlite3.Error`` on the database's own
+        refusal; the caller's transaction owns the rollback (the
+        ``_settle_effects_in_transaction`` posture spelled once next
+        door)."""
+
+        self._conn.execute(
+            "INSERT INTO world (world_id, name, template_world_id, created_at)"
+            " VALUES (?, ?, ?, ?)",
+            (world_id, name, template_world_id, now),
+        )
+
     def bind_actor(
         self,
         actor_id: str,
@@ -417,11 +438,7 @@ class SqliteWorldStore:
         try:
             self._conn.execute("BEGIN IMMEDIATE")
             began = True
-            self._conn.execute(
-                "INSERT INTO world_actor (actor_id, world_id, persona_id, created_at)"
-                " VALUES (?, ?, ?, ?)",
-                (actor_id, world_id, persona_id, now),
-            )
+            self._bind_actor_tx(actor_id, world_id, persona_id, now)
         except sqlite3.Error as exc:
             if began:
                 try:
@@ -442,6 +459,27 @@ class SqliteWorldStore:
                 persona_id=PersonaId(persona_id),
                 created_at=now,
             )
+        )
+
+    def _bind_actor_tx(
+        self,
+        actor_id: str,
+        world_id: str,
+        persona_id: str,
+        now: str,
+    ) -> None:
+        """The binding face's own INSERT, inside the caller's transaction
+        (the ``_create_world_tx`` twin): V3-8a's atomic creation service
+        calls this arm so the actor row lands in the same short
+        transaction as the world, its initial Bible and the profile the
+        profile row's FK needs. Raises ``sqlite3.Error`` on the
+        database's own refusal; the caller's transaction owns the
+        rollback."""
+
+        self._conn.execute(
+            "INSERT INTO world_actor (actor_id, world_id, persona_id, created_at)"
+            " VALUES (?, ?, ?, ?)",
+            (actor_id, world_id, persona_id, now),
         )
 
     def bind_conversation(

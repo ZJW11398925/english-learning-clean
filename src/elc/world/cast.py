@@ -308,24 +308,16 @@ class SqliteCastStore:
         try:
             self._conn.execute("BEGIN IMMEDIATE")
             began = True
-            self._conn.execute(
-                "INSERT INTO world_actor_profile ("
-                " actor_id, world_id, story_role, pov_eligible,"
-                " pov_weight, long_term_drive, current_arc_seed,"
-                " private_context, created_at, updated_at, state_version"
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
-                (
-                    actor_id,
-                    world_id,
-                    None if story_role is None else story_role.value,
-                    None if pov_eligible is None else int(pov_eligible),
-                    pov_weight,
-                    long_term_drive,
-                    current_arc_seed,
-                    private_context,
-                    now,
-                    now,
-                ),
+            self._seed_actor_profile_tx(
+                actor_id,
+                world_id,
+                story_role=story_role,
+                pov_eligible=pov_eligible,
+                pov_weight=pov_weight,
+                long_term_drive=long_term_drive,
+                current_arc_seed=current_arc_seed,
+                private_context=private_context,
+                now=now,
             )
         except sqlite3.Error as exc:
             if began:
@@ -346,6 +338,52 @@ class SqliteCastStore:
         created = self.actor_profile(actor_id)
         assert created is not None  # the INSERT above just landed it
         return Ok(created)
+
+    def _seed_actor_profile_tx(
+        self,
+        actor_id: str,
+        world_id: str,
+        *,
+        story_role: StoryRole | None = None,
+        pov_eligible: bool | None = None,
+        pov_weight: int | None = None,
+        long_term_drive: str = "",
+        current_arc_seed: str = "",
+        private_context: str = "",
+        now: str,
+    ) -> None:
+        """The profile seed's own INSERT, inside the caller's transaction
+        (the no-transaction arm pattern: :meth:`seed_actor_profile` above
+        owns the short transaction byte for byte as before). V3-8a's
+        atomic creation service
+        (:func:`elc.world.bootstrap.create_world_with_bible`) calls this
+        arm so the profile lands in *its* one short transaction beside
+        the world, its initial Bible and the actor row the profile's FK
+        needs — one group, all or nothing. The typed arms map to columns
+        exactly as the public face always did (``story_role`` its
+        canonical word or NULL — the honest undeclared; ``pov_eligible``
+        1/0 or NULL). Raises ``sqlite3.Error`` on the database's own
+        refusal; the caller's transaction owns the rollback."""
+
+        self._conn.execute(
+            "INSERT INTO world_actor_profile ("
+            " actor_id, world_id, story_role, pov_eligible,"
+            " pov_weight, long_term_drive, current_arc_seed,"
+            " private_context, created_at, updated_at, state_version"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
+            (
+                actor_id,
+                world_id,
+                None if story_role is None else story_role.value,
+                None if pov_eligible is None else int(pov_eligible),
+                pov_weight,
+                long_term_drive,
+                current_arc_seed,
+                private_context,
+                now,
+                now,
+            ),
+        )
 
     def seed_player_character(
         self,
@@ -420,26 +458,18 @@ class SqliteCastStore:
         try:
             self._conn.execute("BEGIN IMMEDIATE")
             began = True
-            self._conn.execute(
-                "INSERT INTO world_player_character ("
-                " player_character_id, world_id, name, background,"
-                " appearance, abilities, limits, location, state,"
-                " knowledge_refs, created_at, updated_at, state_version"
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
-                (
-                    player_character_id,
-                    world_id,
-                    name,
-                    background,
-                    appearance,
-                    abilities,
-                    limits,
-                    location,
-                    state,
-                    knowledge_refs,
-                    now,
-                    now,
-                ),
+            self._seed_player_character_tx(
+                player_character_id,
+                world_id,
+                name=name,
+                background=background,
+                appearance=appearance,
+                abilities=abilities,
+                limits=limits,
+                location=location,
+                state=state,
+                knowledge_refs=knowledge_refs,
+                now=now,
             )
         except sqlite3.Error as exc:
             if began:
@@ -460,6 +490,55 @@ class SqliteCastStore:
         created = self.player_character(world_id)
         assert created is not None  # the INSERT above just landed it
         return Ok(created)
+
+    def _seed_player_character_tx(
+        self,
+        player_character_id: str,
+        world_id: str,
+        *,
+        name: str,
+        background: str = "",
+        appearance: str = "",
+        abilities: str = "",
+        limits: str = "",
+        location: str = "",
+        state: str = "",
+        knowledge_refs: str = "",
+        now: str,
+    ) -> None:
+        """The player seed's own INSERT, inside the caller's transaction
+        (the ``_seed_actor_profile_tx`` twin): V3-8a's atomic creation
+        service
+        (:func:`elc.world.bootstrap.create_world_with_bible`) calls this
+        arm so the reader's durable character lands in *its* one short
+        transaction beside the world, its initial Bible and the AI cast
+        — one group, all or nothing. The eight content fields ride as
+        given (the V3-3R seed semantics are the public face's docstring's
+        — this arm writes what it is handed and judges nothing). Raises
+        ``sqlite3.Error`` on the database's own refusal; the caller's
+        transaction owns the rollback."""
+
+        self._conn.execute(
+            "INSERT INTO world_player_character ("
+            " player_character_id, world_id, name, background,"
+            " appearance, abilities, limits, location, state,"
+            " knowledge_refs, created_at, updated_at, state_version"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
+            (
+                player_character_id,
+                world_id,
+                name,
+                background,
+                appearance,
+                abilities,
+                limits,
+                location,
+                state,
+                knowledge_refs,
+                now,
+                now,
+            ),
+        )
 
     # -- read faces ------------------------------------------------------------
 

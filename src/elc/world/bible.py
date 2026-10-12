@@ -242,36 +242,7 @@ class SqliteBibleStore:
         try:
             self._conn.execute("BEGIN IMMEDIATE")
             began = True
-            self._conn.execute(
-                "INSERT INTO world_bible_revision ("
-                " bible_revision_id, world_id, revision, parent_revision,"
-                " status, premise, genre, tone, calendar, physics,"
-                " magic_rules, geography, society, politics, technology,"
-                " religion, history, hard_rules, narrative_preferences,"
-                " created_at, updated_at, state_version"
-                ") VALUES (?, ?, 1, NULL, 'CURRENT',"
-                " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
-                (
-                    bible_revision_id,
-                    world_id,
-                    content.premise,
-                    content.genre,
-                    content.tone,
-                    content.calendar,
-                    content.physics,
-                    content.magic_rules,
-                    content.geography,
-                    content.society,
-                    content.politics,
-                    content.technology,
-                    content.religion,
-                    content.history,
-                    content.hard_rules,
-                    content.narrative_preferences,
-                    now,
-                    now,
-                ),
-            )
+            self._seed_bible_tx(bible_revision_id, world_id, content, now)
         except sqlite3.Error as exc:
             if began:
                 try:
@@ -291,6 +262,55 @@ class SqliteBibleStore:
         created = self.get_bible(world_id, 1)
         assert created is not None  # the INSERT above just landed it
         return Ok(created)
+
+    def _seed_bible_tx(
+        self,
+        bible_revision_id: str,
+        world_id: str,
+        content: BibleContent,
+        now: str,
+    ) -> None:
+        """The seed face's own INSERT, inside the caller's transaction
+        (the no-transaction arm pattern: :meth:`seed_bible` above owns
+        the short transaction byte for byte as before). V3-8a's atomic
+        creation service
+        (:func:`elc.world.bootstrap.create_world_with_bible`) calls this
+        arm so the world's first ``CURRENT`` revision lands in *its* one
+        short transaction beside the world row and the cast seeds — one
+        group, all or nothing. Raises ``sqlite3.Error`` on the
+        database's own refusal; the caller's transaction owns the
+        rollback."""
+
+        self._conn.execute(
+            "INSERT INTO world_bible_revision ("
+            " bible_revision_id, world_id, revision, parent_revision,"
+            " status, premise, genre, tone, calendar, physics,"
+            " magic_rules, geography, society, politics, technology,"
+            " religion, history, hard_rules, narrative_preferences,"
+            " created_at, updated_at, state_version"
+            ") VALUES (?, ?, 1, NULL, 'CURRENT',"
+            " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
+            (
+                bible_revision_id,
+                world_id,
+                content.premise,
+                content.genre,
+                content.tone,
+                content.calendar,
+                content.physics,
+                content.magic_rules,
+                content.geography,
+                content.society,
+                content.politics,
+                content.technology,
+                content.religion,
+                content.history,
+                content.hard_rules,
+                content.narrative_preferences,
+                now,
+                now,
+            ),
+        )
 
     def revise_bible(
         self,
