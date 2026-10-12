@@ -183,3 +183,15 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 8. **INFO 留痕**：F8（扫描钉对拼接型 SQL 有盲区——启发式扫描共性，行为层由 store-only 写路兜底）；F9（`Director.validate_blueprint` 对不存在世界答 VALIDATION_FAILED 而非 NOT_FOUND——写面已先查世界，无实害）；F10（「persona 无 character_card 行 → LEFT JOIN NULL → 回退 actor id」未单钉——覆盖性提示）。
 
 授权：独立评审（executor-pro 新上下文只读，2026-10-12）+ 总控处置（V3-1/V3-3 处置先例：总控亲写，注释/守卫/钉级）；处置提交随本条目同刀。
+
+### v1.3.6 — 2026-10-12 V3-4R（外审 1 HIGH + 2 MEDIUM-HIGH；范围受限修正刀；授权：外审结论转呈）
+
+**结论**：V3-4 主体方向正确，进入 V3-5 前做**范围受限** V3-4R——不推翻 Director、不扩 Writer/Commit、零迁移；外审五项全采，`DATA §26.2.1` L3 块同刀修订。
+
+1. **HIGH（scene identity / replan 模型）= 呈现顺序与持久身份分离**：`scenes[]` 数组只表达呈现/计划顺序；元素可带稳定身份 `scene_ref`（指向同章既有 anchor 的 `scene_index`；严格校验：重 ref 拒/不存在拒/他章拒/同位他锚冲突拒/退休 anchor 永不指认）；不带 ref 的元素按序位指认同位置 anchor；**identity stamping**——anchor 创建时把派生 `scene_id` 烧入 plan 行 `scenes` JSON 对应元素（**受控一次性改写**：仅增 `scene_id` 一键、仅创建时一次、adopt 前完成、其余字节不动）；新增场景配 unused monotonic `scene_index`（`max(既有)+1`）；**禁止幽灵/占位 scene**；退休 anchor 永不复活永不重铸。最新 Blueprint 自然表示稀疏 durable identity（rev3 = [ref s01, ref s02, {新场→s04}]）。
+2. **MH-1（World authority fail-closed）**：`world` 存在但无 `CURRENT` Bible ⇒ 禁止规划（`NOT_FOUND` 人话）；`DirectorContext` 必携带 `current_tick`（Director 产生 planned ticks 必须知道 canonical story time；初始 planning 以其为现实起点——本刀把 canonical time 摆到 Director 眼前，不改写 payload）。
+3. **MH-2（POV 实权 + cast 加厚）**：`pov_eligible=False` 拒为 POV／`True` 允许／`None` = 未声明**不自动授权**（MVP 拒）；`player_character_id` 为 POV 允许；`pov_actor_id ∈ participants` 冻结为 schema invariant；cast 输入加厚——AI 成员带 `character_card` 人物六件（identity/personality/background/speech_style/values/boundaries，card 缺失=空串 honest undeclared）+ `world_actor_profile`；player 带 name/background/appearance/abilities/limits（`location/state/knowledge_refs` 继续结构级缺席）。
+4. **V3-5 硬门（登记，本刀不实现）**：**Director operation crash/replay 必须在新运行链第一次真实消费 Director 前关闭**（top-level idempotent planning operation 或 resume/recovery；不得让重试自动跳到新 chapter/revision——V3-4 评审 F1 两型残骸〔PLANNED 无 plan 悬空章/悬空 PROPOSED revision〕是其具体形）。落点 = V3-5 开工四查必裁。
+5. **最小语义收紧（同刀）**：`scenes` 非空（推翻 V3-4 钉「空 scenes 合法」——该钉随迁反转）；chapter `planned_start_tick <= planned_end_tick`；scene `planned_start_tick >= 0` 且 ≤ 本章 `planned_end_tick`；POV ∈ participants（同 #3）。不扩成剧情合理性检测器。
+
+授权：外审（用户转呈，2026-10-12）；DMCP 开工裁决 `DEC-OPI-be7b094f-…21`（rev 783）。

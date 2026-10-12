@@ -1,4 +1,5 @@
-"""V3-4 — the World Director + ``world_chapter(_plan)`` (the pin groups).
+"""V3-4 — the World Director + ``world_chapter(_plan)`` (the pin groups);
+revised by V3-4R (TASK-OPI-be7b094f…23 / DEC-OPI-be7b094f…21).
 
 The Narrative V3 program's fourth cut (TASK-OPI-be7b094f…11 /
 VAL-OPI-be7b094f…13; the ruling DEC-OPI-be7b094f…7): the
@@ -7,36 +8,55 @@ schema-and-table side of the Director — the strict Blueprint schema
 assembly (the V3-3R external review's item 5; the Package is a seed
 source, never a runtime authority), the context read face, and the two
 write faces that land a Blueprint as an adopted plan revision plus its
-``world_scene`` position anchors. **Zero migration**: 0029's four
+``world_scene`` identity anchors. **Zero migration**: 0029's four
 tables were V3-1's; this cut is pure code (the chain head stays
 ``0032_actor_profile_world_fk`` / ``32``). The #4 prerequisites (an
 ``ADOPTED`` Blueprint / Dossier before an activation; the overlap ban
 covering a ``SETTLING`` chapter) turn on in this cut — group 4 pins
-them at the store's own surface. The groups:
+them at the store's own surface.
+
+The V3-4R correction (the external review's five items) lands here:
+**scene identity separates from presentation order** (``scene_ref`` /
+burned ``scene_id`` / unused-monotonic minting; retired anchors never
+revived — the HIGH), **world authority is fail-closed** (no ``CURRENT``
+Bible, no planning) and the context carries the **canonical tick**,
+**POV eligibility is authority** (``pov_eligible`` False / undeclared
+both refuse; the POV must be among the participants) and the cast
+input thickens (six card person fields / three player profile fields),
+plus the tightening laws (non-empty ``scenes``; ordered chapter window;
+scene ticks inside it). The groups:
 
 1. **schema pins** — the canonical key set word for word; a legal
    Blueprint passes with its supplemental keys riding verbatim; missing
    chapter/scene fields, wrong types, blank soft-expectation strings,
-   and identities outside the durable namespace (the V3-3R negative
-   controls: a persona id and a resident name both refuse) are all
-   value-semantics refusals — never an exception;
+   the V3-4R tightening (empty ``scenes`` / reversed chapter window /
+   scene ticks outside it), the identity pair's payload-local checks
+   (type / agreement / duplicate) and identities outside the durable
+   namespace (the V3-3R negative controls: a persona id and a resident
+   name both refuse) are all value-semantics refusals — never an
+   exception; POV eligibility and the POV-in-participants invariant
+   are pinned against explicit authority maps;
 2. **the durable cast-input assembly** — berrymoor seeded through the
    real open pass assembles exactly the two durable identities, Nell's
-   profile six fields riding the member, the card-name join resolved,
-   the player arm carrying only the profile face (the seed fields do
-   not exist on the shape), the context carrying the Bible / storyline
-   / CURRENT-fact arms — and the source scan: no package face is
-   touched (no import, no SQL), plus the cold-start import pin;
+   profile six fields riding the member, the card join resolved wide
+   (name + six person fields; a card-less member still stands with six
+   empty strings), the player arm carrying the profile face (three
+   new fields ride; the seed fields do not exist on the shape), the
+   context carrying the Bible / storyline / CURRENT-fact arms plus the
+   canonical tick — and the source scan: no package face is touched
+   (no import, no SQL), plus the cold-start import pin;
 3. **the write faces** — open_next_chapter's full chain (chapter
-   PLANNED, plan ADOPTED, N PLANNED anchors, the derivation laws word
-   for word), the store faces replaying the derived ids as no-ops (the
-   idempotence rides the store's own creation faces), the chain moving
-   forward one chapter per open, revise_blueprint's position-keyed diff
-   (a new ordinal gets a row, a vanished still-PLANNED ordinal is
-   discarded, a content change never touches an anchor, an ACTIVE
-   anchor is never touched, a ``scene_index`` is never re-used) — and
-   the refusals (dangling world / chapter, a bad payload writing
-   nothing);
+   PLANNED, plan ADOPTED, identity stamping byte for byte, N PLANNED
+   anchors, the derivation laws word for word), the store faces
+   replaying the landed shapes as no-ops, the chain moving forward one
+   chapter per open, revise_blueprint's identity-keyed diff (refs keep
+   their anchors, a content change never touches a row, a fresh
+   element mints ``max + 1``, a vanished still-PLANNED anchor is
+   discarded, an ACTIVE anchor is never touched, a ``scene_index`` is
+   never re-used, no ghost rows) — the five ``scene_ref`` refusals,
+   the read-back law (a burned identity is never rewritten, a
+   disagreeing pair refuses) and the refusals (dangling world /
+   chapter, a bad payload writing nothing, an authority-less world);
 4. **the #4 prerequisites** (STATE §21/§22's 「V3-4 起强制」) — an
    ADOPTED Blueprint before a chapter opens, an ADOPTED Dossier before
    a scene activates, and the overlap ban covering an ACTIVE **or**
@@ -57,6 +77,7 @@ import re
 import sqlite3
 import subprocess
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -66,12 +87,14 @@ from elc.host import open_host
 from elc.persona.provider import ScriptedPersonaProvider
 from elc.platform.db.epoch import open_runtime_epoch
 from elc.platform.db.migrations import apply_migrations
-from elc.platform.types import DomainErrorCode, Err, Ok
-from elc.world.bible import SqliteBibleStore
+from elc.platform.types import DomainErrorCode, Err, Ok, Result
+from elc.world.bible import BibleContent, SqliteBibleStore
 from elc.world.cast import SqliteCastStore, StoryRole
 from elc.world.director import (
     BLUEPRINT_SCENE_KEYS,
+    ChapterBlueprint,
     Director,
+    _next_unused_scene_index,
     build_cast_input,
     build_director_context,
     chapter_id_for,
@@ -84,10 +107,11 @@ from elc.world.narrative import (
     PlanRevisionStatus,
     SceneStatus,
     SqliteNarrativeStore,
+    encode_scenes,
 )
 from elc.world.package import BUILTIN_WORLDS_DIR, ensure_builtin_worlds
 from elc.world.store import SqliteWorldStore
-from elc.world.time import read_current_tick
+from elc.world.time import advance_current_tick, read_current_tick
 from elc.world.types import WorldEvent
 from tests.conftest import (
     MIGRATION_IDS,
@@ -180,11 +204,17 @@ def _seed_town(
     world_store: SqliteWorldStore,
     cast_store: SqliteCastStore,
     world_id: str = TOWN,
+    *,
+    with_bible: bool = True,
 ) -> None:
     """One hand-made world over the fresh database: the world row, one
-    AI actor bound to a card, her seeded profile, and the reader's own
-    durable character — the two durable identity sources the namespace
-    assembles from (no package anywhere)."""
+    AI actor bound to a card, her seeded profile (``pov_eligible =
+    True`` — the V3-4R POV authority the schema face reads), the
+    reader's own durable character, and — unless the caller asks
+    otherwise — the world's ``CURRENT`` Bible revision (the fail-closed
+    law's world authority, seeded through the Bible store's own face;
+    ``with_bible=False`` seeds an authority-less world for that law's
+    own pin)."""
 
     created = world_store.create_world(world_id, "Town", None, NOW)
     assert isinstance(created, Ok)
@@ -211,6 +241,15 @@ def _seed_town(
         now=NOW,
     )
     assert isinstance(player, Ok)
+    if with_bible:
+        bible_store = SqliteBibleStore(conn, open_runtime_epoch(conn))
+        seeded_bible = bible_store.seed_bible(
+            f"{world_id}-bible-r1",
+            world_id,
+            BibleContent(premise="the town by the water"),
+            NOW,
+        )
+        assert isinstance(seeded_bible, Ok)
 
 
 def _insert_card(
@@ -365,6 +404,28 @@ def _blueprint(
     }
 
 
+def _validate(
+    payload: Mapping[str, Any],
+    *,
+    player_character_id: str | None = "pc-you",
+    pov_eligibility: Mapping[str, bool | None] | None = None,
+) -> Result[ChapterBlueprint]:
+    """The schema face over the town's own authority: the namespace, the
+    player id and the one actor's declared eligibility — the same three
+    answers ``Director.validate_blueprint`` assembles from the durable
+    cast input, spelled here so the schema pins can vary one of them at
+    a time."""
+
+    return validate_blueprint(
+        payload,
+        namespace=TOWN_NAMESPACE,
+        player_character_id=player_character_id,
+        pov_eligibility=(
+            {"actor-lia": True} if pov_eligibility is None else pov_eligibility
+        ),
+    )
+
+
 def _add_adopted_plan(
     narrative: SqliteNarrativeStore, chapter_id: str, revision: int = 1
 ) -> None:
@@ -462,7 +523,7 @@ def test_a_legal_blueprint_passes_and_the_extras_ride_verbatim() -> None:
         gate_hint="ask about the sign",
     )
     payload = _blueprint(scenes=[scene])
-    result = validate_blueprint(payload, namespace=TOWN_NAMESPACE)
+    result = _validate(payload)
     assert isinstance(result, Ok)
     blueprint = result.value
     assert blueprint.goal == payload["goal"]
@@ -498,7 +559,7 @@ def test_missing_chapter_fields_are_refused_by_name() -> None:
     ):
         payload = _blueprint()
         del payload[key]
-        result = validate_blueprint(payload, namespace=TOWN_NAMESPACE)
+        result = _validate(payload)
         assert isinstance(result, Err), key
         assert result.error.code is DomainErrorCode.VALIDATION_FAILED
         assert key in result.error.message, key
@@ -520,7 +581,7 @@ def test_wrong_chapter_field_types_are_refused() -> None:
         ("scenes", {"1": "not a list"}),
     ):
         payload = _blueprint() | {key: value}
-        result = validate_blueprint(payload, namespace=TOWN_NAMESPACE)
+        result = _validate(payload)
         assert isinstance(result, Err), (key, value)
         assert result.error.code is DomainErrorCode.VALIDATION_FAILED
         assert key in result.error.message, (key, value)
@@ -540,7 +601,7 @@ def test_blank_soft_expectations_are_refused() -> None:
     ):
         for value in ("", "   "):
             payload = _blueprint() | {key: value}
-            result = validate_blueprint(payload, namespace=TOWN_NAMESPACE)
+            result = _validate(payload)
             assert isinstance(result, Err), (key, value)
             assert result.error.code is DomainErrorCode.VALIDATION_FAILED
             assert key in result.error.message
@@ -555,9 +616,7 @@ def test_scene_elements_are_refused_key_by_key() -> None:
     for key in BLUEPRINT_SCENE_KEYS:
         scene = _scene("actor-lia", ("actor-lia", "pc-you"))
         del scene[key]
-        result = validate_blueprint(
-            _blueprint(scenes=[scene]), namespace=TOWN_NAMESPACE
-        )
+        result = _validate(_blueprint(scenes=[scene]))
         assert isinstance(result, Err), key
         assert result.error.code is DomainErrorCode.VALIDATION_FAILED
         assert key in result.error.message, key
@@ -575,9 +634,7 @@ def test_scene_elements_are_refused_key_by_key() -> None:
         ("participants", "actor-lia"),
     ):
         scene = _scene("actor-lia", ("actor-lia", "pc-you")) | {key: value}
-        result = validate_blueprint(
-            _blueprint(scenes=[scene]), namespace=TOWN_NAMESPACE
-        )
+        result = _validate(_blueprint(scenes=[scene]))
         assert isinstance(result, Err), (key, value)
         assert result.error.code is DomainErrorCode.VALIDATION_FAILED
         assert key in result.error.message, (key, value)
@@ -590,28 +647,25 @@ def test_the_schema_face_keeps_the_v3_3r_identity_freeze() -> None:
     two durable identities pass."""
 
     for bad in ("persona-lia", "Old Tam", "actor-ghost"):
-        pov_result = validate_blueprint(
-            _blueprint(scenes=[_scene(bad, ("actor-lia", "pc-you"))]),
-            namespace=TOWN_NAMESPACE,
+        pov_result = _validate(
+            _blueprint(scenes=[_scene(bad, ("actor-lia", "pc-you"))])
         )
         assert isinstance(pov_result, Err), bad
         assert pov_result.error.code is DomainErrorCode.VALIDATION_FAILED
         assert bad in pov_result.error.message
         assert "canonical participant identity" in pov_result.error.message
 
-        participants_result = validate_blueprint(
+        participants_result = _validate(
             _blueprint(
                 scenes=[_scene("actor-lia", ("actor-lia", "pc-you", bad))]
-            ),
-            namespace=TOWN_NAMESPACE,
+            )
         )
         assert isinstance(participants_result, Err), bad
         assert participants_result.error.code is DomainErrorCode.VALIDATION_FAILED
         assert bad in participants_result.error.message
 
-    legal = validate_blueprint(
-        _blueprint(scenes=[_scene("actor-lia", ("actor-lia", "pc-you"))]),
-        namespace=TOWN_NAMESPACE,
+    legal = _validate(
+        _blueprint(scenes=[_scene("actor-lia", ("actor-lia", "pc-you"))])
     )
     assert isinstance(legal, Ok)
 
@@ -624,19 +678,20 @@ def test_non_mappings_and_unencodable_extras_are_refused() -> None:
     not_mapping = validate_blueprint(
         [("goal", "x")],  # type: ignore[arg-type]
         namespace=TOWN_NAMESPACE,
+        player_character_id="pc-you",
+        pov_eligibility={"actor-lia": True},
     )
     assert isinstance(not_mapping, Err)
     assert not_mapping.error.code is DomainErrorCode.VALIDATION_FAILED
 
-    not_a_mapping_element = validate_blueprint(
+    not_a_mapping_element = _validate(
         _blueprint(scenes=[_scene("actor-lia", ("actor-lia", "pc-you"))])
-        | {"scenes": ["just a string"]},
-        namespace=TOWN_NAMESPACE,
+        | {"scenes": ["just a string"]}
     )
     assert isinstance(not_a_mapping_element, Err)
     assert "scenes[1]" in not_a_mapping_element.error.message
 
-    unencodable = validate_blueprint(
+    unencodable = _validate(
         _blueprint(
             scenes=[
                 _scene(
@@ -645,12 +700,218 @@ def test_non_mappings_and_unencodable_extras_are_refused() -> None:
                     beats={1, 2},
                 )
             ]
-        ),
-        namespace=TOWN_NAMESPACE,
+        )
     )
     assert isinstance(unencodable, Err)
     assert unencodable.error.code is DomainErrorCode.VALIDATION_FAILED
     assert "JSON-encodable" in unencodable.error.message
+
+
+def test_the_v3_4r_tightening_laws_hold() -> None:
+    """The V3-4R minimal semantics tightening: ``scenes`` is non-empty;
+    the chapter window never runs backwards; a scene's
+    ``planned_start_tick`` is non-negative and never starts past the
+    chapter's ``planned_end_tick`` — while a tick exactly at the
+    chapter's end is legal (the message speaks the ordinal language)."""
+
+    empty = _validate(_blueprint() | {"scenes": []})
+    assert isinstance(empty, Err)
+    assert empty.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "scenes" in empty.error.message
+
+    reversed_window = _validate(_blueprint() | {"planned_start_tick": 601})
+    assert isinstance(reversed_window, Err)
+    assert reversed_window.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "planned_start_tick" in reversed_window.error.message
+    assert "planned_end_tick" in reversed_window.error.message
+
+    negative = _validate(
+        _blueprint()
+        | {
+            "scenes": [
+                _scene("actor-lia", ("actor-lia", "pc-you"))
+                | {"planned_start_tick": -1}
+            ]
+        }
+    )
+    assert isinstance(negative, Err)
+    assert negative.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "scenes[1]" in negative.error.message
+    assert "negative" in negative.error.message
+
+    beyond = _validate(
+        _blueprint()
+        | {
+            "scenes": [
+                _scene("actor-lia", ("actor-lia", "pc-you"))
+                | {"planned_start_tick": 601}
+            ]
+        }
+    )
+    assert isinstance(beyond, Err)
+    assert beyond.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "scenes[1]" in beyond.error.message
+    assert "planned_end_tick" in beyond.error.message
+
+    at_the_edge = _validate(
+        _blueprint()
+        | {
+            "scenes": [
+                _scene("actor-lia", ("actor-lia", "pc-you"))
+                | {"planned_start_tick": 600}
+            ]
+        }
+    )
+    assert isinstance(at_the_edge, Ok)  # == planned_end_tick is inside
+
+
+def test_the_identity_pair_is_checked_payload_locally() -> None:
+    """The ``scene_ref`` / ``scene_id`` pair's payload-local half (the
+    V3-4R identity model): ``scene_ref`` is an integer, strictly (a
+    ``bool`` and a string both refuse); ``scene_id`` is a string; both
+    present must agree on the index; and two elements may not declare
+    one identity — whether through ``scene_ref`` or through a burned
+    ``scene_id`` (the anchored half lives in the resolution; see the
+    write-face refusals below)."""
+
+    base = _blueprint()
+    for bad_ref in (True, "1", 1.0, None):
+        result = _validate(
+            base
+            | {
+                "scenes": [
+                    _scene("actor-lia", ("actor-lia", "pc-you"))
+                    | {"scene_ref": bad_ref}
+                ]
+            }
+        )
+        assert isinstance(result, Err), bad_ref
+        assert result.error.code is DomainErrorCode.VALIDATION_FAILED
+        assert "scene_ref" in result.error.message, bad_ref
+
+    bad_id = _validate(
+        base
+        | {
+            "scenes": [
+                _scene("actor-lia", ("actor-lia", "pc-you"))
+                | {"scene_id": 7}
+            ]
+        }
+    )
+    assert isinstance(bad_id, Err)
+    assert "scene_id" in bad_id.error.message
+
+    disagreeing = _validate(
+        base
+        | {
+            "scenes": [
+                _scene("actor-lia", ("actor-lia", "pc-you"))
+                | {"scene_ref": 1, "scene_id": "world-town-ch01-s02"}
+            ]
+        }
+    )
+    assert isinstance(disagreeing, Err)
+    assert disagreeing.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "must agree" in disagreeing.error.message
+
+    # A well-formed pair passes the payload-local half (the resolution
+    # judges whether the anchor exists — group 3's pins).
+    agreeing = _validate(
+        _blueprint(
+            scenes=[
+                _scene("actor-lia", ("actor-lia", "pc-you"))
+                | {"scene_ref": 2, "scene_id": "world-town-ch07-s02"}
+            ]
+        )
+    )
+    assert isinstance(agreeing, Ok)
+
+    duplicate_refs = _validate(
+        _blueprint(
+            scenes=[
+                _scene("actor-lia", ("actor-lia", "pc-you"))
+                | {"scene_ref": 1},
+                _scene("actor-lia", ("actor-lia", "pc-you"))
+                | {"scene_ref": 1},
+            ]
+        )
+    )
+    assert isinstance(duplicate_refs, Err)
+    assert duplicate_refs.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "scene_ref" in duplicate_refs.error.message
+
+    mixed_identity = _validate(
+        _blueprint(
+            scenes=[
+                _scene("actor-lia", ("actor-lia", "pc-you"))
+                | {"scene_ref": 1},
+                _scene("actor-lia", ("actor-lia", "pc-you"))
+                | {"scene_id": "world-town-ch01-s01"},
+            ]
+        )
+    )
+    assert isinstance(mixed_identity, Err)
+    assert "repeats the anchor identity 1" in mixed_identity.error.message
+
+
+def test_pov_eligibility_is_authority_not_decoration() -> None:
+    """The V3-4R review's item 3 at the schema face: an AI actor with
+    an explicit ``False`` is refused (the message naming
+    ``pov_eligible``); an undeclared eligibility — ``None`` on the
+    profile, or no profile row at all — is refused too (undeclared is
+    not automatically authorized); the declared ``True`` actor and the
+    ``player_character_id`` both pass."""
+
+    declared = _scene("actor-lia", ("actor-lia", "pc-you"))
+    refused_false = _validate(
+        _blueprint(scenes=[declared]), pov_eligibility={"actor-lia": False}
+    )
+    assert isinstance(refused_false, Err)
+    assert refused_false.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "pov_eligible" in refused_false.error.message
+
+    refused_none = _validate(
+        _blueprint(scenes=[declared]), pov_eligibility={"actor-lia": None}
+    )
+    assert isinstance(refused_none, Err)
+    assert refused_none.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "pov_eligible" in refused_none.error.message
+
+    refused_missing = _validate(_blueprint(scenes=[declared]), pov_eligibility={})
+    assert isinstance(refused_missing, Err)
+    assert "pov_eligible" in refused_missing.error.message
+
+    passed = _validate(_blueprint(scenes=[declared]))
+    assert isinstance(passed, Ok)
+
+    player_pov = _validate(
+        _blueprint(
+            scenes=[_scene("pc-you", ("pc-you", "actor-lia"))]
+        ),
+        pov_eligibility={},
+    )
+    assert isinstance(player_pov, Ok)
+
+
+def test_the_pov_must_be_among_the_participants() -> None:
+    """The V3-4R schema invariant: a POV absent from her own scene's
+    ``participants`` is refused — for the reader's character exactly as
+    for an AI actor (even one the authority declares eligible)."""
+
+    actor_absent = _validate(
+        _blueprint(scenes=[_scene("actor-lia", ("pc-you",))])
+    )
+    assert isinstance(actor_absent, Err)
+    assert actor_absent.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "participants" in actor_absent.error.message
+    assert "actor-lia" in actor_absent.error.message
+
+    player_absent = _validate(
+        _blueprint(scenes=[_scene("pc-you", ("actor-lia",))])
+    )
+    assert isinstance(player_absent, Err)
+    assert player_absent.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "participants" in player_absent.error.message
 
 
 # ---------------------------------------------------------------------------
@@ -679,6 +940,14 @@ def test_the_cast_input_assembles_from_durable_instance_data(
     ]
     nell = cast.members[0]
     assert nell.name == "Nell Alder"  # the character_card.name join
+    # The V3-4R card thickening: the six person fields ride from the
+    # shipped character_card row (the builtin Nell declares all six).
+    assert "bookbinder" in nell.identity
+    assert nell.personality != ""
+    assert nell.background != ""
+    assert nell.speech_style != ""
+    assert nell.values != ""
+    assert nell.boundaries != ""
     assert nell.profile is not None
     assert nell.profile.story_role is StoryRole.PROTAGONIST
     assert nell.profile.pov_eligible is True
@@ -701,14 +970,16 @@ def test_the_cast_input_assembles_from_durable_instance_data(
     assert "Old Tam" not in cast.namespace
 
 
-def test_the_player_arm_carries_only_the_profile_face(
+def test_the_player_arm_carries_the_profile_face_only(
     tmp_path: Path,
 ) -> None:
-    """The V3-3R seed freeze carried structurally: the Director's player
-    shape has no ``location`` / ``state`` / ``knowledge_refs`` (their
-    current authority is ``world_state_fact`` / V3-7's memory) and no
-    unused档案 fields — a consumer cannot read the seed as a running
-    fact through this arm by accident."""
+    """The V3-3R seed freeze carried structurally, thickened by V3-4R:
+    the Director's player shape carries the character's档案 three more
+    fields (``appearance`` / ``abilities`` / ``limits`` — the V3-4R
+    review's item 3) and still has no ``location`` / ``state`` /
+    ``knowledge_refs`` (their current authority is ``world_state_fact``
+    / V3-7's memory) — a consumer cannot read the creation-time seed as
+    a running fact through this arm by accident."""
 
     world_store, _bible_store, cast_store, _narrative, db = _seed_berrymoor(
         tmp_path
@@ -718,14 +989,9 @@ def test_the_player_arm_carries_only_the_profile_face(
     )
     player = cast.player_character
     assert player is not None
-    for absent in (
-        "location",
-        "state",
-        "knowledge_refs",
-        "appearance",
-        "abilities",
-        "limits",
-    ):
+    for present in ("appearance", "abilities", "limits"):
+        assert hasattr(player, present), present
+    for absent in ("location", "state", "knowledge_refs"):
         assert not hasattr(player, absent), absent
 
 
@@ -752,6 +1018,7 @@ def test_the_context_carries_the_named_arms(tmp_path: Path) -> None:
     assert len(context.storylines) == 2
     assert all(line.theme != "" for line in context.storylines)
     assert context.current_facts == ()
+    assert context.current_tick == 0  # the seed world starts at tick zero
     assert context.cast.namespace == BERRYMOOR_NAMESPACE
     for absent in (
         "chapter_summaries",
@@ -811,8 +1078,135 @@ def test_the_production_open_assembles_the_same_cast_input(
         assert [member.actor_id for member in cast.members] == [
             "actor-berrymoor-nell"
         ]
+        assert cast.members[0].identity != ""
     finally:
         host.close()
+
+
+def test_a_cardless_member_still_assembles_with_empty_faces(
+    tmp_path: Path,
+) -> None:
+    """The honest-undeclared arm of the V3-4R card thickening: a member
+    whose card the join cannot reach still stands — the name falls back
+    to the actor id and the six person fields ride the empty string,
+    never a guessed value (the FK-on profile normally guarantees a card;
+    the deletion programme sweeps user-authored cards and the read face
+    must not explode when the binding outlives its card — the LEFT
+    JOIN's own promise). Constructed FK-off: the state is unreachable
+    under foreign-key enforcement, which is exactly why the reader
+    carries the arm."""
+
+    db = sqlite3.connect(tmp_path / "cardless.db")  # FK off by default
+    apply_migrations(db)
+    fence = open_runtime_epoch(db)
+    world_store = SqliteWorldStore(db, fence)
+    cast_store = SqliteCastStore(db, fence)
+    created = world_store.create_world(TOWN, "Town", None, NOW)
+    assert isinstance(created, Ok)
+    db.execute(
+        "INSERT INTO world_actor (actor_id, world_id, persona_id,"
+        " created_at) VALUES (?, ?, ?, ?)",
+        ("actor-drifter", TOWN, "persona-gone", NOW),
+    )
+    db.commit()
+
+    cast = build_cast_input(
+        db, TOWN, world_store=world_store, cast_store=cast_store
+    )
+    assert [member.actor_id for member in cast.members] == ["actor-drifter"]
+    drifter = cast.members[0]
+    assert drifter.name == "actor-drifter"  # the fallback signature
+    for face in (
+        "identity",
+        "personality",
+        "background",
+        "speech_style",
+        "values",
+        "boundaries",
+    ):
+        assert getattr(drifter, face) == "", face
+    assert drifter.profile is None
+
+
+def test_the_context_tick_reads_the_canonical_story_time(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    director: Director,
+) -> None:
+    """The V3-4R review's item 2 at the context face: ``current_tick``
+    reads the world's canonical story time — zero on a seeded world,
+    and the moved value after the tick primitive advances (the
+    Director only *reads* it here; advancing is the commit
+    transactions' move, N-INV-007)."""
+
+    _seed_town(conn, world_store, cast_store)
+    context = director.context(TOWN)
+    assert context.current_tick == 0
+
+    advanced = advance_current_tick(conn, TOWN, 7)
+    assert isinstance(advanced, Ok)
+    assert advanced.value == 7
+    conn.commit()
+
+    context = director.context(TOWN)
+    assert context.current_tick == 7
+
+
+def test_the_bound_schema_face_reads_the_cast_authority(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    director: Director,
+) -> None:
+    """The bound face's wiring (MH-2 at the instance, not the map): the
+    eligibility comes from the world's own ``world_actor_profile`` rows
+    — a declared-``False`` actor and a profile-less actor are both
+    refused (the latter with the same undeclared sentence), the
+    ``True`` actor passes, and the player character passes outright."""
+
+    _seed_town(conn, world_store, cast_store)
+    _insert_actor(conn, "actor-refuser", TOWN, persona_id="persona-refuser")
+    refused_profile = cast_store.seed_actor_profile(
+        "actor-refuser",
+        TOWN,
+        story_role=StoryRole.SUPPORTING,
+        pov_eligible=False,
+        now=NOW,
+    )
+    assert isinstance(refused_profile, Ok)
+    _insert_actor(conn, "actor-mute", TOWN, persona_id="persona-mute")
+    # No profile at all for actor-mute — the honest undeclared.
+
+    declined = director.validate_blueprint(
+        TOWN,
+        _blueprint(
+            scenes=[_scene("actor-refuser", ("actor-refuser", "pc-you"))]
+        ),
+    )
+    assert isinstance(declined, Err)
+    assert declined.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "pov_eligible" in declined.error.message
+
+    undeclared = director.validate_blueprint(
+        TOWN,
+        _blueprint(scenes=[_scene("actor-mute", ("actor-mute", "pc-you"))]),
+    )
+    assert isinstance(undeclared, Err)
+    assert undeclared.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "pov_eligible" in undeclared.error.message
+
+    declared = director.validate_blueprint(
+        TOWN,
+        _blueprint(scenes=[_scene("actor-lia", ("actor-lia", "pc-you"))]),
+    )
+    assert isinstance(declared, Ok)
+
+    player = director.validate_blueprint(
+        TOWN,
+        _blueprint(scenes=[_scene("pc-you", ("pc-you", "actor-lia"))]),
+    )
+    assert isinstance(player, Ok)
 
 
 # ---------------------------------------------------------------------------
@@ -873,6 +1267,22 @@ def test_the_director_carries_no_write_sql_of_its_own() -> None:
             "world_scene_dossier",
         ):
             assert table not in text, (table, text)
+
+
+def test_the_reconciler_mints_no_positional_range_anchors() -> None:
+    """The V3-4R spine (the HIGH's regression guard): no ``range`` call
+    survives anywhere in the director module — anchor indexes are never
+    minted from array ordinals — and the one minting law is
+    ``max(existing) + 1``, pinned by behaviour on the module's own
+    function."""
+
+    for node in ast.walk(_DIRECTOR_TREE):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            assert node.func.id != "range", ast.dump(node)
+
+    assert _next_unused_scene_index([]) == 1
+    assert _next_unused_scene_index([1, 2, 3]) == 4
+    assert _next_unused_scene_index([3]) == 4  # gaps are not reused
 
 
 def test_the_director_module_imports_from_a_cold_interpreter() -> None:
@@ -944,7 +1354,13 @@ def test_open_next_chapter_lands_the_full_chain(
         opening.plan.chapter_questions_to_advance
         == payload["chapter_questions_to_advance"]
     )
-    assert opening.plan.scenes == tuple(payload["scenes"])
+    # The V3-4R identity stamping: every fresh element carries its
+    # derived scene_id (the one added key — see the byte-level pin
+    # below).
+    assert opening.plan.scenes == tuple(
+        {**element, "scene_id": f"world-town-ch01-s{index:02d}"}
+        for index, element in enumerate(payload["scenes"], start=1)
+    )
     assert [row.scene_id for row in opening.scenes] == [
         "world-town-ch01-s01",
         "world-town-ch01-s02",
@@ -976,6 +1392,52 @@ def test_the_derivation_laws_are_the_l3_spelling() -> None:
     assert scene_id_for("world-berrymoor-ch01", 12) == "world-berrymoor-ch01-s12"
 
 
+def test_open_stamps_the_burned_scene_id_without_touching_other_bytes(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    director: Director,
+) -> None:
+    """Identity stamping, byte for byte (the V3-4R HIGH): the plan row's
+    ``scenes`` JSON differs from the caller's table by exactly one added
+    key per element (``scene_id``, appended) — every other key and value
+    byte-identical, under the store's own deterministic codec."""
+
+    _seed_town(conn, world_store, cast_store)
+    payload = _blueprint(
+        scenes=[
+            _scene("actor-lia", ("actor-lia", "pc-you"), purpose="one"),
+            _scene(
+                "actor-lia",
+                ("actor-lia", "pc-you"),
+                purpose="two",
+                beats=["the bell above the door"],
+            ),
+        ]
+    )
+    opened = director.open_next_chapter(TOWN, payload, NOW)
+    assert isinstance(opened, Ok)
+
+    expected = tuple(
+        {**element, "scene_id": f"world-town-ch01-s{index:02d}"}
+        for index, element in enumerate(payload["scenes"], start=1)
+    )
+    assert opened.value.plan.scenes == expected
+    raw = conn.execute(
+        "SELECT scenes FROM world_chapter_plan WHERE chapter_plan_id = ?",
+        ("world-town-ch01-bp-r1",),
+    ).fetchone()[0]
+    assert raw == encode_scenes(expected)
+    for given, stored in zip(payload["scenes"], expected, strict=True):
+        assert set(stored) - set(given) == {"scene_id"}
+        assert {
+            key: value for key, value in stored.items() if key != "scene_id"
+        } == given
+        # The burned key is appended, so the original key order is the
+        # byte order the caller gave.
+        assert list(stored)[:-1] == list(given)
+
+
 def test_the_store_faces_replay_the_derived_ids_without_new_rows(
     conn: sqlite3.Connection,
     world_store: SqliteWorldStore,
@@ -984,10 +1446,12 @@ def test_the_store_faces_replay_the_derived_ids_without_new_rows(
     director: Director,
 ) -> None:
     """The replay law, at the level where it is true (「经 store 幂等性
-    自然达成」): the derived ids of one open replayed through the
+    自然达成」): the landed shapes of one open replayed through the
     store's own creation faces answer the stored rows — nothing new is
-    written, row counts and the records' state_versions ride
-    unchanged."""
+    written, row counts and the records' state_versions ride unchanged.
+    Since V3-4R the landed plan's scenes table *is* the stamped one
+    (identity stamping happens before the row lands), so the replay
+    speaks those bytes — the same id with the same shape."""
 
     _seed_town(conn, world_store, cast_store)
     payload = _blueprint(
@@ -1007,25 +1471,24 @@ def test_the_store_faces_replay_the_derived_ids_without_new_rows(
         "world_scene": 2,
     }
 
-    validated = director.validate_blueprint(TOWN, payload)
-    assert isinstance(validated, Ok)
-    blueprint = validated.value
     replayed_chapter = narrative.create_chapter("world-town-ch01", TOWN, 1, LATER)
     assert isinstance(replayed_chapter, Ok)
     assert replayed_chapter.value == opening.chapter
     replayed_plan = narrative.create_plan(
-        "world-town-ch01-bp-r1",
-        "world-town-ch01",
-        1,
-        goal=blueprint.goal,
-        dramatic_question=blueprint.dramatic_question,
-        planned_start_tick=blueprint.planned_start_tick,
-        planned_end_tick=blueprint.planned_end_tick,
-        closing_pressure=blueprint.closing_pressure,
-        desired_development=blueprint.desired_development,
-        soft_outcomes=blueprint.soft_outcomes,
-        chapter_questions_to_advance=blueprint.chapter_questions_to_advance,
-        scenes=blueprint.scenes,
+        opening.plan.chapter_plan_id,
+        opening.plan.chapter_id,
+        opening.plan.plan_revision,
+        goal=opening.plan.goal,
+        dramatic_question=opening.plan.dramatic_question,
+        planned_start_tick=opening.plan.planned_start_tick,
+        planned_end_tick=opening.plan.planned_end_tick,
+        closing_pressure=opening.plan.closing_pressure,
+        desired_development=opening.plan.desired_development,
+        soft_outcomes=opening.plan.soft_outcomes,
+        chapter_questions_to_advance=(
+            opening.plan.chapter_questions_to_advance
+        ),
+        scenes=opening.plan.scenes,
         now=LATER,
     )
     assert isinstance(replayed_plan, Ok)
@@ -1084,12 +1547,14 @@ def test_revise_blueprint_diffs_by_position(
     narrative: SqliteNarrativeStore,
     director: Director,
 ) -> None:
-    """The L3 Diff rules, position-keyed: a new revision is appended and
-    adopted (the old one superseded); a vanished ordinal's still-PLANNED
-    row is discarded; a surviving ordinal's row is never touched even
-    when the element's content changed; a new ordinal gets a new
-    ``PLANNED`` row; and a retired ``scene_index`` is never re-used
-    (one anchor per index, its retired word riding it)."""
+    """The L3 Diff rules' positional half: a new revision is appended
+    and adopted (the old one superseded); a surviving ordinal's row is
+    never touched even when the element's content changed (the row is a
+    progress anchor, the JSON is the content source); a vanished
+    ordinal's still-PLANNED row is discarded; and the retired index
+    keeps its anchor (never re-used, never re-minted). The identity
+    references (``scene_ref`` / burned ``scene_id``) and the fresh
+    minting law have their own pins below."""
 
     _seed_town(conn, world_store, cast_store)
     scenes = [
@@ -1133,31 +1598,99 @@ def test_revise_blueprint_diffs_by_position(
     assert rows[2].state_version == 2  # the dossier dance's activation
     assert rows[3].status is SceneStatus.DISCARDED
     assert rows[3].state_version == 2  # mint + discard
+    assert rows[1].scene_id == "world-town-ch01-s01"  # the same anchor
+    assert [
+        plan.status for plan in narrative.plans_of("world-town-ch01")
+    ] == [
+        PlanRevisionStatus.SUPERSEDED,
+        PlanRevisionStatus.ADOPTED,
+    ]
 
-    # Revision 3: four elements — position 4 is new (a new PLANNED
-    # row); position 3 stays the one discarded anchor (a scene_index is
-    # never re-used: the retired index is not re-minted).
+
+def test_the_identity_model_keeps_anchors_across_revisions(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+) -> None:
+    """The V3-4R e2e (the review's own acceptance shape): rev1 =
+    [s1, s2, s3] → rev2 = [ref s01, ref s02] (s03 DISCARDED) → rev3 =
+    [ref s01, ref s02, {fresh}] ⇒ the fresh scene mints **s04**
+    (``scene_index = 4``, PLANNED — ``max(existing) + 1`` over a
+    retired index), the retired s03 stays retired, no ghost row exists
+    (rows = elements + retired), and s04 walks the whole dossier dance
+    to ACTIVE."""
+
+    _seed_town(conn, world_store, cast_store)
+    opened = director.open_next_chapter(
+        TOWN,
+        _blueprint(
+            scenes=[
+                _scene("actor-lia", ("actor-lia", "pc-you"), purpose=f"beat {i}")
+                for i in (1, 2, 3)
+            ]
+        ),
+        NOW,
+    )
+    assert isinstance(opened, Ok)
+
+    revised = director.revise_blueprint(
+        "world-town-ch01",
+        _blueprint(
+            scenes=[
+                _scene(
+                    "actor-lia",
+                    ("actor-lia", "pc-you"),
+                    purpose="a different first sight",
+                    scene_ref=1,
+                ),
+                _scene(
+                    "actor-lia", ("actor-lia", "pc-you"), purpose="beat 2",
+                    scene_ref=2,
+                ),
+            ]
+        ),
+        LATER,
+    )
+    assert isinstance(revised, Ok)
+    rows = {row.scene_index: row for row in narrative.scenes_of("world-town-ch01")}
+    assert set(rows) == {1, 2, 3}
+    assert rows[1].status is SceneStatus.PLANNED
+    assert rows[1].state_version == 1  # ref keeps the anchor; content moved
+    assert rows[1].scene_id == "world-town-ch01-s01"
+    assert rows[2].scene_id == "world-town-ch01-s02"
+    assert rows[3].status is SceneStatus.DISCARDED
+
     revised_three = director.revise_blueprint(
         "world-town-ch01",
         _blueprint(
             scenes=[
-                _scene("actor-lia", ("actor-lia", "pc-you")),
-                _scene("actor-lia", ("actor-lia", "pc-you"), purpose="beat 2"),
-                _scene("actor-lia", ("actor-lia", "pc-you"), purpose="beat 3"),
-                _scene("actor-lia", ("actor-lia", "pc-you"), purpose="beat 4"),
+                _scene(
+                    "actor-lia", ("actor-lia", "pc-you"), purpose="beat 1 v3",
+                    scene_ref=1,
+                ),
+                _scene(
+                    "actor-lia", ("actor-lia", "pc-you"), purpose="beat 2",
+                    scene_ref=2,
+                ),
+                _scene(
+                    "actor-lia", ("actor-lia", "pc-you"), purpose="the fresh scene"
+                ),
             ]
         ),
         LATER,
     )
     assert isinstance(revised_three, Ok)
-    assert revised_three.value.plan.plan_revision == 3
     rows = {row.scene_index: row for row in narrative.scenes_of("world-town-ch01")}
-    assert set(rows) == {1, 2, 3, 4}
+    assert set(rows) == {1, 2, 3, 4}  # 3 elements + 1 retired: no ghost
     assert rows[4].scene_id == "world-town-ch01-s04"
     assert rows[4].status is SceneStatus.PLANNED
     assert rows[4].state_version == 1
-    assert rows[3].scene_id == "world-town-ch01-s03"
-    assert rows[3].status is SceneStatus.DISCARDED  # the retired anchor stays
+    assert rows[3].status is SceneStatus.DISCARDED  # retired forever
+    assert revised_three.value.plan.scenes[2]["scene_id"] == (
+        "world-town-ch01-s04"
+    )
     assert [
         plan.status for plan in narrative.plans_of("world-town-ch01")
     ] == [
@@ -1165,6 +1698,223 @@ def test_revise_blueprint_diffs_by_position(
         PlanRevisionStatus.SUPERSEDED,
         PlanRevisionStatus.ADOPTED,
     ]
+
+    # The fresh anchor is a normal planned scene: the dossier dance
+    # carries it to ACTIVE (the #4 prerequisite included).
+    _activate_scene_with_dossier(narrative, "world-town-ch01-s04")
+    fresh = narrative.get_scene("world-town-ch01-s04")
+    assert fresh is not None
+    assert fresh.status is SceneStatus.ACTIVE
+    assert fresh.actual_start_tick is None  # the commits own the actuals
+
+
+def test_scene_refs_refuse_the_five_ways(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+) -> None:
+    """The ``scene_ref`` refusals, one arm each (the V3-4R HIGH): a
+    duplicate ref; a ref naming no anchor of this chapter; another
+    chapter's index (addressable only in its own chapter); a
+    ``DISCARDED`` anchor (retired forever); and the position conflict
+    (a ref whose array ordinal is already occupied by another anchor).
+    Every one a value-semantics ``VALIDATION_FAILED`` writing nothing —
+    the plan-revision count never moves."""
+
+    _seed_town(conn, world_store, cast_store)
+    opened = director.open_next_chapter(
+        TOWN,
+        _blueprint(
+            scenes=[
+                _scene("actor-lia", ("actor-lia", "pc-you"), purpose=f"beat {i}")
+                for i in (1, 2, 3)
+            ]
+        ),
+        NOW,
+    )
+    assert isinstance(opened, Ok)
+
+    duplicate = director.revise_blueprint(
+        "world-town-ch01",
+        _blueprint(
+            scenes=[
+                _scene("actor-lia", ("actor-lia", "pc-you"), scene_ref=1),
+                _scene("actor-lia", ("actor-lia", "pc-you"), scene_ref=1),
+            ]
+        ),
+        LATER,
+    )
+    assert isinstance(duplicate, Err)
+    assert duplicate.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "scene_ref" in duplicate.error.message
+
+    nowhere = director.revise_blueprint(
+        "world-town-ch01",
+        _blueprint(
+            scenes=[_scene("actor-lia", ("actor-lia", "pc-you"), scene_ref=9)]
+        ),
+        LATER,
+    )
+    assert isinstance(nowhere, Err)
+    assert nowhere.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "names no anchor" in nowhere.error.message
+    assert "world-town-ch01" in nowhere.error.message
+
+    # Another chapter's index is no identity here: ch01 holds anchor 1,
+    # ch02 (hand-made, no anchors) referencing 1 still refuses.
+    made = narrative.create_chapter("world-town-ch02", TOWN, 2, NOW)
+    assert isinstance(made, Ok)
+    foreign = director.revise_blueprint(
+        "world-town-ch02",
+        _blueprint(
+            scenes=[_scene("actor-lia", ("actor-lia", "pc-you"), scene_ref=1)]
+        ),
+        LATER,
+    )
+    assert isinstance(foreign, Err)
+    assert foreign.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "names no anchor" in foreign.error.message
+    assert "world-town-ch02" in foreign.error.message
+
+    conflict = director.revise_blueprint(
+        "world-town-ch01",
+        _blueprint(
+            scenes=[_scene("actor-lia", ("actor-lia", "pc-you"), scene_ref=2)]
+        ),
+        LATER,
+    )
+    assert isinstance(conflict, Err)
+    assert conflict.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "conflicts" in conflict.error.message
+
+    discarded = director.revise_blueprint(
+        "world-town-ch01",
+        _blueprint(
+            scenes=[
+                _scene("actor-lia", ("actor-lia", "pc-you"), scene_ref=1),
+                _scene("actor-lia", ("actor-lia", "pc-you"), scene_ref=2),
+            ]
+        ),
+        LATER,
+    )
+    assert isinstance(discarded, Ok)  # s03 retires here
+    retired = director.revise_blueprint(
+        "world-town-ch01",
+        _blueprint(
+            scenes=[
+                _scene("actor-lia", ("actor-lia", "pc-you"), scene_ref=1),
+                _scene("actor-lia", ("actor-lia", "pc-you"), scene_ref=2),
+                _scene("actor-lia", ("actor-lia", "pc-you"), scene_ref=3),
+            ]
+        ),
+        LATER,
+    )
+    assert isinstance(retired, Err)
+    assert retired.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "DISCARDED" in retired.error.message
+
+    # Nothing was written by the four refusals: two revisions only (the
+    # open's and the retiring revise), three anchors with their words
+    # intact.
+    assert len(narrative.plans_of("world-town-ch01")) == 2
+    rows = {row.scene_index: row for row in narrative.scenes_of("world-town-ch01")}
+    assert set(rows) == {1, 2, 3}
+    assert rows[3].status is SceneStatus.DISCARDED
+
+
+def test_a_revision_never_rewrites_a_burned_identity(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+) -> None:
+    """The read-back law: a stamped element resubmitted (``scene_id``
+    alone, no ``scene_ref``) resolves by its burned identity, the new
+    revision carries the same ``scene_id`` for the same anchors, the
+    dropped tail anchor retires, and the earlier revision's column
+    bytes stay byte for byte what the open wrote — a burned identity is
+    never rewritten."""
+
+    _seed_town(conn, world_store, cast_store)
+    opened = director.open_next_chapter(
+        TOWN,
+        _blueprint(
+            scenes=[
+                _scene("actor-lia", ("actor-lia", "pc-you"), purpose=f"beat {i}")
+                for i in (1, 2, 3)
+            ]
+        ),
+        NOW,
+    )
+    assert isinstance(opened, Ok)
+    read_back = opened.value.plan.scenes
+    assert all("scene_id" in element for element in read_back)
+
+    revised = director.revise_blueprint(
+        "world-town-ch01",
+        _blueprint(scenes=[read_back[0], read_back[1]]),
+        LATER,
+    )
+    assert isinstance(revised, Ok)
+    assert revised.value.plan.scenes[0]["scene_id"] == read_back[0]["scene_id"]
+    assert revised.value.plan.scenes[1]["scene_id"] == read_back[1]["scene_id"]
+    rows = {row.scene_index: row for row in narrative.scenes_of("world-town-ch01")}
+    assert set(rows) == {1, 2, 3}
+    assert rows[1].status is SceneStatus.PLANNED
+    assert rows[2].status is SceneStatus.PLANNED
+    assert rows[3].status is SceneStatus.DISCARDED
+
+    # The r1 row's bytes never moved (append-only, and no rewrite of
+    # the burned ids).
+    r1 = narrative.get_plan("world-town-ch01-bp-r1")
+    assert r1 is not None
+    assert r1.scenes == read_back
+    assert encode_scenes(r1.scenes) == encode_scenes(read_back)
+
+
+def test_a_burned_identity_disagreeing_with_its_ref_is_refused(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+) -> None:
+    """The identity pair's agreement, both halves: payload-local (the
+    tail index disagrees — refused without touching the database) and
+    anchored (the tail agrees but the full string names a different
+    chapter's identity — refused at the resolution)."""
+
+    _seed_town(conn, world_store, cast_store)
+    opened = director.open_next_chapter(TOWN, _blueprint(), NOW)
+    assert isinstance(opened, Ok)
+
+    bad_pair = _scene("actor-lia", ("actor-lia", "pc-you")) | {
+        "scene_ref": 1,
+        "scene_id": "world-town-ch01-s02",
+    }
+    payload_local = director.revise_blueprint(
+        "world-town-ch01", _blueprint(scenes=[bad_pair]), LATER
+    )
+    assert isinstance(payload_local, Err)
+    assert payload_local.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "must agree" in payload_local.error.message
+
+    foreign_id = _scene("actor-lia", ("actor-lia", "pc-you")) | {
+        "scene_ref": 1,
+        "scene_id": "world-elsewhere-ch01-s01",
+    }
+    anchored = director.revise_blueprint(
+        "world-town-ch01", _blueprint(scenes=[foreign_id]), LATER
+    )
+    assert isinstance(anchored, Err)
+    assert anchored.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "disagrees" in anchored.error.message
+
+    # Neither refusal minted a revision.
+    assert len(narrative.plans_of("world-town-ch01")) == 1
 
 
 def test_revise_blueprint_never_touches_an_active_anchor(
@@ -1224,8 +1974,9 @@ def test_revise_blueprint_refuses_a_dangling_chapter_and_a_bad_payload(
     """The revise refusals: a chapter that does not exist is
     ``NOT_FOUND``; a payload that fails the schema is
     ``VALIDATION_FAILED`` before anything is written (no plan revision
-    lands), and an empty scene list is a legal Blueprint — no hidden
-    non-emptiness law lives in the schema."""
+    lands), and an empty scene list is **refused** — the V3-4R
+    non-emptiness law, overturning the V3-4 pin that called it legal —
+    again with no new revision minted and every anchor left standing."""
 
     refused = director.revise_blueprint("chapter-ghost", _blueprint(), NOW)
     assert isinstance(refused, Err)
@@ -1243,11 +1994,13 @@ def test_revise_blueprint_refuses_a_dangling_chapter_and_a_bad_payload(
     empty_scenes = director.revise_blueprint(
         "world-town-ch01", _blueprint(scenes=[]), LATER
     )
-    assert isinstance(empty_scenes, Ok)
-    assert empty_scenes.value.plan.scenes == ()
+    assert isinstance(empty_scenes, Err)
+    assert empty_scenes.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "scenes" in empty_scenes.error.message
+    assert len(narrative.plans_of("world-town-ch01")) == 1
     assert [
         row.status for row in narrative.scenes_of("world-town-ch01")
-    ] == [SceneStatus.DISCARDED]
+    ] == [SceneStatus.PLANNED]
 
 
 def test_revise_blueprint_refuses_a_settled_chapter(
@@ -1304,6 +2057,39 @@ def test_revise_blueprint_refuses_a_settled_chapter(
     rows = narrative.scenes_of("world-town-ch01")
     assert [row.scene_index for row in rows] == [1]
     assert rows[0].status is SceneStatus.PLANNED
+
+
+def test_a_world_without_a_bible_is_refused_before_anything_is_written(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+) -> None:
+    """The fail-closed law (the V3-4R review's item 2; DATA §26.2.1's
+    block): a world holding no ``CURRENT`` Bible revision plans nothing
+    — ``open_next_chapter`` refuses ``NOT_FOUND`` naming the Bible
+    (after the world-existence arm, before any write), and
+    ``revise_blueprint`` refuses the same way for a chapter of that
+    world — no chapter row, no plan revision, no anchor."""
+
+    _seed_town(conn, world_store, cast_store, with_bible=False)
+    refused = director.open_next_chapter(TOWN, _blueprint(), NOW)
+    assert isinstance(refused, Err)
+    assert refused.error.code is DomainErrorCode.NOT_FOUND
+    assert "Bible" in refused.error.message
+    assert narrative.chapters_of(TOWN) == ()
+
+    created = narrative.create_chapter("world-town-ch01", TOWN, 1, NOW)
+    assert isinstance(created, Ok)
+    refused_revise = director.revise_blueprint(
+        "world-town-ch01", _blueprint(), LATER
+    )
+    assert isinstance(refused_revise, Err)
+    assert refused_revise.error.code is DomainErrorCode.NOT_FOUND
+    assert "Bible" in refused_revise.error.message
+    assert narrative.plans_of("world-town-ch01") == ()
+    assert narrative.scenes_of("world-town-ch01") == ()
 
 
 # ---------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 """The World Director's V3-4 machine face (TASK-OPI-be7b094f…11 /
-DEC-OPI-be7b094f…7) — the schema-and-table side of the cut: the strict
+DEC-OPI-be7b094f…7; the V3-4R correction, TASK-OPI-be7b094f…23 /
+DEC-OPI-be7b094f…21) — the schema-and-table side of the cut: the strict
 Blueprint schema, the durable cast-input assembly, the context read
 face, and the two write faces that land a Blueprint as an adopted plan
 revision and reconcile its ``scenes[]`` against ``world_scene``
@@ -11,8 +12,8 @@ parse) is not here; it is registered as its own later cut (a V3-8 Gold
 Scenario dependency). What ships here is what the contract spells:
 
 - **The strict Blueprint schema** (DATA §26.2.1's V3-4 block — the L3
-  landing; :func:`validate_blueprint`): the nine chapter fields
-  verbatim, the ``scenes[]`` canonical key set
+  landing, revised by the V3-4R review; :func:`validate_blueprint`):
+  the nine chapter fields verbatim, the ``scenes[]`` canonical key set
   (:data:`BLUEPRINT_SCENE_KEYS` — ``purpose`` / ``place`` /
   ``pov_actor_id`` / ``participants`` / ``planned_start_tick`` /
   ``entry_goals`` / ``exit_condition`` / ``elasticity`` /
@@ -22,7 +23,22 @@ Scenario dependency). What ships here is what the contract spells:
   ``world_player_character.player_character_id``; a ``persona_id`` or
   a resident name is not a V3 participant — the V3-3R freeze), and the
   Director's own supplemental keys (beats / gate hints, whatever the
-  Director grows) passing through unjudged.
+  Director grows) passing through unjudged. **The V3-4R tightening**:
+  ``scenes`` is non-empty; the chapter's window never runs backwards
+  (``planned_start_tick <= planned_end_tick``); a scene's
+  ``planned_start_tick`` is non-negative and never starts beyond the
+  chapter's ``planned_end_tick``; ``pov_actor_id`` must be among the
+  element's ``participants`` (a POV is present in her own scene). The
+  schema is deliberately still not a plot plausibility checker.
+
+- **POV eligibility is authority, not decoration** (the V3-4R review's
+  item 3): a ``pov_actor_id`` naming an AI actor demands that actor's
+  ``world_actor_profile.pov_eligible`` to be ``True`` — an explicit
+  ``False`` is refused, and an undeclared eligibility (``None``, or
+  no profile row at all) is **not automatically authorized** (the MVP
+  refuses; the message says so). The ``player_character_id`` is
+  allowed as a POV outright — the reader is the protagonist of her
+  own story.
 
 - **The wording law's schema half** (the design doc §2.2 / §三 1.5):
   **the soft-expectation set is never a postcondition** —
@@ -34,44 +50,89 @@ Scenario dependency). What ships here is what the contract spells:
   — a manufactured one would be exactly the rail-switch the law
   forbids (the Director is not the railway's dispatcher).
 
+- **Scene identity is durable and separate from presentation order**
+  (the V3-4R review's item 1, the HIGH): the ``scenes[]`` array states
+  the presentation / plan order and carries no identity of its own.
+  An element may carry the optional stable identity ``scene_ref`` (an
+  integer pointing at a ``world_scene`` anchor's ``scene_index`` **of
+  the same chapter**); an element without one matches the anchor at
+  its own array ordinal. ``DISCARDED`` anchors are retired forever —
+  never revived, never re-minted, never referenced. **Identity
+  stamping**: when the Director mints an anchor for an element, it
+  burns the derived ``scene_id`` into that element of the plan row's
+  ``scenes`` JSON (the one added key, injected before the revision row
+  lands; every other byte rides untouched). Later revisions never
+  rewrite a burned identity, and a burned ``scene_id`` resubmitted
+  next to a disagreeing ``scene_ref`` is refused. Elements minted
+  fresh (no ref, no live anchor at their ordinal, no burned id) take
+  an **unused monotonic** ``scene_index`` (``max(existing) + 1``): no
+  ghost or placeholder scene rows exist.
+
 - **The durable cast-input assembly** (:func:`build_cast_input`; the
-  V3-3R external review's item 5): ``world_actor`` (the actor ids) +
-  ``character_card.name`` (the live ``web._world_actor_names`` join,
-  ``world_actor → character_card.name``; a card the table does not
-  name falls back to the actor id) + ``world_actor_profile`` +
-  ``world_player_character``, unified through
-  :func:`elc.world.cast.participant_namespace`. **The Package is a seed
-  source, never the runtime authority** — nothing here reads it (no
-  import, no table; pinned by a source scan). The player's
-  ``location`` / ``state`` / ``knowledge_refs`` are the creation-time
-  seed (the V3-3R freeze) and deliberately do not exist on
-  :class:`DirectorPlayerCharacter` — their current authority is
+  V3-3R external review's item 5, thickened by the V3-4R review's item
+  3): ``world_actor`` (the actor ids) + ``character_card`` (the live
+  ``web._world_actor_names`` join, ``world_actor → character_card``,
+  read wider: ``name`` plus the six person fields ``identity`` /
+  ``personality`` / ``background`` / ``speech_style`` / ``values`` /
+  ``boundaries``; a card the table does not name falls back to the
+  actor id for the name and to empty strings for the six — the honest
+  undeclared) + ``world_actor_profile`` + ``world_player_character``,
+  unified through :func:`elc.world.cast.participant_namespace`. **The
+  Package is a seed source, never the runtime authority** — nothing
+  here reads it (no import, no table; pinned by a source scan). The
+  player's ``location`` / ``state`` / ``knowledge_refs`` are the
+  creation-time seed (the V3-3R freeze) and deliberately do not exist
+  on :class:`DirectorPlayerCharacter` — their current authority is
   ``world_state_fact`` / V3-7's actor memory.
 
 - **The Director's context read face** (:func:`build_director_context`):
   the current Bible revision, the cast input, the world's
-  ``active_storylines`` (migration 0028, live) and its ``current_facts``
-  (the ``world_state_fact`` CURRENT half, migration 0024). Chapter
-  Summaries and Reader Exposure do not exist yet: they are V3-7's /
-  V3-5's arms, registered here as such.
+  ``active_storylines`` (migration 0028, live), its ``current_facts``
+  (the ``world_state_fact`` CURRENT half, migration 0024) and the
+  **canonical story time** (``current_tick``, read through
+  :func:`elc.world.time.read_current_tick`). The tick arm is the V3-4R
+  review's item 2: a Director producing planned ticks must know the
+  canonical time — initial chapter planning takes ``current_tick`` as
+  its reality anchor, a replanning may keep the historical planned
+  time of what already happened, and fresh planning must not
+  unconsciously regress the canonical time. This cut only places the
+  canonical time in front of the Director — it rewrites no payload.
+  Chapter Summaries and Reader Exposure do not exist yet: they are
+  V3-7's / V3-5's arms, registered here as such.
+
+- **World authority is fail-closed** (the V3-4R review's item 2): a
+  world holding no ``CURRENT`` ``world_bible_revision`` is refused
+  ``NOT_FOUND`` by both write faces **before anything is written** —
+  without world authority there is no Director (DATA §26.2.1's
+  fail-closed block).
 
 - **The two write faces — Plan-face only** (the Plan≠Canon pin):
   :meth:`Director.open_next_chapter` mints the next chapter
   (``PLANNED`` — it never opens a chapter; the ``ACTIVE`` flip is the
-  lifecycle face's), creates and adopts plan revision 1, and creates
-  one ``PLANNED`` ``world_scene`` anchor per ``scenes[]`` element.
+  lifecycle face's), creates and adopts plan revision 1, and mints one
+  ``PLANNED`` ``world_scene`` anchor per freshly-resolved element.
   :meth:`Director.revise_blueprint` appends the next plan revision and
-  reconciles by **position** (the L3 rules): a new ordinal gets a new
-  ``PLANNED`` row; a vanished ordinal's still-``PLANNED`` row is
-  discarded; an ``ACTIVE`` / ``COMMITTED`` / ``CLOSED`` row is never
-  touched (N-INV-003 — a replanning has no write power over what
-  happened); a surviving ordinal's row is not touched even when the
-  element's content changed (the row is a progress anchor, the JSON is
-  the content source); a ``scene_index`` is never re-used.
+  reconciles by **identity** (the L3 rules, V3-4R): a ``scene_ref``
+  (or a burned ``scene_id``) names its anchor, whose row is not
+  touched even when the element's content changed (the row is a
+  progress anchor, the JSON is the content source); a positional
+  element matches its ordinal's live anchor; a fresh element mints
+  the unused monotonic index; an anchor no element claims and that is
+  still ``PLANNED`` is discarded; an ``ACTIVE`` / ``COMMITTED`` /
+  ``CLOSED`` row is never touched (N-INV-003 — a replanning has no
+  write power over what happened); a ``scene_index`` is never re-used.
   **The Director never advances ``world.current_tick``** (#3 /
   N-INV-007 — the commit transactions are the only movers) and writes
   **no canon progress word at all**: what it lands is a plan revision
-  plus position anchors (the Plan≠Canon boundary of the L3 block).
+  plus identity anchors (the Plan≠Canon boundary of the L3 block).
+
+**Registered for V3-5 (not implemented here — the V3-4R review's item
+4)**: closing the Director operation's own crash / replay surface — a
+top-level idempotent planning operation, or resume / recovery — so
+that a retry never silently lands a new chapter or a new revision.
+The V3-4 review's F1 residues (a ``PLANNED`` chapter with no plan row,
+a dangling ``PROPOSED`` revision) are the concrete shapes; their
+discharge belongs to V3-5's opening inquiry.
 
 The derivation laws (DATA §26.2.1's L3 block, spelled word for word):
 ``chapter_id = f"{world_id}-ch{chapter_index:02d}"``,
@@ -84,10 +145,12 @@ Director composes those writes one step at a time and owns no replay
 buffer of its own.
 
 Discipline (the house store law, :mod:`elc.world.narrative.store`'s
-posture): **value semantics** — every refusal is a ``Result`` ``Err``,
-never an exception (``VALIDATION_FAILED`` for the caller's own payload,
-``NOT_FOUND`` for a dangling world / chapter, and any store refusal
-riding out unchanged); **no hidden clock** (every row's stamps ride the
+posture): **value semantics** — every write-face refusal is a
+``Result`` ``Err``, never an exception (``VALIDATION_FAILED`` for the
+caller's own payload, ``NOT_FOUND`` for a dangling world / chapter, and
+any store refusal riding out unchanged; the context read face is not a
+``Result`` face and raises on its one out-of-contract input — its own
+docstring says so); **no hidden clock** (every row's stamps ride the
 caller's ``now`` — the write faces take it as a parameter); **no
 transaction of its own** — the Director composes the store's own short
 transactions (the store faces already own ``BEGIN IMMEDIATE`` …
@@ -100,7 +163,7 @@ through :class:`~elc.world.narrative.store.SqliteNarrativeStore`.
 from __future__ import annotations
 
 import sqlite3
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -127,6 +190,7 @@ from elc.world.narrative.types import (
     encode_scenes,
 )
 from elc.world.store import SqliteWorldStore, WorldStorylineRecord
+from elc.world.time import read_current_tick
 from elc.world.types import WorldStateFact
 
 __all__ = [
@@ -197,25 +261,42 @@ _SCENE_TEXT_KEYS = (
 @dataclass(frozen=True)
 class DirectorCastMember:
     """One AI-controlled actor as the Director sees her — assembled from
-    durable instance data alone (the V3-3R item-5 recipe).
+    durable instance data alone (the V3-3R item-5 recipe, thickened by
+    the V3-4R review's item 3).
 
     ``actor_id`` is the canonical V3 participant identity (not the
     persona id); ``name`` is the card's display name with the fallback
     law (a card the table does not name, or names emptily, falls back
-    to the actor id — a plain signature, never a broken one);
+    to the actor id — a plain signature, never a broken one). The six
+    person fields — ``identity`` / ``personality`` / ``background`` /
+    ``speech_style`` / ``values`` / ``boundaries`` — ride from the
+    ``character_card`` row (who she *is*); a card the join cannot name
+    leaves all six the empty string — the honest undeclared, never a
+    guessed value, and never a reason to drop the member.
     ``profile`` is the ``world_actor_profile`` row, or ``None`` for an
-    actor the world never seeded a profile for (the honest undeclared).
+    actor the world never seeded a profile for (the honest undeclared);
+    the profile still answers *who she is in this world* — the six card
+    fields never replace it.
     """
 
     actor_id: str
     name: str
+    identity: str
+    personality: str
+    background: str
+    speech_style: str
+    values: str
+    boundaries: str
     profile: ActorProfileRecord | None
 
 
 @dataclass(frozen=True)
 class DirectorPlayerCharacter:
     """The reader's own durable character as the Director sees her — the
-    profile face only: her id, name and background.
+    profile face: her id, name, background, appearance, abilities and
+    limits (``name`` / ``background`` / ``appearance`` / ``abilities``
+    / ``limits`` are the character's 档案, DATA §26.2.1's freeze block;
+    a field the writer declared nothing for rides the empty string).
 
     The V3-3R seed freeze is carried **structurally**: ``location`` /
     ``state`` / ``knowledge_refs`` are creation-time seed, not running
@@ -230,6 +311,9 @@ class DirectorPlayerCharacter:
     player_character_id: str
     name: str
     background: str
+    appearance: str
+    abilities: str
+    limits: str
 
 
 @dataclass(frozen=True)
@@ -247,14 +331,21 @@ class DirectorCastInput:
 
 @dataclass(frozen=True)
 class DirectorContext:
-    """What the Director's first planning reads today.
+    """What the Director's planning reads today.
 
     The arms are the ones the contract names: the Bible revision (the
     instance-level world authority), the cast input, the world's
-    ``active_storylines`` (0028's two-layer read) and the
-    ``world_state_fact`` CURRENT half (0024). Chapter Summaries and
-    Reader Exposure are **not** arms yet — they are V3-7's / V3-5's
-    (registered; a later cut grows this shape, not a placeholder now).
+    ``active_storylines`` (0028's two-layer read), the
+    ``world_state_fact`` CURRENT half (0024) and ``current_tick`` —
+    the canonical story time (the V3-4R review's item 2,
+    :func:`elc.world.time.read_current_tick`). A Director producing
+    planned ticks must know the canonical time: initial chapter
+    planning takes ``current_tick`` as its reality anchor; a
+    replanning may keep the historical planned time of what already
+    happened, and fresh planning must not unconsciously regress the
+    canonical time. Chapter Summaries and Reader Exposure are **not**
+    arms yet — they are V3-7's / V3-5's (registered; a later cut grows
+    this shape, not a placeholder now).
     """
 
     world_id: str
@@ -262,6 +353,7 @@ class DirectorContext:
     cast: DirectorCastInput
     storylines: tuple[WorldStorylineRecord, ...]
     current_facts: tuple[WorldStateFact, ...]
+    current_tick: int
 
 
 @dataclass(frozen=True)
@@ -324,20 +416,23 @@ def plan_id_for(chapter_id: str, plan_revision: int) -> str:
 
 def scene_id_for(chapter_id: str, scene_index: int) -> str:
     """The scene anchor identity law:
-    ``f"{chapter_id}-s{scene_index:02d}"`` — the array ordinal's own
-    name."""
+    ``f"{chapter_id}-s{scene_index:02d}"`` — the durable anchor
+    index's own name (since V3-4R the index is the unused-monotonic
+    anchor identity, not necessarily the array ordinal)."""
 
     return f"{chapter_id}-s{scene_index:02d}"
 
 
 # ---------------------------------------------------------------------------
-# the strict Blueprint schema (the L3 landing; value semantics only)
+# the scene-identity resolution (the V3-4R spine; DATA §26.2.1's L3 block)
 # ---------------------------------------------------------------------------
 
 
 def _refuse(reason: str) -> Err[Any]:
-    """One schema refusal as a human sentence (the
-    :func:`~elc.world.narrative.types.decode_scenes` message shape)."""
+    """One refusal as a human sentence (the
+    :func:`~elc.world.narrative.types.decode_scenes` message shape) —
+    the shared spelling of the schema's and the resolution's
+    value-semantics refusals."""
 
     return Err(
         DomainError(
@@ -347,22 +442,266 @@ def _refuse(reason: str) -> Err[Any]:
     )
 
 
+def _next_unused_scene_index(existing_indexes: Iterable[int]) -> int:
+    """The fresh anchor's ``scene_index`` — ``max(existing) + 1`` (the
+    V3-4R unused-monotonic law; an empty chapter mints 1).
+
+    The one minting authority: a fresh element never takes its array
+    ordinal, never re-uses a retired ``scene_index`` and never fills a
+    gap — indexes grow monotonically and the retired stay retired
+    (DATA §26.2.1's L3 diff rules; the source scan pins that no
+    positional ``range`` minting survives in this module).
+    """
+
+    return max(existing_indexes, default=0) + 1
+
+
+def _scene_id_index(scene_id: str) -> int | None:
+    """The ``scene_index`` a derived ``scene_id`` spells, or ``None``
+    when the string carries no ``-s<digits>`` tail (the derivation
+    law's own spelling, ``f"{chapter_id}-s{index:02d}"``)."""
+
+    head, _, digits = scene_id.rpartition("-s")
+    if not head or not digits.isdigit():
+        return None
+    return int(digits)
+
+
+def _element_identity(scene: Mapping[str, Any]) -> int | None:
+    """The anchor identity one ``scenes[]`` element declares, or
+    ``None`` — the explicit ``scene_ref`` first, then the burned
+    ``scene_id``'s own index (the read-back form: a stamped element
+    resolves by its burned identity when no ``scene_ref`` rides with
+    it). Both keys have passed the schema's own type / agreement
+    checks before this face runs."""
+
+    if "scene_ref" in scene:
+        return int(scene["scene_ref"])
+    scene_id = scene.get("scene_id")
+    if isinstance(scene_id, str):
+        return _scene_id_index(scene_id)
+    return None
+
+
+@dataclass(frozen=True)
+class _SceneTarget:
+    """One element's resolution: the anchor it speaks for and the
+    element as it lands in the plan row's ``scenes`` JSON.
+
+    ``is_new`` marks a freshly minted anchor — its element carries the
+    burned ``scene_id`` key; an existing anchor's element rides as
+    given (a burned identity is never rewritten on arrival).
+    """
+
+    ordinal: int
+    scene_index: int
+    scene_id: str
+    is_new: bool
+    element: dict[str, Any]
+
+
+def _resolve_scene_targets(
+    chapter_id: str,
+    scenes: tuple[dict[str, Any], ...],
+    anchors: tuple[WorldSceneRecord, ...],
+) -> Result[tuple[_SceneTarget, ...]]:
+    """Resolve every ``scenes[]`` element to the anchor it speaks for —
+    the identity resolution both write faces run **before any write**
+    (DATA §26.2.1's L3 block, V3-4R).
+
+    An element's identity is its ``scene_ref``, or its burned
+    ``scene_id``, or the live anchor at its own array ordinal; a fresh
+    element (no ref, no live anchor at its ordinal, no burned id) mints
+    :func:`_next_unused_scene_index`. Refused, every one a
+    value-semantics sentence naming the element's ordinal:
+
+    - a reference (``scene_ref`` / ``scene_id``) naming no anchor of
+      **this chapter** — another chapter's ``scene_index`` is no
+      identity here;
+    - a reference naming a ``DISCARDED`` anchor — retired anchors are
+      never revived, never re-minted, never referenced;
+    - a reference whose array ordinal is already occupied by another
+      anchor (``scene_index != scene_ref`` at that ordinal) — the
+      explicit identity and the positional one would disagree;
+    - two elements claiming one anchor identity.
+
+    The burned identity is cross-checked in full: an element carrying
+    both a ``scene_ref`` and a ``scene_id`` whose strings disagree is
+    refused (the schema's tail comparison is the payload-local half,
+    this is the anchored half).
+    """
+
+    by_index = {row.scene_index: row for row in anchors}
+    by_id = {row.scene_id: row for row in anchors}
+    claimed: dict[int, int] = {}
+    next_index = _next_unused_scene_index(by_index)
+    targets: list[_SceneTarget] = []
+    for ordinal, element in enumerate(scenes, start=1):
+        ref = element.get("scene_ref")
+        scene_id = element.get("scene_id")
+        if ref is None and isinstance(scene_id, str):
+            named = by_id.get(scene_id)
+            if named is None:
+                return _refuse(
+                    f"scenes[{ordinal}].scene_id {scene_id!r} names no"
+                    f" anchor of chapter {chapter_id!r} — a burned"
+                    " identity is addressable only in its own chapter"
+                )
+            if named.status is SceneStatus.DISCARDED:
+                return _refuse(
+                    f"scenes[{ordinal}].scene_id {scene_id!r} names a"
+                    f" DISCARDED anchor of chapter {chapter_id!r} — a"
+                    " retired anchor is never revived, never re-minted"
+                    " and never referenced"
+                )
+            ref = named.scene_index
+        if ref is not None:
+            anchor = by_index.get(int(ref))
+            if anchor is None:
+                return _refuse(
+                    f"scenes[{ordinal}].scene_ref {ref!r} names no anchor"
+                    f" of chapter {chapter_id!r} — only this chapter's"
+                    " anchors are addressable (another chapter's"
+                    " scene_index is no identity here)"
+                )
+            if anchor.status is SceneStatus.DISCARDED:
+                return _refuse(
+                    f"scenes[{ordinal}].scene_ref {ref!r} names a"
+                    f" DISCARDED anchor of chapter {chapter_id!r} — a"
+                    " retired anchor is never revived, never re-minted"
+                    " and never referenced"
+                )
+            if isinstance(scene_id, str) and scene_id != anchor.scene_id:
+                return _refuse(
+                    f"scenes[{ordinal}].scene_id {scene_id!r} disagrees"
+                    " with the anchor its scene_ref"
+                    f" {ref!r} names ({anchor.scene_id!r}) — the burned"
+                    " identity and its reference must agree"
+                )
+            position = by_index.get(ordinal)
+            if position is not None and position.scene_index != int(ref):
+                return _refuse(
+                    f"scenes[{ordinal}].scene_ref {ref!r} conflicts with"
+                    " the anchor already at this array position"
+                    f" (scene_index {ordinal}) — an element carrying a"
+                    " scene_ref must sit at its own position or at a"
+                    " position no anchor occupies"
+                )
+            if anchor.scene_index in claimed:
+                return _refuse(
+                    f"scenes[{ordinal}] claims scene_ref"
+                    f" {anchor.scene_index} already claimed by"
+                    f" scenes[{claimed[anchor.scene_index]}] — one"
+                    " anchor identity per element"
+                )
+            claimed[anchor.scene_index] = ordinal
+            targets.append(
+                _SceneTarget(
+                    ordinal=ordinal,
+                    scene_index=anchor.scene_index,
+                    scene_id=anchor.scene_id,
+                    is_new=False,
+                    element=dict(element),
+                )
+            )
+            continue
+        position = by_index.get(ordinal)
+        if position is not None and position.status is not SceneStatus.DISCARDED:
+            if position.scene_index in claimed:
+                return _refuse(
+                    f"scenes[{ordinal}] matches scene_index"
+                    f" {position.scene_index} already claimed by"
+                    f" scenes[{claimed[position.scene_index]}] — one"
+                    " anchor identity per element"
+                )
+            claimed[position.scene_index] = ordinal
+            targets.append(
+                _SceneTarget(
+                    ordinal=ordinal,
+                    scene_index=position.scene_index,
+                    scene_id=position.scene_id,
+                    is_new=False,
+                    element=dict(element),
+                )
+            )
+            continue
+        fresh_id = scene_id_for(chapter_id, next_index)
+        stamped = dict(element)
+        stamped["scene_id"] = fresh_id
+        targets.append(
+            _SceneTarget(
+                ordinal=ordinal,
+                scene_index=next_index,
+                scene_id=fresh_id,
+                is_new=True,
+                element=stamped,
+            )
+        )
+        claimed[next_index] = ordinal
+        next_index += 1
+    return Ok(tuple(targets))
+
+
+# ---------------------------------------------------------------------------
+# the strict Blueprint schema (the L3 landing; value semantics only)
+# ---------------------------------------------------------------------------
+
+
 def _scene_refusal(
-    scene: Mapping[str, Any], ordinal: int, namespace: frozenset[str]
+    scene: Mapping[str, Any],
+    ordinal: int,
+    *,
+    chapter_end_tick: int,
+    namespace: frozenset[str],
+    player_character_id: str | None,
+    pov_eligibility: Mapping[str, bool | None],
 ) -> str | None:
     """The canonical key set's own refusals for one ``scenes[]`` element
-    (DATA §26.2.1's L3 block, key by key) — the reason sentence, or
-    ``None`` when the element passes.
+    (DATA §26.2.1's L3 block, key by key; the V3-4R tightening
+    included) — the reason sentence, or ``None`` when the element
+    passes.
 
     ``ordinal`` is the array position (1-based) — the blueprint's own
     word for the position the reconciliation keys on, so a refusal
-    names the same coordinate the diff will use. Supplemental keys are
-    the Director's own: unjudged in meaning, but the element must still
-    be JSON-encodable (the plan row's ``scenes`` column is JSON — a
-    value the column cannot carry is refused here, in the caller's own
-    vocabulary, rather than exploding out of the store's encoder).
+    names the same coordinate the diff will use. The identity pair
+    (``scene_ref`` / ``scene_id``) is checked here for type and mutual
+    agreement; whether the reference *exists* is the resolution's
+    question (:func:`_resolve_scene_targets` — this face knows no
+    chapter). POV eligibility is the V3-4R review's item 3: the
+    namespace says who is a durable participant, ``player_character_id``
+    / ``pov_eligibility`` say who may carry a POV — an AI actor with an
+    explicit ``False`` or an undeclared (``None`` / no profile at all)
+    eligibility is refused, and the POV must be among the element's
+    ``participants``. Supplemental keys are the Director's own:
+    unjudged in meaning, but the element must still be JSON-encodable
+    (the plan row's ``scenes`` column is JSON — a value the column
+    cannot carry is refused here, in the caller's own vocabulary,
+    rather than exploding out of the store's encoder).
     """
 
+    ref: int | None = None
+    if "scene_ref" in scene:
+        candidate = scene["scene_ref"]
+        if isinstance(candidate, bool) or not isinstance(candidate, int):
+            return (
+                f"scenes[{ordinal}].scene_ref must be an integer"
+                " scene_index of this chapter's anchors; got"
+                f" {candidate!r}"
+            )
+        ref = candidate
+    scene_id = scene.get("scene_id")
+    if "scene_id" in scene and not isinstance(scene_id, str):
+        return (
+            f"scenes[{ordinal}].scene_id must be a string (the derived"
+            f" anchor identity); got {type(scene_id).__name__}"
+        )
+    if ref is not None and isinstance(scene_id, str):
+        if _scene_id_index(scene_id) != ref:
+            return (
+                f"scenes[{ordinal}].scene_id {scene_id!r} does not"
+                f" match scene_ref {ref} — the burned identity and its"
+                " reference must agree"
+            )
     for key in _SCENE_TEXT_KEYS:
         if key not in scene:
             return (
@@ -385,6 +724,19 @@ def _scene_refusal(
             f"scenes[{ordinal}].planned_start_tick must be an integer"
             f" tick; got {tick!r}"
         )
+    if tick < 0:
+        return (
+            f"scenes[{ordinal}].planned_start_tick {tick!r} is"
+            " negative — a planned tick never precedes the world's own"
+            " zero"
+        )
+    if tick > chapter_end_tick:
+        return (
+            f"scenes[{ordinal}].planned_start_tick {tick!r} lies"
+            f" beyond the chapter's planned_end_tick"
+            f" {chapter_end_tick!r} — a scene never starts after the"
+            " chapter's window closes"
+        )
     if "pov_actor_id" not in scene:
         return (
             f"scenes[{ordinal}] is missing the canonical key"
@@ -404,6 +756,23 @@ def _scene_refusal(
             " persona id is a template identity, a resident name is"
             " prose)"
         )
+    is_player = player_character_id is not None and pov == player_character_id
+    if not is_player:
+        eligible = pov_eligibility.get(pov)
+        if eligible is False:
+            return (
+                f"scenes[{ordinal}].pov_actor_id {pov!r} is not"
+                " POV-eligible: the actor's world_actor_profile declares"
+                " pov_eligible = false"
+            )
+        if eligible is None:
+            return (
+                f"scenes[{ordinal}].pov_actor_id {pov!r} carries no"
+                " declared POV eligibility"
+                " (world_actor_profile.pov_eligible is null, or the"
+                " actor holds no profile) — an undeclared eligibility is"
+                " not automatically authorized (the MVP refuses)"
+            )
     if "participants" not in scene:
         return (
             f"scenes[{ordinal}] is missing the canonical key"
@@ -432,6 +801,12 @@ def _scene_refusal(
                 " (V3-3R freeze: a persona id is a template identity, a"
                 " resident name is prose)"
             )
+    if pov not in participants:
+        return (
+            f"scenes[{ordinal}].pov_actor_id {pov!r} is not among the"
+            " element's participants — the POV is present in her own"
+            " scene (the schema invariant, V3-4R)"
+        )
     try:
         encode_scenes((dict(scene),))
     except (TypeError, ValueError) as exc:
@@ -443,10 +818,15 @@ def _scene_refusal(
 
 
 def validate_blueprint(
-    payload: Mapping[str, Any], *, namespace: frozenset[str]
+    payload: Mapping[str, Any],
+    *,
+    namespace: frozenset[str],
+    player_character_id: str | None,
+    pov_eligibility: Mapping[str, bool | None],
 ) -> Result[ChapterBlueprint]:
-    """The Blueprint's strict schema (DATA §26.2.1's V3-4 block; the
-    machine face of the wording law's schema half).
+    """The Blueprint's strict schema (DATA §26.2.1's V3-4 block, revised
+    by the V3-4R review; the machine face of the wording law's schema
+    half).
 
     Refused, every one as a value-semantics ``VALIDATION_FAILED`` naming
     the offending field (never an exception, never a partial answer):
@@ -454,20 +834,32 @@ def validate_blueprint(
     - the payload not being a mapping;
     - a missing / mistyped chapter field — the nine §26.2.1 fields are
       all required, the six text fields must be strings, the two ticks
-      integers (a bool is not a tick);
+      integers (a bool is not a tick), and the window never runs
+      backwards (``planned_start_tick <= planned_end_tick``);
     - an empty / blank soft-expectation field (the four the wording law
       names: ``closing_pressure`` / ``desired_development`` /
       ``soft_outcomes`` / ``chapter_questions_to_advance`` — a
       direction must be stated; the fields are **never** a
       postcondition, and the schema has no detector for one);
-    - ``scenes`` not being a sequence of mappings, or an element missing
-      a canonical key (:data:`BLUEPRINT_SCENE_KEYS`) or carrying a
-      wrong type;
+    - ``scenes`` not being a non-empty sequence of mappings, or an
+      element missing a canonical key (:data:`BLUEPRINT_SCENE_KEYS`) or
+      carrying a wrong type (a scene's ``planned_start_tick`` is
+      non-negative and never starts beyond the chapter's
+      ``planned_end_tick``);
     - an identity outside ``namespace`` — ``pov_actor_id`` and every
       ``participants`` word must be a durable V3 participant (an AI
       actor's ``actor_id`` or the ``player_character_id``; a
       ``persona_id`` and a resident name are both refused — the V3-3R
-      freeze), and an element that is not JSON-encodable.
+      freeze); the POV must be among the element's ``participants``
+      and, when it names an AI actor, that actor's
+      ``world_actor_profile.pov_eligible`` must be ``True`` (an
+      explicit ``False`` and an undeclared eligibility are both
+      refused — ``pov_eligibility`` / ``player_character_id`` carry
+      the authority, the V3-4R review's item 3);
+    - an identity pair declared twice — two elements carrying the same
+      ``scene_ref`` (or the same burned ``scene_id`` index), and a
+      ``scene_id`` disagreeing with its ``scene_ref``;
+    - an element that is not JSON-encodable.
 
     Supplemental keys beyond the canonical set are the Director's own
     and pass through **verbatim** into the returned records (the
@@ -520,6 +912,13 @@ def validate_blueprint(
                 f"the chapter field {key!r} must be an integer tick; got"
                 f" {value!r}"
             )
+    if payload["planned_start_tick"] > payload["planned_end_tick"]:
+        return _refuse(
+            "the chapter's planned_start_tick"
+            f" {payload['planned_start_tick']!r} runs past its"
+            f" planned_end_tick {payload['planned_end_tick']!r} — a"
+            " chapter's window never runs backwards"
+        )
     if "scenes" not in payload:
         return _refuse(
             "the chapter field 'scenes' is missing (the nine §26.2.1"
@@ -530,19 +929,43 @@ def validate_blueprint(
         raw_scenes, (list, tuple)
     ):
         return _refuse(
-            "the chapter field 'scenes' must be a sequence of scene"
-            f" mappings; got {type(raw_scenes).__name__}"
+            "the chapter field 'scenes' must be a non-empty sequence of"
+            f" scene mappings; got {type(raw_scenes).__name__}"
+        )
+    if not raw_scenes:
+        return _refuse(
+            "the chapter field 'scenes' is empty — a chapter plans at"
+            " least one scene (the V3-4R non-emptiness law; an empty"
+            " plan is not a plan)"
         )
     scenes: list[dict[str, Any]] = []
+    claimed: dict[int, int] = {}
     for ordinal, element in enumerate(raw_scenes, start=1):
         if not isinstance(element, Mapping):
             return _refuse(
                 f"scenes[{ordinal}] is not a mapping (the scene draft's"
                 " own shape)"
             )
-        reason = _scene_refusal(element, ordinal, namespace)
+        reason = _scene_refusal(
+            element,
+            ordinal,
+            chapter_end_tick=payload["planned_end_tick"],
+            namespace=namespace,
+            player_character_id=player_character_id,
+            pov_eligibility=pov_eligibility,
+        )
         if reason is not None:
             return _refuse(reason)
+        identity = _element_identity(element)
+        if identity is not None:
+            if identity in claimed:
+                return _refuse(
+                    f"scenes[{ordinal}] repeats the anchor identity"
+                    f" {identity} claimed by scenes[{claimed[identity]}]"
+                    " (scene_ref / scene_id) — one element per scene"
+                    " identity"
+                )
+            claimed[identity] = ordinal
         scenes.append(dict(element))
     return Ok(
         ChapterBlueprint(
@@ -566,27 +989,59 @@ def validate_blueprint(
 # ---------------------------------------------------------------------------
 
 
-def _card_names(conn: sqlite3.Connection, world_id: str) -> dict[str, str]:
-    """One world's actor ids mapped to their card names — the web face's
-    ``_world_actor_names`` join, read-side only (``world_actor`` →
-    ``character_card.name``); a card the table does not name (or names
-    emptily) falls back to the actor id, a plain signature.
+@dataclass(frozen=True)
+class _CardFace:
+    """One actor's card-derived face: the display ``name`` (the
+    fallback law already applied) and the six person fields — a card
+    the join cannot name leaves the six the empty string, the honest
+    undeclared."""
+
+    name: str
+    identity: str
+    personality: str
+    background: str
+    speech_style: str
+    values: str
+    boundaries: str
+
+
+def _card_faces(
+    conn: sqlite3.Connection, world_id: str
+) -> dict[str, _CardFace]:
+    """One world's actor ids mapped to their card faces — the web
+    face's ``_world_actor_names`` join, read wider (``world_actor`` →
+    ``character_card``: the ``name`` plus the six person fields the
+    V3-4R review's item 3 thickens the cast input with); a card the
+    table does not name (or names emptily) falls back to the actor id
+    for the name, and a card row the join cannot reach leaves the six
+    fields the empty string — a plain signature and an honest
+    undeclared, never a broken member.
 
     The read is parameter-bound and names no package face: a world
-    assembled without a package still answers every name (the seed
+    assembled without a package still answers every face (the seed
     source is not the runtime authority)."""
 
     rows = conn.execute(
-        "SELECT a.actor_id, c.name FROM world_actor a"
+        "SELECT a.actor_id, c.name, c.identity, c.personality,"
+        " c.background, c.speech_style, c.\"values\", c.boundaries"
+        " FROM world_actor a"
         " LEFT JOIN character_card c ON c.persona_id = a.persona_id"
         " WHERE a.world_id = ? ORDER BY a.actor_id ASC",
         (world_id,),
     ).fetchall()
-    names: dict[str, str] = {}
+    faces: dict[str, _CardFace] = {}
     for row in rows:
         actor_id = str(row[0])
-        names[actor_id] = str(row[1]) if row[1] not in (None, "") else actor_id
-    return names
+        faces[actor_id] = _CardFace(
+            name=str(row[1]) if row[1] not in (None, "") else actor_id,
+            identity="" if row[2] is None else str(row[2]),
+            personality="" if row[3] is None else str(row[3]),
+            background="" if row[4] is None else str(row[4]),
+            speech_style="" if row[5] is None else str(row[5]),
+            values="" if row[6] is None else str(row[6]),
+            boundaries="" if row[7] is None else str(row[7]),
+        )
+    return faces
 
 
 def build_cast_input(
@@ -598,18 +1053,23 @@ def build_cast_input(
 ) -> DirectorCastInput:
     """Assemble the Director's cast input from durable instance data
     alone (the V3-3R external review's item 5, the cast module's recipe
-    docstring being the contract):
+    docstring being the contract; thickened by the V3-4R review's item
+    3):
 
     - the actor ids — :meth:`elc.world.store.SqliteWorldStore.actors_of`'s
       records' ``actor_id`` halves (the V3-3R canonical identity; never
       the persona half);
-    - the display names — the ``world_actor → character_card.name``
-      join (:func:`_card_names`), falling back to the actor id;
+    - the card faces — the ``world_actor → character_card`` join
+      (:func:`_card_faces`): the display name (falling back to the
+      actor id) and the six person fields (a card-less row leaving the
+      six the empty string — the honest undeclared, the member still
+      standing);
     - the profiles — :meth:`elc.world.cast.SqliteCastStore.actor_profiles_of`
       (a ``None`` profile is the honest undeclared);
     - the reader's character — :meth:`elc.world.cast.SqliteCastStore.player_character`,
       narrowed to the profile face (:class:`DirectorPlayerCharacter`:
-      the seed fields do not ride — the V3-3R freeze);
+      ``name`` / ``background`` / ``appearance`` / ``abilities`` /
+      ``limits`` ride; the seed fields do not — the V3-3R freeze);
     - the vocabulary — :func:`elc.world.cast.participant_namespace` over
       exactly those two sources, never stored.
 
@@ -622,15 +1082,28 @@ def build_cast_input(
         profile.actor_id: profile
         for profile in cast_store.actor_profiles_of(world_id)
     }
-    names = _card_names(conn, world_id)
-    members = tuple(
-        DirectorCastMember(
-            actor_id=str(actor.actor_id),
-            name=names.get(str(actor.actor_id), str(actor.actor_id)),
-            profile=profiles.get(str(actor.actor_id)),
+    faces = _card_faces(conn, world_id)
+    # The join reads FROM world_actor: every actor of the world carries
+    # a face (a card-less row rides as the actor id plus six empty
+    # strings), so the lookup below cannot miss.
+    members_list: list[DirectorCastMember] = []
+    for actor in actors:
+        actor_id = str(actor.actor_id)
+        face = faces[actor_id]
+        members_list.append(
+            DirectorCastMember(
+                actor_id=actor_id,
+                name=face.name,
+                identity=face.identity,
+                personality=face.personality,
+                background=face.background,
+                speech_style=face.speech_style,
+                values=face.values,
+                boundaries=face.boundaries,
+                profile=profiles.get(actor_id),
+            )
         )
-        for actor in actors
-    )
+    members = tuple(members_list)
     player_row = cast_store.player_character(world_id)
     player = (
         None
@@ -639,6 +1112,9 @@ def build_cast_input(
             player_character_id=player_row.player_character_id,
             name=player_row.name,
             background=player_row.background,
+            appearance=player_row.appearance,
+            abilities=player_row.abilities,
+            limits=player_row.limits,
         )
     )
     namespace = participant_namespace(
@@ -661,10 +1137,26 @@ def build_director_context(
     bible_store: SqliteBibleStore,
 ) -> DirectorContext:
     """The Director's context read face: the Bible revision, the cast
-    input, the world's active storylines and its CURRENT facts — the
-    arms the contract names (Chapter Summaries / Reader Exposure are
-    later cuts' arms and are not invented here)."""
+    input, the world's active storylines, its CURRENT facts and the
+    canonical story time (``current_tick``, read through
+    :func:`elc.world.time.read_current_tick`) — the arms the contract
+    names (Chapter Summaries / Reader Exposure are later cuts' arms and
+    are not invented here).
 
+    The face's calling precondition is a **seeded world**: the tick is
+    the one arm with no honest empty answer, so a dangling world raises
+    ``ValueError`` naming it (there is no canonical time to report for
+    a world that does not exist — the same honest corrupted-call
+    posture the store's undecodable-row raise keeps; DATA §26.2.1's
+    fail-closed block presumes the world's own authority before the
+    Director plans)."""
+
+    tick = read_current_tick(conn, world_id)
+    if isinstance(tick, Err):
+        raise ValueError(
+            f"director context of world {world_id!r} not read:"
+            f" {tick.error.message}"
+        )
     return DirectorContext(
         world_id=world_id,
         bible=bible_store.current_bible(world_id),
@@ -673,6 +1165,7 @@ def build_director_context(
         ),
         storylines=world_store.active_storylines(world_id),
         current_facts=world_store.current_facts(world_id),
+        current_tick=tick.value,
     )
 
 
@@ -724,15 +1217,34 @@ class Director:
     def validate_blueprint(
         self, world_id: str, payload: Mapping[str, Any]
     ) -> Result[ChapterBlueprint]:
-        """The schema face bound to a world: the namespace derives from
-        the world's durable cast input (:func:`build_cast_input`), so
-        the identity check judges against the live instance — never a
-        package declaration."""
+        """The schema face bound to a world: the namespace, the
+        player-character id and the POV eligibility map all derive
+        from the world's durable cast input
+        (:func:`build_cast_input`), so the identity and POV checks
+        judge against the live instance — never a package
+        declaration. The eligibility map carries every actor's
+        ``world_actor_profile.pov_eligible`` (``None`` for an actor
+        with no profile row — the same honest undeclared the profile
+        arm answers)."""
 
         cast = build_cast_input(
             self._conn, world_id, world_store=self._worlds, cast_store=self._cast
         )
-        return validate_blueprint(payload, namespace=cast.namespace)
+        return validate_blueprint(
+            payload,
+            namespace=cast.namespace,
+            player_character_id=(
+                None
+                if cast.player_character is None
+                else cast.player_character.player_character_id
+            ),
+            pov_eligibility={
+                member.actor_id: (
+                    None if member.profile is None else member.profile.pov_eligible
+                )
+                for member in cast.members
+            },
+        )
 
     # -- write faces ----------------------------------------------------------
 
@@ -748,19 +1260,33 @@ class Director:
         first chapter is 1; §21's monotone ``+1``); the chapter id, the
         plan id (revision 1) and every scene anchor id derive from the
         L3 laws. The sequence, each step one store short transaction:
-        create the chapter (``PLANNED``), create plan revision 1, adopt
-        it (``ADOPTED`` — the #4 prerequisite the lifecycle face will
-        check), then reconcile the ``scenes[]`` table into ``PLANNED``
-        anchors (``scene_index`` = array ordinal 1..N).
+        resolve the ``scenes[]`` identities first (the derived chapter
+        id cannot pre-exist — its index is the world's max + 1 — so
+        its anchor set is empty and every element is fresh, minting
+        array ordinals 1..N under ``max(existing) + 1`` with the
+        derived ``scene_id`` burned into the plan payload; a
+        ``scene_ref`` / ``scene_id`` reference is refused here, before
+        a single write), create the chapter (``PLANNED``), create plan
+        revision 1, adopt it (``ADOPTED`` — the #4 prerequisite the
+        lifecycle face will check), then reconcile the ``scenes[]``
+        table into ``PLANNED`` anchors (one row per fresh element — no
+        ghost rows).
 
         **The chapter is not opened** (``ACTIVE`` is the lifecycle
         face's move, with its prerequisites) and **no tick moves** (the
         Director has no write path to ``world.current_tick``; #3 /
         N-INV-007). ``now`` is the caller's stamp for every row.
 
-        Refusals: the world does not exist — ``NOT_FOUND``; the payload
-        fails the schema — ``VALIDATION_FAILED`` (nothing is written);
-        any store refusal rides out unchanged.
+        Refusals: the world does not exist — ``NOT_FOUND``; the world
+        holds no ``CURRENT`` Bible revision — ``NOT_FOUND`` (the
+        fail-closed law: without world authority there is no Director;
+        DATA §26.2.1's block); the payload fails the schema or its
+        identity references do not resolve — ``VALIDATION_FAILED``
+        (nothing is written); any store refusal rides out unchanged.
+
+        **Registered for V3-5**: this operation's own crash / replay
+        surface (a retry after a partial run derives the next chapter
+        index and moves on) — see the module docstring.
         """
 
         if self._worlds.get_world(world_id) is None:
@@ -773,6 +1299,18 @@ class Director:
                     ),
                 )
             )
+        if self._bible.current_bible(world_id) is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"chapter not planned for world {world_id!r}: the"
+                        " world holds no CURRENT Bible revision — without"
+                        " world authority the Director does not plan"
+                        " (DATA §26.2.1's fail-closed block)"
+                    ),
+                )
+            )
         validated = self.validate_blueprint(world_id, blueprint_payload)
         if isinstance(validated, Err):
             return Err(validated.error)
@@ -780,19 +1318,23 @@ class Director:
         chapters = self._narrative.chapters_of(world_id)
         chapter_index = chapters[-1].chapter_index + 1 if chapters else 1
         chapter_id = chapter_id_for(world_id, chapter_index)
+        resolved = _resolve_scene_targets(
+            chapter_id, blueprint.scenes, self._narrative.scenes_of(chapter_id)
+        )
+        if isinstance(resolved, Err):
+            return Err(resolved.error)
+        targets = resolved.value
         created_chapter = self._narrative.create_chapter(
             chapter_id, world_id, chapter_index, now
         )
         if isinstance(created_chapter, Err):
             return Err(created_chapter.error)
         created_plan = self._create_and_adopt_plan(
-            chapter_id, 1, blueprint, now
+            chapter_id, 1, blueprint, targets, now
         )
         if isinstance(created_plan, Err):
             return Err(created_plan.error)
-        reconciled = self._reconcile_scenes(
-            chapter_id, len(blueprint.scenes), now
-        )
+        reconciled = self._reconcile_scenes(chapter_id, targets, now)
         if isinstance(reconciled, Err):
             return Err(reconciled.error)
         return Ok(
@@ -811,27 +1353,36 @@ class Director:
     ) -> Result[ChapterOpening]:
         """Replan a chapter's remaining part — a new plan revision, and
         the ``scenes[]`` table reconciled against the existing anchors
-        (the L3 Diff rules, position-keyed).
+        (the L3 Diff rules, V3-4R identity-keyed).
 
         The new revision is the chapter's existing maximum plus one; it
         is created and adopted in the same posture as
         :meth:`open_next_chapter` (adoption supersedes the old revision
         in one store transaction — the Plan face is append-only, the
-        old revision stays as history). Then, by array position against
-        ``world_scene.scene_index``:
+        old revision stays as history). The ``scenes[]`` identities
+        resolve first (:func:`_resolve_scene_targets` — refusals land
+        before any write), then:
 
-        - a position with no anchor row gets a new ``PLANNED`` row;
-        - a vanished position's row is discarded **only while it is
-          still ``PLANNED``** (§22: only a never-opened scene can be
-          un-planned);
+        - a ``scene_ref`` / burned ``scene_id`` names its anchor; the
+          row is left untouched even when the element's content changed
+          (the row is a progress anchor; the JSON of the newest adopted
+          revision is the content source);
+        - an element without a reference matches the live anchor at its
+          own array ordinal the same way; an ordinal whose anchor is
+          ``DISCARDED`` is no match — retired anchors are never revived
+          (the element mints fresh instead);
+        - a fresh element mints an unused monotonic ``scene_index``
+          (``max(existing) + 1``), gets a new ``PLANNED`` row, and its
+          derived ``scene_id`` is burned into the plan payload before
+          the revision row lands;
+        - an anchor no element claims and that is still ``PLANNED`` is
+          discarded (§22: only a never-opened scene can be un-planned);
         - an ``ACTIVE`` / ``COMMITTED`` / ``CLOSED`` row is **never
           touched** (N-INV-003 — a replanning has no write power over
           what the world has touched);
-        - a surviving position's row is not touched even when the
-          element's content changed (the row is a progress anchor; the
-          JSON of the newest adopted revision is the content source);
         - a ``scene_index`` is never re-used (a retired index stays
-          retired — the anchor rows are history too).
+          retired — the anchor rows are history too), and no ghost or
+          placeholder row is ever minted.
 
         The chapter's status **is** consulted for the two terminal-ish
         words (the V3-4 review's F3): a ``SETTLING`` or ``CLOSED``
@@ -843,9 +1394,12 @@ class Director:
         enforced by the rules above, not by refusing the revision.
 
         Refusals: the chapter does not exist — ``NOT_FOUND``; the
+        chapter's world holds no ``CURRENT`` Bible revision —
+        ``NOT_FOUND`` (the fail-closed law; nothing is written); the
         chapter is ``SETTLING`` / ``CLOSED`` — ``VALIDATION_FAILED``
-        (nothing is written); the payload fails the schema —
-        ``VALIDATION_FAILED``; any store refusal rides out unchanged.
+        (nothing is written); the payload fails the schema or its
+        identity references do not resolve — ``VALIDATION_FAILED``;
+        any store refusal rides out unchanged.
         """
 
         chapter = self._narrative.get_chapter(chapter_id)
@@ -856,6 +1410,19 @@ class Director:
                     message=(
                         f"chapter {chapter_id!r} not revised: it does not"
                         " exist"
+                    ),
+                )
+            )
+        if self._bible.current_bible(chapter.world_id) is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"chapter {chapter_id!r} not revised: world"
+                        f" {chapter.world_id!r} holds no CURRENT Bible"
+                        " revision — without world authority the Director"
+                        " does not plan (DATA §26.2.1's fail-closed"
+                        " block)"
                     ),
                 )
             )
@@ -877,16 +1444,22 @@ class Director:
         if isinstance(validated, Err):
             return Err(validated.error)
         blueprint = validated.value
+        resolved = _resolve_scene_targets(
+            chapter_id,
+            blueprint.scenes,
+            self._narrative.scenes_of(chapter_id),
+        )
+        if isinstance(resolved, Err):
+            return Err(resolved.error)
+        targets = resolved.value
         plans = self._narrative.plans_of(chapter_id)
         plan_revision = plans[-1].plan_revision + 1 if plans else 1
         created_plan = self._create_and_adopt_plan(
-            chapter_id, plan_revision, blueprint, now
+            chapter_id, plan_revision, blueprint, targets, now
         )
         if isinstance(created_plan, Err):
             return Err(created_plan.error)
-        reconciled = self._reconcile_scenes(
-            chapter_id, len(blueprint.scenes), now
-        )
+        reconciled = self._reconcile_scenes(chapter_id, targets, now)
         if isinstance(reconciled, Err):
             return Err(reconciled.error)
         return Ok(
@@ -904,11 +1477,15 @@ class Director:
         chapter_id: str,
         plan_revision: int,
         blueprint: ChapterBlueprint,
+        targets: tuple[_SceneTarget, ...],
         now: str,
     ) -> Result[WorldChapterPlanRecord]:
-        """Create one plan revision from a validated Blueprint and adopt
-        it (the two store short transactions; every field verbatim, the
-        scenes under the store's own deterministic codec)."""
+        """Create one plan revision from a validated Blueprint and its
+        resolved targets, and adopt it (the two store short
+        transactions; every chapter field verbatim, the scenes table
+        the resolution's own — a fresh element already carrying its
+        burned ``scene_id``, an existing element riding as given, both
+        under the store's own deterministic codec)."""
 
         created = self._narrative.create_plan(
             plan_id_for(chapter_id, plan_revision),
@@ -922,7 +1499,7 @@ class Director:
             desired_development=blueprint.desired_development,
             soft_outcomes=blueprint.soft_outcomes,
             chapter_questions_to_advance=blueprint.chapter_questions_to_advance,
-            scenes=blueprint.scenes,
+            scenes=tuple(target.element for target in targets),
             now=now,
         )
         if isinstance(created, Err):
@@ -937,35 +1514,38 @@ class Director:
         return Ok(adopted.value)
 
     def _reconcile_scenes(
-        self, chapter_id: str, scene_count: int, now: str
+        self,
+        chapter_id: str,
+        targets: tuple[_SceneTarget, ...],
+        now: str,
     ) -> Result[tuple[WorldSceneRecord, ...]]:
-        """The L3 reconciliation, position-keyed (see
-        :meth:`revise_blueprint` for the rules): create the missing
-        positions (array ordinals ``1..scene_count`` with no anchor
-        row), discard the vanished positions' still-``PLANNED`` rows
-        (``scene_index > scene_count``), touch nothing else, and answer
-        the chapter's rows in ``scene_index`` order.
+        """The L3 reconciliation, identity-keyed (see
+        :meth:`revise_blueprint` for the rules): mint one ``PLANNED``
+        row per fresh target (its ``scene_index`` already the unused
+        monotonic one — never an array ordinal by construction),
+        discard the unclaimed still-``PLANNED`` anchors (rows no
+        element speaks for; retired anchors stay retired and happened
+        anchors stay untouched), touch nothing else, and answer the
+        chapter's rows in ``scene_index`` order (discarded anchors
+        included — history is rows, not errors).
 
-        Creation at an ordinal is guarded by the existing rows'
-        identity — a row already occupies every created index, so a
+        Creation is guarded by the resolution's own identities — every
+        index came from :func:`_resolve_scene_targets`, so a
         ``scene_index`` is never minted twice (the table's UNIQUE backs
         the same law at the storage level)."""
 
         existing = self._narrative.scenes_of(chapter_id)
-        occupied = {row.scene_index for row in existing}
-        for scene_index in range(1, scene_count + 1):
-            if scene_index in occupied:
+        claimed = {target.scene_index for target in targets}
+        for target in targets:
+            if not target.is_new:
                 continue
             created = self._narrative.create_scene(
-                scene_id_for(chapter_id, scene_index),
-                chapter_id,
-                scene_index,
-                now,
+                target.scene_id, chapter_id, target.scene_index, now
             )
             if isinstance(created, Err):
                 return Err(created.error)
         for row in existing:
-            if row.scene_index <= scene_count:
+            if row.scene_index in claimed:
                 continue
             if row.status is not SceneStatus.PLANNED:
                 continue  # ACTIVE / COMMITTED / CLOSED / DISCARDED: history
