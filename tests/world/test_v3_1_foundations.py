@@ -67,7 +67,11 @@ from typing import Any
 
 import pytest
 
-from elc.platform.db.epoch import open_runtime_epoch
+from elc.platform.db.epoch import (
+    RuntimeEpochFence,
+    load_current_epoch,
+    open_runtime_epoch,
+)
 from elc.platform.db.migrations import apply_migrations, schema_version
 from elc.platform.types import (
     DomainErrorCode,
@@ -1101,3 +1105,64 @@ def test_the_four_tables_carry_the_contract_shape(
     assert _fk_targets("world_chapter_plan") == {"chapter_id": "world_chapter"}
     assert _fk_targets("world_scene") == {"chapter_id": "world_chapter"}
     assert _fk_targets("world_scene_dossier") == {"scene_id": "world_scene"}
+
+
+def test_the_create_faces_spell_the_three_refusal_families(
+    conn: sqlite3.Connection,
+    store: SqliteNarrativeStore,
+    world_store: SqliteWorldStore,
+    tmp_path: Path,
+) -> None:
+    """The V3-4 disposition (the review's F6 — this file's own V3-2
+    registration of the docstring/mapping disagreement, discharged):
+    the create faces' ``_refusal_code`` spells the same three families
+    the world store's ``create_world`` does (N-W10-6) — a UNIQUE clash
+    is a ``CONFLICT``, a FOREIGN KEY refusal is a ``NOT_FOUND``, and
+    any other database failure (a lock is the test's witness) answers
+    ``DEPENDENCY_UNAVAILABLE``, never re-attributed as a missing
+    identity."""
+
+    # UNIQUE → CONFLICT: a second chapter under the world's taken index.
+    _seed_world(world_store)
+    _seed_chapter(store, "chapter-main-1", chapter_index=1)
+    clash = store.create_chapter("chapter-other", "world-main", 1, NOW)
+    assert isinstance(clash, Err)
+    assert clash.error.code == DomainErrorCode.CONFLICT
+    # FOREIGN KEY → NOT_FOUND: a dangling world is the database's own
+    # refusal, not a store invention.
+    dangling = store.create_chapter("chapter-x", "world-nowhere", 1, NOW)
+    assert isinstance(dangling, Err)
+    assert dangling.error.code == DomainErrorCode.NOT_FOUND
+
+    # Any other database failure → DEPENDENCY_UNAVAILABLE: a second
+    # connection's write lock makes the store's ``BEGIN IMMEDIATE``
+    # raise ``OperationalError`` (a short busy_timeout keeps the test
+    # fast — the V3-2 locked-database pin's own posture).
+    conn_b = sqlite3.connect(tmp_path / "app.db")
+    try:
+        conn_b.execute("PRAGMA foreign_keys=ON")
+        epoch_now = load_current_epoch(conn_b)
+        assert epoch_now is not None
+        conn_b.execute("PRAGMA busy_timeout = 50")
+        store_b = SqliteNarrativeStore(
+            conn_b, RuntimeEpochFence(current=epoch_now)
+        )
+
+        conn.execute("BEGIN IMMEDIATE")  # the first writer holds the lock
+        try:
+            refused = store_b.create_chapter(
+                "chapter-locked", "world-main", 2, NOW
+            )
+        finally:
+            conn.execute("ROLLBACK")
+        assert isinstance(refused, Err)
+        assert refused.error.code == DomainErrorCode.DEPENDENCY_UNAVAILABLE
+        assert "locked" in (refused.error.message or "")
+
+        # The recovery evidence: with the lock released, the same call
+        # lands the row.
+        retried = store_b.create_chapter("chapter-locked", "world-main", 2, NOW)
+        assert isinstance(retried, Ok)
+        assert retried.value.chapter_index == 2
+    finally:
+        conn_b.close()

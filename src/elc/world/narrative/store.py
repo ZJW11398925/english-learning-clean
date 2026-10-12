@@ -23,7 +23,14 @@ Discipline (the house store law, :mod:`elc.world.store`'s posture):
   (an illegal lifecycle word); ``DEPENDENCY_UNAVAILABLE`` = the
   database itself failed outside the vocabulary above (the raw sqlite
   error rides the message). Messages are human sentences naming the row
-  and the reason.
+  and the reason. The create faces' mapping spells the same three
+  families the world store's ``create_world`` does (N-W10-6): a UNIQUE
+  clash is a ``CONFLICT``, a FOREIGN KEY refusal is a ``NOT_FOUND``,
+  and any other database failure is the database's own —
+  ``DEPENDENCY_UNAVAILABLE``, never re-attributed as a missing
+  identity (the V3-4 review's F6 — this paragraph's long-sealed
+  disagreement with ``_refusal_code`` below, discharged in this cut's
+  disposition).
 - **state_version CAS** — creation mints ``state_version = 1``; every
   lifecycle move takes the caller's ``expected_state_version`` and
   updates under ``WHERE ... state_version = ?``: a rowcount of zero
@@ -1512,13 +1519,21 @@ class SqliteNarrativeStore:
 
     @staticmethod
     def _refusal_code(exc: sqlite3.Error) -> DomainErrorCode:
-        """Map the database's own refusal to the store's vocabulary: a
-        UNIQUE clash is a ``CONFLICT`` (the identities exist, the
-        shapes collide); a FOREIGN KEY refusal is ``NOT_FOUND`` (a
-        referenced identity is missing) — the world store's mapping,
-        spelled the same here."""
+        """Map the database's own refusal to the store's vocabulary —
+        the same three families the world store's ``create_world``
+        spells (N-W10-6): a UNIQUE clash is a ``CONFLICT`` (the
+        identities exist, the shapes collide); a FOREIGN KEY refusal is
+        ``NOT_FOUND`` (a referenced identity is missing); any other
+        database failure is the database's own and answers
+        ``DEPENDENCY_UNAVAILABLE`` with the raw error riding the
+        message (a locked/broken database is never re-attributed as a
+        missing identity — the V3-4 review's F6 discharged: the create
+        faces' mapping now spells the module docstring's vocabulary in
+        full)."""
 
         text = str(exc)
         if "UNIQUE constraint failed" in text:
             return DomainErrorCode.CONFLICT
-        return DomainErrorCode.NOT_FOUND
+        if "FOREIGN KEY constraint failed" in text:
+            return DomainErrorCode.NOT_FOUND
+        return DomainErrorCode.DEPENDENCY_UNAVAILABLE

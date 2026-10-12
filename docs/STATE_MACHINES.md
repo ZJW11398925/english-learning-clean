@@ -659,7 +659,7 @@ Blueprint(plan_revision ADOPTED) → PLANNED
 规则：
 
 - 一个世界同一时间至多一章 `ACTIVE`（MVP；并行章禁止）。
-- **章重叠禁止（评审 #4 前置裁决，V3-4 起强制）**：前一章 `CLOSED` 之前，其世界不得出现新的 `ACTIVE` 章——`SETTLING` 章与下一章 `ACTIVE` 共存亦禁止。
+- **章重叠禁止（评审 #4 前置裁决，V3-4 起强制）**：前一章 `CLOSED` 之前，其世界不得出现新的 `ACTIVE` 章——`SETTLING` 章与下一章 `ACTIVE` 共存亦禁止。**操作形（V3-4 落地读法，与 `SqliteNarrativeStore.activate_chapter` 一致）**：`activate_chapter` 在世界内存在 `ACTIVE` **或** `SETTLING` 的其他章时拒开；`PLANNED` 章不挡（多份 Blueprint 可先备好〔章间作者层〕，开章顺序由 lifecycle 面决定——前一章未 CLOSED 时是否拒开新章 = 已登记的 V3-5/V3-6 生命周期事项）。
 - **ACTIVE 前置（评审 #4 前置裁决，V3-4 起强制）**：章进入 `ACTIVE` 必须已有一份 `ADOPTED` 的 Chapter Blueprint（plan_revision）。
 - **lifecycle tick authority（评审 #3，V3-4/V3-5 起强制）**：`opened_at_tick` / `closed_at_tick` 在正式管线中必须取自当前 `world.current_tick`，并在转移事务内校验（V3-1 staging 的调用方代书为过渡态，提交刀接管）。
 - `CLOSED` 不可 reopen；修正走后续章（N-INV-003）。

@@ -168,3 +168,18 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 7. **边界重申**：旧 V2 链零改；UI 不动；真实 automatic-teaching rollout 维持 HOLD；不开新迁移（`tests/conftest.py` 的 MIGRATION_IDS/SCHEMA_HEAD_* 不动）。
 
 授权：总控开工四查（IP §20 刀序 V3-4 行 + v1.3.1 登记的 L3 落点到期）；DMCP 决策 `DEC-OPI-be7b094f-…7`；三件 = TASK `…11` / VAL `…13`（同铸）。
+
+### v1.3.5 — 2026-10-12 V3-4 独立评审处置（ACCEPT-WITH-FINDINGS 无 HIGH；授权：评审结论转呈）
+
+**结论**：V3-4 **维持推进**（不重开）；8/8 承重变异全 RED；三项 MEDIUM 与四项 LOW 全处置——**F3/F4/F5/F6/F7 修，F1/F2 追认+登记**；INFO 三件留痕。
+
+1. **F3（MEDIUM，修）**：`revise_blueprint` 对 `SETTLING` / `CLOSED` 章拒 `VALIDATION_FAILED`（§21 「CLOSED 不可 reopen；修正走后续章」/ §24 「只重规划剩余部分」——原定「不查章状态」只覆盖「对已 COMMITTED 场无写权」，未挡住闭章内新 PLANNED 锚被激活）。守卫已落 `director.py` + 新钉 `test_revise_blueprint_refuses_a_settled_chapter` + `DATA §26.2.1` 补「重规划的章状态边界」条。
+2. **F4（LOW，修）**：`STATE §21` 章重叠禁止句补**操作形**成文（与 `activate_chapter` 一致：世界内存在 ACTIVE 或 SETTLING 的其他章即拒；`PLANNED` 章不挡——多份 Blueprint 可先备好）。「前一章未 CLOSED 即拒开新章（`open_next_chapter` 守卫）」登记为 V3-5/V3-6 生命周期事项——注意其与 F1 崩溃残骸（PLANNED 无 plan 悬空章）会互相放大，届时一并裁。
+3. **F5（LOW，修）**：`DATA §26.2.1` L3 块补 `chapter_id` / `plan_id` 两条派生律句（原只有 `scene_id` 一条成文，docstring/AOCI 的「三派生律 word for word」自此为真）。
+4. **F6（LOW，修）**：封印切片「narrative store docstring 同族矛盾」**触发即清偿**（本刀正是 store.py 的触碰刀）：`_refusal_code` 三段归位（UNIQUE→CONFLICT／FOREIGN KEY→NOT_FOUND／其余→DEPENDENCY_UNAVAILABLE，照 `world/store.py` create_world 先例 N-W10-6）+ 模块 docstring 同刻对齐 + 新钉 `test_the_create_faces_spell_the_three_refusal_families`（锁库实证 DEPENDENCY_UNAVAILABLE，V3-2 双连接姿势）。
+5. **F7（LOW，修）**：「两处 read joins／两处参数绑定 SELECT」计数错更正为**一处**（`director.py` docstring + `aoci.code.txt` WD4M 同刻）。
+6. **F1（MEDIUM，追认+登记）**：Director 组合层崩溃窗口两型残骸（`open_next_chapter` 在「章已建、plan 失败」窗中断 ⇒ PLANNED 无 plan 悬空章，重放前进一章；`revise_blueprint` 在「create_plan 成功、adopt 失败」窗中断 ⇒ 悬空 PROPOSED revision，重放产出下一 revision）——**store 面幂等读法追认**（「同 payload 重放不增行」在 store 面成立且双钉在册，是可执行的最强读法；Director 层「重放」语义等价于「再规划下一章」，强行做组合层幂等需调用方钉 chapter_id，现合同无此输入）。**登记后刀义务**：「Director 组合层崩溃续跑/残骸回收语义」归 V3-5/V3-6（首次把 Director 接进管线者）或专门编排刀；RA §29 的 V3 recovery 扫描面是否补录「PLANNED 无 plan 章 / 悬空 PROPOSED revision」两类残骸届时一并裁。
+7. **F2（MEDIUM，追认+成文）**：位次曾 DISCARDED 后其元素回升到该位次 ⇒ **退休锚不重铸、不复活**（`scene_index` 不复用 + §22 无 DISCARDED→PLANNED + append-only 三重约束下唯一免写史的读法）；「新增位次」= **无行的位次**。已成文入 `DATA §26.2.1` L3 块（对账方向条 + Diff ①⑤ 指针）；消费刀不得把 DISCARDED 锚当作可激活的计划场，也不得重编位次。
+8. **INFO 留痕**：F8（扫描钉对拼接型 SQL 有盲区——启发式扫描共性，行为层由 store-only 写路兜底）；F9（`Director.validate_blueprint` 对不存在世界答 VALIDATION_FAILED 而非 NOT_FOUND——写面已先查世界，无实害）；F10（「persona 无 character_card 行 → LEFT JOIN NULL → 回退 actor id」未单钉——覆盖性提示）。
+
+授权：独立评审（executor-pro 新上下文只读，2026-10-12）+ 总控处置（V3-1/V3-3 处置先例：总控亲写，注释/守卫/钉级）；处置提交随本条目同刀。

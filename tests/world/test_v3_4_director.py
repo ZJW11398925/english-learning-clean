@@ -1250,8 +1250,64 @@ def test_revise_blueprint_refuses_a_dangling_chapter_and_a_bad_payload(
     ] == [SceneStatus.DISCARDED]
 
 
+def test_revise_blueprint_refuses_a_settled_chapter(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+) -> None:
+    """The review's F3 guard: a ``SETTLING`` or ``CLOSED`` chapter has no
+    「剩余部分」 left to replan (§21 「CLOSED 不可 reopen；修正走后续
+    章」 / §24 「只重规划剩余部分」) — revising one is refused
+    ``VALIDATION_FAILED`` naming the status, **before anything is
+    written** (no new plan revision, no new anchor, the chapter row
+    untouched)."""
+
+    _seed_town(conn, world_store, cast_store)
+    opened = director.open_next_chapter(TOWN, _blueprint(), NOW)
+    assert isinstance(opened, Ok)
+    activated = narrative.activate_chapter(
+        "world-town-ch01", 0, NOW, expected_state_version=1
+    )
+    assert isinstance(activated, Ok)
+    settled = narrative.settle_chapter(
+        "world-town-ch01", now=LATER, expected_state_version=2
+    )
+    assert isinstance(settled, Ok)
+
+    refused_settling = director.revise_blueprint(
+        "world-town-ch01", _blueprint(), LATER
+    )
+    assert isinstance(refused_settling, Err)
+    assert refused_settling.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "SETTLING" in refused_settling.error.message
+    assert len(narrative.plans_of("world-town-ch01")) == 1
+
+    closed = narrative.close_chapter(
+        "world-town-ch01", closed_at_tick=90, now=LATER, expected_state_version=3
+    )
+    assert isinstance(closed, Ok)
+    refused_closed = director.revise_blueprint(
+        "world-town-ch01", _blueprint(), LATER
+    )
+    assert isinstance(refused_closed, Err)
+    assert refused_closed.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "CLOSED" in refused_closed.error.message
+    # Nothing was written: one plan revision, one PLANNED anchor, the
+    # chapter row's own version unmoved by the refused revisions.
+    assert len(narrative.plans_of("world-town-ch01")) == 1
+    chapter = narrative.get_chapter("world-town-ch01")
+    assert chapter is not None
+    assert chapter.status is ChapterStatus.CLOSED
+    assert chapter.state_version == 4
+    rows = narrative.scenes_of("world-town-ch01")
+    assert [row.scene_index for row in rows] == [1]
+    assert rows[0].status is SceneStatus.PLANNED
+
+
 # ---------------------------------------------------------------------------
-# 4. the #4 prerequisites (STATE §21/§22, 「V3-4 起强制」)
+# 5. Plan≠Canon (the cut's pin) and the V2 chain
 # ---------------------------------------------------------------------------
 
 

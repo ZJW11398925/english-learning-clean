@@ -92,8 +92,8 @@ caller's ``now`` — the write faces take it as a parameter); **no
 transaction of its own** — the Director composes the store's own short
 transactions (the store faces already own ``BEGIN IMMEDIATE`` …
 ``COMMIT``; a nested BEGIN would break exactly that composability, the
-:mod:`elc.world.time` posture); **no SQL string building** — the two
-read joins below are parameter-bound literals, and every write goes
+:mod:`elc.world.time` posture); **no SQL string building** — the one
+read join below is parameter-bound literals, and every write goes
 through :class:`~elc.world.narrative.store.SqliteNarrativeStore`.
 """
 
@@ -119,6 +119,7 @@ from elc.world.cast import (
 )
 from elc.world.narrative.store import SqliteNarrativeStore
 from elc.world.narrative.types import (
+    ChapterStatus,
     SceneStatus,
     WorldChapterPlanRecord,
     WorldChapterRecord,
@@ -832,14 +833,19 @@ class Director:
         - a ``scene_index`` is never re-used (a retired index stays
           retired — the anchor rows are history too).
 
-        The chapter's status is not consulted: revising a chapter's
-        plan is a Plan-face act, and §24's own law (「只重规划剩余部
-        分；对已 COMMITTED 场无写权」) is enforced by the rules above,
-        not by refusing the revision outright.
+        The chapter's status **is** consulted for the two terminal-ish
+        words (the V3-4 review's F3): a ``SETTLING`` or ``CLOSED``
+        chapter has no 「剩余部分」 left to replan (§21 「CLOSED 不可
+        reopen；修正走后续章」 / §24 「只重规划剩余部分」), so revising
+        one is refused ``VALIDATION_FAILED`` before anything is
+        written. A ``PLANNED`` or ``ACTIVE`` chapter's plan is open to
+        revision, and §24's own law (「对已 COMMITTED 场无写权」) is
+        enforced by the rules above, not by refusing the revision.
 
         Refusals: the chapter does not exist — ``NOT_FOUND``; the
-        payload fails the schema — ``VALIDATION_FAILED``; any store
-        refusal rides out unchanged.
+        chapter is ``SETTLING`` / ``CLOSED`` — ``VALIDATION_FAILED``
+        (nothing is written); the payload fails the schema —
+        ``VALIDATION_FAILED``; any store refusal rides out unchanged.
         """
 
         chapter = self._narrative.get_chapter(chapter_id)
@@ -850,6 +856,18 @@ class Director:
                     message=(
                         f"chapter {chapter_id!r} not revised: it does not"
                         " exist"
+                    ),
+                )
+            )
+        if chapter.status in (ChapterStatus.SETTLING, ChapterStatus.CLOSED):
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"chapter {chapter_id!r} not revised: it is"
+                        f" {chapter.status.value!r} — a settled chapter"
+                        " has no remaining part to replan (§21/§24:"
+                        " corrections go through the next chapter)"
                     ),
                 )
             )
