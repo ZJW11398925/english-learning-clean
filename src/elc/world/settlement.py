@@ -1,5 +1,6 @@
 """The Narrative V3 SEGMENT COMMIT — NCP-3's one short atomic group
-(V3-5, TASK-OPI-be7b094f…34 / the opening ruling DEC-OPI-be7b094f…32) —
+(V3-5, TASK-OPI-be7b094f…34 / the opening ruling DEC-OPI-be7b094f…32;
+the V3-5R corrections TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11) —
 plus the two faces the cut's hard doors freeze: the explicit story-time
 lineage read and the decoupled reader-exposure record.
 
@@ -14,12 +15,21 @@ lineage read and the decoupled reader-exposure record.
    ``world_state_fact`` CURRENT/SUPERSEDED law is spelled once;
 3. ``segment_commit`` — the explicit lineage row (the review's **item
    1**: V3 events' story time is attributed *here*, never inferred from
-   an opaque event-id's naming; ``story_time_of`` is the read path);
+   an opaque event-id's naming; ``story_time_of`` is the read path),
+   carrying the segment's persisted ``is_last_segment`` (V3-5R; the
+   review's MEDIUM-HIGH — see the terminality paragraph below);
 4. ``world.current_tick`` advanced by the segment's ``duration_ticks``
    (the only sanctioned mover — N-INV-007 / N-R-INV-005);
-5. ``is_last_segment`` — the scene's ``ACTIVE → COMMITTED`` flip in
-   the same transaction (the alias law: SCENE COMMIT **is** the
-   scene's last SEGMENT COMMIT, STATE §22 — not a third transaction);
+5. ``world_scene``'s actual span — the scene's **only** span writer
+   (V3-5R, TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11's HIGH-2): the
+   store's no-transaction arm
+   (``_advance_scene_actual_span_tx``) writes ``actual_start_tick``
+   (``COALESCE`` — the first committed segment's start stands), advances
+   ``actual_end_tick`` for every segment, and carries the
+   ``ACTIVE → COMMITTED`` flip when the segment is the scene's last —
+   **one UPDATE, one version bump** (the alias law: SCENE COMMIT **is**
+   the scene's last SEGMENT COMMIT, STATE §22 — not a third
+   transaction);
 6. the chapter's first segment — ``PLANNED → ACTIVE`` with
    ``opened_at_tick`` = the transaction's own read of
    ``world.current_tick`` (the **#3 lifecycle tick authority**: the
@@ -28,15 +38,33 @@ lineage read and the decoupled reader-exposure record.
    overlap ban — judge inside this same transaction, which is the
    0029 race-free obligation's discharge).
 
+**The fresh segment's ordering law (V3-5R, the review's MEDIUM-HIGH)**:
+a fresh segment takes strictly ``segment_seq == max(committed_seq) +
+1`` — the first segment is 1, and 0 / negative / skipped / out-of-order
+sequences are refused ``VALIDATION_FAILED`` naming the given and the
+expected values. The read runs inside this one transaction, and the
+replay arm below answers an existing key **first** — a stored segment's
+replay is never judged by this law.
+
+**Terminality is persisted (V3-5R; migration 0034)**:
+``segment_commit.is_last_segment`` stores whether this segment's commit
+carried the flip. The replay shape comparison includes it — the same
+``segment_key`` replayed with a different ``is_last_segment`` is an
+explicit ``CONFLICT``, never a silent "equivalent record": the
+``commit_scene`` explicit face can commit a scene with no terminal
+segment at all, which is exactly why the fact is stored and never
+derived on read.
+
 **Idempotent replay**: the same ``segment_key = (scene_id,
 segment_seq)`` replayed with the same shape is a whole-group no-op —
-the stored outcome rides back, no second row, no tick re-advance; the
-same key with a different shape is a ``CONFLICT`` (committed segments
-are append-only). The shape comparison covers the semantic payload
-(prose body / language / narration / participants / effects /
-duration); the bookkeeping stamps (``occurred_at`` / ``created_at`` /
-``updated_at``) are not compared — they are the caller's clock
-stamps, and a replay carries a fresh one.
+the stored outcome rides back, no second row, no tick re-advance, and
+no span re-write (the span arm is on the fresh path only); the same key
+with a different shape is a ``CONFLICT`` (committed segments are
+append-only). The shape comparison covers the semantic payload (prose
+body / language / narration / participants / effects / duration) and
+the persisted terminality flag; the bookkeeping stamps (``occurred_at``
+/ ``created_at`` / ``updated_at``) are not compared — they are the
+caller's clock stamps, and a replay carries a fresh one.
 
 **The reader exposure face** (:func:`record_exposure`) is deliberately
 **not** part of any commit transaction — the review's **item 2**
@@ -186,9 +214,16 @@ def commit_segment(
       is not ``ACTIVE`` — ``VALIDATION_FAILED`` (only an active scene
       takes segments; a replay is answered before this check, so a
       committed scene's stored segments still replay as no-ops);
+    - a **fresh** segment whose ``segment_seq`` is not
+      ``max(committed_seq) + 1`` (the first segment is 1) — a 0,
+      negative, skipped or out-of-order sequence is
+      ``VALIDATION_FAILED`` naming the given and the expected values
+      (the V3-5R ordering law; the replay arm is answered first, so an
+      existing key's replay is never judged by it);
     - a participant word outside the world's ``participant_namespace``
       (canonical identity — the V3-3R freeze) — ``VALIDATION_FAILED``;
-    - the same segment_key with a different shape — ``CONFLICT``
+    - the same segment_key with a different shape (its persisted
+      ``is_last_segment`` terminality flag included) — ``CONFLICT``
       (committed segments do not rewrite).
 
     ``now`` stamps the passage/event/lineage rows (``occurred_at`` =
@@ -342,6 +377,33 @@ def _commit_segment_tx(
             effects=effects,
             narration=narration,
             duration_ticks=duration_ticks,
+            is_last_segment=is_last_segment,
+        )
+
+    # The fresh path's ordering law (V3-5R, the review's MEDIUM-HIGH):
+    # a fresh segment takes strictly max(committed_seq) + 1 — the first
+    # segment is 1. The replay read above runs first, so a stored key's
+    # replay is never judged here; the read is inside the caller's
+    # transaction, so no window lets a second writer slip a sequence in.
+    last_row = conn.execute(
+        "SELECT MAX(segment_seq) FROM segment_commit WHERE scene_id = ?",
+        (scene_id,),
+    ).fetchone()
+    last_seq = 0 if last_row is None or last_row[0] is None else int(last_row[0])
+    expected_seq = last_seq + 1
+    if segment_seq != expected_seq:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=(
+                    f"segment {segment_seq} of scene {scene_id!r} not"
+                    " committed: a fresh segment takes segment_seq ="
+                    f" max(committed_seq) + 1 (expected {expected_seq},"
+                    f" given {segment_seq}) — the first segment is 1;"
+                    " 0, negative, skipped and out-of-order sequences"
+                    " are refused (STATE §25)"
+                ),
+            )
         )
 
     if scene.status is not SceneStatus.ACTIVE:
@@ -420,9 +482,9 @@ def _commit_segment_tx(
     conn.execute(
         "INSERT INTO segment_commit ("
         " commit_id, kind, scene_id, segment_seq, passage_id,"
-        " actual_start_tick, actual_end_tick, event_id, created_at,"
-        " updated_at, state_version"
-        ") VALUES (?, 'SEGMENT', ?, ?, ?, ?, ?, ?, ?, ?, 1)",
+        " actual_start_tick, actual_end_tick, event_id, is_last_segment,"
+        " created_at, updated_at, state_version"
+        ") VALUES (?, 'SEGMENT', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
         (
             commit_id,
             scene_id,
@@ -431,6 +493,7 @@ def _commit_segment_tx(
             actual_start,
             actual_end,
             event_id,
+            int(is_last_segment),
             now,
             now,
         ),
@@ -439,13 +502,23 @@ def _commit_segment_tx(
     if isinstance(advanced, Err):
         return Err(advanced.error)
 
+    # The scene's actual span — NCP-3's one span writer (V3-5R HIGH-2):
+    # start on the first committed segment (COALESCE keeps it), end on
+    # every segment, and the ACTIVE → COMMITTED flip rides the same
+    # single UPDATE when this segment is the scene's last (the SCENE
+    # COMMIT alias; one version bump, no third transaction).
     scene_committed = False
+    span = narrative_store._advance_scene_actual_span_tx(
+        scene_id,
+        actual_start,
+        actual_end,
+        is_last_segment,
+        now,
+        expected_state_version=scene.state_version,
+    )
+    if isinstance(span, Err):
+        return Err(span.error)
     if is_last_segment:
-        flipped = narrative_store._flip_scene_committed_tx(
-            scene_id, now, scene.state_version
-        )
-        if isinstance(flipped, Err):
-            return Err(flipped.error)
         scene_committed = True
 
     chapter_activated = False
@@ -475,11 +548,11 @@ def _segment_commit_row(
 ) -> tuple[Any, ...] | None:
     """The segment_key's lineage row, or ``None`` — the replay read's
     own pure SELECT (``commit_id, passage_id, actual_start_tick,
-    actual_end_tick, event_id``)."""
+    actual_end_tick, event_id, is_last_segment``)."""
 
     return conn.execute(
         "SELECT commit_id, passage_id, actual_start_tick,"
-        " actual_end_tick, event_id FROM segment_commit"
+        " actual_end_tick, event_id, is_last_segment FROM segment_commit"
         " WHERE scene_id = ? AND segment_seq = ?",
         (scene_id, segment_seq),
     ).fetchone()
@@ -498,6 +571,7 @@ def _replay_outcome(
     effects: tuple[StateEffect, ...],
     narration: str,
     duration_ticks: int,
+    is_last_segment: bool,
 ) -> Result[CommitOutcome]:
     """Answer a replayed segment_key: shape-equal rides back as the
     stored outcome, shape-different is a ``CONFLICT``.
@@ -505,12 +579,14 @@ def _replay_outcome(
     The compared shape is the semantic payload — the passage's ``body``
     / ``language`` / ``created_at_tick`` (the row's own spelling of the
     segment's end tick), the event's ``kind`` / ``narration`` /
-    ``effects`` / ``participants`` (through the strict codecs), and the
-    lineage span's duration. Bookkeeping stamps are not compared (the
-    caller's clock differs on a replay, by design). An undecodable
-    stored payload — this module's own encoder's output, corrupted —
-    raises ``ValueError`` (the store family's corrupted-row posture),
-    never a fabricated comparison.
+    ``effects`` / ``participants`` (through the strict codecs), the
+    lineage span's duration, and the persisted terminality flag
+    ``is_last_segment`` (V3-5R; a terminality mismatch answers its own
+    ``CONFLICT`` sentence naming the flag). Bookkeeping stamps are not
+    compared (the caller's clock differs on a replay, by design). An
+    undecodable stored payload — this module's own encoder's output,
+    corrupted — raises ``ValueError`` (the store family's corrupted-row
+    posture), never a fabricated comparison.
     """
 
     (
@@ -519,7 +595,15 @@ def _replay_outcome(
         actual_start,
         actual_end,
         event_id,
-    ) = (str(row[0]), str(row[1]), int(row[2]), int(row[3]), str(row[4]))
+        stored_is_last,
+    ) = (
+        str(row[0]),
+        str(row[1]),
+        int(row[2]),
+        int(row[3]),
+        str(row[4]),
+        bool(row[5]),
+    )
     passage = conn.execute(
         "SELECT body, language, created_at_tick FROM narrative_passage"
         " WHERE passage_id = ?",
@@ -553,6 +637,7 @@ def _replay_outcome(
         decoded_effects.value,
         decoded_participants.value,
         actual_end - actual_start,
+        stored_is_last,
     )
     if stored_shape != (
         body,
@@ -563,7 +648,22 @@ def _replay_outcome(
         effects,
         participants,
         duration_ticks,
+        is_last_segment,
     ):
+        if stored_is_last != is_last_segment:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.CONFLICT,
+                    message=(
+                        f"segment {commit_id!r} already exists with a"
+                        " different terminality: the stored"
+                        f" is_last_segment is {stored_is_last}, the"
+                        f" replay carries {is_last_segment} — terminality"
+                        " is a stored fact (migration 0034) and committed"
+                        " segments are append-only; they do not rewrite"
+                    ),
+                )
+            )
         return Err(
             DomainError(
                 code=DomainErrorCode.CONFLICT,

@@ -22,6 +22,21 @@ deterministic guards this face owns:
   the fragment). ``revealable`` is the plan's permission, never an
   obligation: the guard does not require it to appear.
 
+**The provider Writer hard door (V3-5R, TASK-OPI-dc1bafdf…13 /
+DEC-OPI-dc1bafdf…11's item 5, the external review)**: the literal
+``must_hide`` substring guard above is **not** a POV knowledge firewall
+— a semantic rewrite routes around a lexical guard by construction.
+Before a real LLM Writer goes live, the face must compile its context
+**POV-safe**: the Writer's inputs are assembled from the POV
+character's own cognition view
+(:func:`elc.world.cognition.v3_cognition_view` — the lineage read whose
+layers are canonical-identity judgments) union the dossier, so the
+things the POV could not know are **not in the prompt at all**; the
+lexical guard stays as the second, deterministic guard it honestly is.
+The door is registered in the window regression ledger with the LLM
+writer cut — it is not optional wiring, and this docstring is its
+in-repo record until that cut lands.
+
 Then the segment goes to :func:`elc.world.settlement.commit_segment`
 in the caller's own posture:
 

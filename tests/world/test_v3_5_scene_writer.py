@@ -38,9 +38,10 @@ crash/replay closure. The groups:
 8. **the transactionisation discharge** — ``activate_chapter`` judges
    inside its one ``BEGIN IMMEDIATE`` (the source pin) and does not
    bypass a held lock (the behaviour pin);
-9. **the chain head and the scans** — the shared constants end at 0033,
-   the three new modules build no SQL, import no package face and start
-   from a cold interpreter, and the V2 surfaces stay untouched.
+9. **the chain head and the scans** — the shared constants end at 0034
+   (V3-5R's terminality ALTER), the three new modules build no SQL,
+   import no package face and start from a cold interpreter, and the V2
+   surfaces stay untouched.
 """
 
 from __future__ import annotations
@@ -508,6 +509,10 @@ def test_the_segment_commit_lands_the_full_chain(
     scene = narrative.get_scene(SCENE)
     assert scene is not None
     assert scene.status is SceneStatus.COMMITTED
+    # V3-5R: the span arm wrote the scene's actual interval in the same
+    # transaction — the last segment's own start/end (one UPDATE).
+    assert scene.actual_start_tick == 0
+    assert scene.actual_end_tick == 3
 
 
 def test_the_commit_advances_the_tick_by_the_duration(
@@ -1041,13 +1046,19 @@ def test_the_group_transaction_has_one_begin_and_one_commit() -> None:
         assert text != "ROLLBACK", text
 
 
-def test_the_scene_flip_and_the_chapter_opening_are_the_commits_own_arms() -> None:
-    """The SCENE COMMIT alias, machine-checked: within the commit body,
-    the scene's ``ACTIVE → COMMITTED`` flip and the chapter's opening
-    are the narrative store's no-transaction arms — called inside the
-    same one transaction, never as separate faces. The arms themselves
-    carry no transaction-control constant (the unfiltered set — the
-    V3-5 review's F3)."""
+def test_the_span_arm_and_the_chapter_opening_are_the_commits_own_arms() -> None:
+    """The SCENE COMMIT alias, machine-checked (the V3-5R arm set):
+    within the commit body the scene's write is the narrative store's
+    **span arm** — ``_advance_scene_actual_span_tx`` (the actual
+    interval and, on the scene's last segment, the ``ACTIVE →
+    COMMITTED`` flip in one UPDATE; TASK-OPI-dc1bafdf…13) — and the
+    chapter's opening is ``_flip_chapter_activated_tx``, both called
+    inside the same one transaction, never as separate faces. The
+    lifecycle-only ``_flip_scene_committed_tx`` is deliberately **not**
+    the commit's arm any more (the explicit ``commit_scene`` face keeps
+    it — it writes no span). The arms themselves carry no
+    transaction-control constant (the unfiltered set — the V3-5 review's
+    F3)."""
 
     body = _function(_SETTLEMENT_TREE, "_commit_segment_tx")
     called = {
@@ -1055,9 +1066,14 @@ def test_the_scene_flip_and_the_chapter_opening_are_the_commits_own_arms() -> No
         for node in ast.walk(body)
         if isinstance(node, ast.Attribute)
     }
-    assert "_flip_scene_committed_tx" in called
+    assert "_advance_scene_actual_span_tx" in called
     assert "_flip_chapter_activated_tx" in called
-    for name in ("_flip_scene_committed_tx", "_flip_chapter_activated_tx"):
+    assert "_flip_scene_committed_tx" not in called
+    for name in (
+        "_advance_scene_actual_span_tx",
+        "_flip_chapter_activated_tx",
+        "_flip_scene_committed_tx",
+    ):
         arm = _function(_NARRATIVE_STORE_TREE, name)
         assert _sql_constants(arm), (name, "the arm carries no SQL")
         for text in _all_constants(arm):
@@ -1916,21 +1932,23 @@ def test_the_v2_surfaces_and_vocabulary_stay_untouched(
     assert v3_row[0] == '["actor-lia","pc-you"]'
 
 
-def test_the_chain_head_is_0033_and_the_stamps_agree() -> None:
+def test_the_chain_head_and_the_stamps_agree() -> None:
     """The migration self-pin: the shared constants and a fresh database
-    end at V3-5's ``0033_segment_commit`` / ``33``; V3-1's four tables
-    and V3-5's three join the chain behind it."""
+    end at V3-5R's ``0034_segment_terminality`` / ``34`` — behind it
+    V3-5's ``0033_segment_commit``, and V3-1's four tables and V3-5's
+    three join the chain behind that."""
 
-    assert MIGRATION_IDS[-1] == "0033_segment_commit"
-    assert SCHEMA_HEAD_FILE == "0033_segment_commit.sql"
-    assert SCHEMA_HEAD_VERSION == "33"
+    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
+    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
+    assert SCHEMA_HEAD_VERSION == "34"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0033_segment_commit"
-    assert applied[-2] == "0032_actor_profile_world_fk"
-    assert applied[-3] == "0031_world_cast"
-    assert applied[-4] == "0030_world_bible"
-    assert applied[-5] == "0029_narrative_v3_foundations"
+    assert applied[-1] == "0034_segment_terminality"
+    assert applied[-2] == "0033_segment_commit"
+    assert applied[-3] == "0032_actor_profile_world_fk"
+    assert applied[-4] == "0031_world_cast"
+    assert applied[-5] == "0030_world_bible"
+    assert applied[-6] == "0029_narrative_v3_foundations"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -1938,8 +1956,8 @@ def test_the_chain_head_is_0033_and_the_stamps_agree() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "33",
-        "runtime_schema_version": "33",
+        "schema_version": "34",
+        "runtime_schema_version": "34",
     }
     tables = {
         str(row[0])

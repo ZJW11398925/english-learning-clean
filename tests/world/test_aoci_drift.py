@@ -34,6 +34,15 @@ shipped player) and ``host.py`` (the seeded packages' mapping the
 cognitive view's user layer reads) — and the pins below carry the new
 faces the same way (the next touch is a red test, never a silent
 ledger lie).
+
+V3-5R (``TASK-OPI-dc1bafdf…13`` / the opening ruling
+``DEC-OPI-dc1bafdf…11``) adds the terminality migration
+(``0034_segment_terminality.sql``), the new cognition read face
+(``cognition.py``) and re-touches three entries in place —
+``settlement.py`` (the ordering law, the span arm, the persisted
+terminality), ``scene.py`` (the cognition input and the ``max`` time
+law) and the narrative ``store.py`` (the one-UPDATE span writer) — and
+the pin below carries those faces too.
 """
 
 from __future__ import annotations
@@ -483,3 +492,78 @@ def test_host_entry_carries_the_cognitive_views_user_layer() -> None:
     source = (REPO / "src" / "elc" / "host.py").read_text(encoding="utf-8")
     assert "world_user_characters" in source
     assert "_user_character_ids" in source
+
+
+# ---------------------------------------------------------------------------
+# V3-5R (TASK-OPI-dc1bafdf…13): the terminality migration, the cognition
+# read face and the three updated entries
+# ---------------------------------------------------------------------------
+
+
+def test_v3_5r_entries_carry_the_terminality_and_cognition_faces() -> None:
+    """V3-5R's ledger faces ride their entries: the 0034 migration (the
+    terminality column, the back-fill and ordering laws, its stamps),
+    the new cognition read face, and the three updated entries —
+    ``settlement.py`` (the ordering law, terminality, the span arm),
+    ``scene.py`` (the cognition input, ``SceneContext``, the ``max``
+    time law) and the narrative ``store.py`` (the one-UPDATE span
+    writer). The coverage law above keeps the 0034 entry present; this
+    pin keeps the words true."""
+
+    section = "\n".join(_migrations_section())
+    assert "0034_segment_terminality.sql[" in section
+    migration_entry = _entry_line("0034_segment_terminality.sql[")
+    for keyword in (
+        "is_last_segment",
+        "终态",
+        "顺序",
+        "回填",
+        "双 stamp '34'",
+    ):
+        assert keyword in migration_entry, keyword
+
+    world_section = "===D:/english-learning-clean/src/elc/world/==="
+    for tag, keywords in (
+        (
+            "cognition.py[",
+            (
+                "v3_cognition_view",
+                "lineage",
+                "canonical",
+                "public",
+                "witnessed",
+                "SceneContext",
+            ),
+        ),
+        (
+            "settlement.py[",
+            (
+                "顺序律",
+                "terminality",
+                "_advance_scene_actual_span_tx",
+            ),
+        ),
+        (
+            "scene.py[",
+            (
+                "v3_cognition_view",
+                "SceneContext",
+                "max(context.current_tick",
+                "V3-5R",
+            ),
+        ),
+    ):
+        entry = _entry_line_in_section(world_section, tag)
+        for keyword in keywords:
+            assert keyword in entry, (tag, keyword)
+
+    narrative_section = (
+        "===D:/english-learning-clean/src/elc/world/narrative/==="
+    )
+    store_entry = _entry_line_in_section(narrative_section, "store.py[")
+    for keyword in (
+        "_advance_scene_actual_span_tx",
+        "COALESCE",
+        "commit_scene",
+    ):
+        assert keyword in store_entry, keyword

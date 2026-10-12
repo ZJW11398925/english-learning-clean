@@ -129,12 +129,17 @@ MIGRATION_IDS: tuple[str, ...] = (
     # (segment_commit); elc.world.settlement is the commit transaction's
     # face.
     "0033_segment_commit",
+    # V3-5R (TASK-OPI-dc1bafdf…13): the terminality correction — the
+    # external review's MEDIUM-HIGH: segment_commit gains
+    # is_last_segment (the persisted SCENE COMMIT alias fact; one ALTER
+    # plus the exact back-fill for the V3-5 pipeline's own product).
+    "0034_segment_terminality",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0033_segment_commit.sql"
-SCHEMA_HEAD_VERSION = "33"
+SCHEMA_HEAD_FILE = "0034_segment_terminality.sql"
+SCHEMA_HEAD_VERSION = "34"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

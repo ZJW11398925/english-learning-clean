@@ -899,6 +899,8 @@ story_tick actual 推进
 
 **reader_exposure 不在本提交内（评审 #2 解耦）**：passage commit ≠ 用户已看见——exposure 在交付/渲染侧独立记录或保守 estimate（RA §14 家族），绝不与提交同事务充当 reader knowledge。
 
+**V3-5R 落法（开工裁决 `DEC-OPI-dc1bafdf-…11`）**：① 同事务增写 `world_scene` 的 actual 区间（首段 start / 每段 end / 末段随 `ACTIVE→COMMITTED` 翻转——一个 UPDATE 一次版本推进；`commit_scene` 显式面不写 span；replay 零重改）；② fresh 段顺序律 `segment_seq == max(committed_seq) + 1`（首段 1；0/负数/跳号/倒序 ⇒ `VALIDATION_FAILED`；replay arm 先行）；③ `segment_commit.is_last_segment`（migration `0034_segment_terminality.sql`）持久化 SCENE COMMIT 身份并入 replay 形状比对（同 segment_key 不同 `is_last_segment` ⇒ `CONFLICT`）。完整臂序见 `STATE_MACHINES §25`「V3-5R 落法」段。
+
 ### NCP-4 — Chapter Settlement
 
 ```text

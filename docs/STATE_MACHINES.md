@@ -756,6 +756,8 @@ story_tick actual 推进（该段 duration_ticks）
 
 **V3-5 落法（开工裁决 `DEC-OPI-be7b094f-…32`）**：`segment_commit`（#1 lineage 面）随本提交同批落行——`commit_id` 由 segment_key 派生、携带 `actual_start_tick`/`actual_end_tick`/`event_id`/`passage_id`；**`SCENE COMMIT` = 场的最后一段 SEGMENT COMMIT 的别名**：`is_last_segment` 的 SEGMENT COMMIT 同事务翻转 `world_scene` `ACTIVE → COMMITTED`；章的 `opened_at_tick` 由本链正式管线化（首段提交事务内读 `world.current_tick`，章 PLANNED→ACTIVE 同批补章）——**lifecycle tick authority（评审 #3）自 V3-5 起由提交事务接管，不再由调用方代书**。
 
+**V3-5R 落法（开工裁决 `DEC-OPI-dc1bafdf-…11`）**：① **场景 actual 区间 = 本事务唯一写权**——fresh 段提交的同一事务内，一个 UPDATE（store 无事务臂 `_advance_scene_actual_span_tx`）写 `actual_start_tick = COALESCE(actual_start_tick, 段 actual_start)`、`actual_end_tick = 段 actual_end`、`is_last` 时 `status='COMMITTED'`（**一次版本推进**；SCENE COMMIT 仍不是第三个事务）；replay 不改 span。② **顺序律**：fresh 段严格 `segment_seq == max(committed_seq) + 1`（首段必须 1；0 / 负数 / 跳号 / 倒序 ⇒ `VALIDATION_FAILED` 点名 given 与 expected；replay arm 先行——已存 key 的重放不受本律约束）。③ **terminality**：`segment_commit.is_last_segment`（migration 0034）持久化该段的 SCENE COMMIT 身份；replay 形状比对含之（同 segment_key 不同 `is_last_segment` ⇒ `CONFLICT`）。
+
 幂等键：`segment_key = (scene_id, segment_seq)`；passage 与 event 的 id 由 segment_key 派生（重放写同一批 id）。
 
 ```text
@@ -804,6 +806,7 @@ actual_*_tick：Canon 面（只由 SEGMENT / ACTION OUTCOME COMMIT 写；单调�
 
 - `actual_start_tick` = 推进行为前的 world tick；`actual_end_tick` = 加 `duration_ticks` 后的 world tick（`duration_ticks >= 0`）。
 - 同一世界 actual 区间非递减；跨章继续；章/场的 actual 区间由 commit 决定（可与 planned 不同——用户行为可改变时间进程）。
+- **场 actual 区间的唯一写者（V3-5R 落法，`DEC-OPI-dc1bafdf-…11`）**：`world_scene.actual_start_tick` / `actual_end_tick` 只由 SEGMENT COMMIT（NCP-3）的同一事务写——首段写 `actual_start_tick`（COALESCE 保首值）、每段推进 `actual_end_tick`、末段随 `ACTIVE → COMMITTED` 翻转（**一次版本推进**；`commit_scene` 显式面不写 span；replay 零重改）。
 - 排序与因果读 actual；显示由 Calendar 把 tick 解释成世界日期（不依赖地球公历）。
 - 章规划中的时间只写 planned；不得预写 actual。
 

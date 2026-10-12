@@ -1738,6 +1738,12 @@ reader_exposure               # 读者暴露面（记录语义；本轮无 metag
 - `segment_commit`（**#1 lineage 显式面**——V3 事件 story-time attribution 的权威读路）：`commit_id` TEXT PK（派生 = `f"sg:{scene_id}:{segment_seq:04d}"`）、`kind` NOT NULL CHECK `('SEGMENT')`（V3-6 增 `'ACTION_OUTCOME'` 词）、`scene_id` NOT NULL、`segment_seq` NOT NULL、`passage_id` NOT NULL REFERENCES `narrative_passage`、`actual_start_tick` NOT NULL、`actual_end_tick` NOT NULL、`event_id` NOT NULL REFERENCES `world_event`（本段沉淀的非用户事实行）、双 stamp、`state_version` CHECK>0；**`UNIQUE (scene_id, segment_seq)`**（与 passage 同幂等键族）。**V3 事件的叙事时间 = 经本表归属的 actual 区间**（`story_time_of(event_id)` 读路）——**禁止以 opaque event-id 命名规则反推**（评审 #1 硬门）；V3 cognition 不得把 legacy `occurred_at`（Legacy V2 ISO 语义）当世界时间（§26.2.2 同句）。
 - **V3 事件的 `world_event.participants` 词表 = canonical identity**（`actor_id` ∪ `player_character_id`，participant_namespace 派生）；legacy 行（cast persona ids ∪ user id）**不回写、不同表混读**——区分靠本 lineage 面与读路过滤（V3-7 cognition 的职责），§26.2.3 的 V3-3R 注同义。
 
+**V3-5R 落法（外审 2 HIGH + 1 MEDIUM-HIGH；开工裁决 `DEC-OPI-dc1bafdf-…11`，2026-10-12；migration `0034`）**：
+
+- `segment_commit` 增列 `is_last_segment INTEGER NOT NULL DEFAULT 0 CHECK (is_last_segment IN (0,1))`（migration `0034_segment_terminality.sql`）——**terminality 的持久化形**：`is_last_segment=1` ⇔ 该段的 SEGMENT COMMIT 同事务翻转了场 `ACTIVE → COMMITTED`（SCENE COMMIT=别名）。回填律（迁移注释成文，只对 V3-5 管线产物为真）：`COMMITTED`/`CLOSED` 场的最大 `segment_seq` 行 = 1。replay 形状比对含该列——同一 `segment_key` 以不同 `is_last_segment` 重放 ⇒ 明确 `CONFLICT`（不静默返回旧结果）。**顺序律**：fresh segment 严格 `segment_seq == max(committed_seq) + 1`（首段必须 1；0 / 负数 / 跳号 / 倒序一律 `VALIDATION_FAILED`，消息点名 given 与 expected；replay arm 先行）。
+- **场景 actual 区间 = NCP-3 的唯一写权**（STATE §26）：首个 committed segment 同事务写 `world_scene.actual_start_tick`；每个 segment 同事务推进 `world_scene.actual_end_tick`；末段同时 `ACTIVE → COMMITTED`——**一个 UPDATE 一次版本推进**（store 的无事务臂 `_advance_scene_actual_span_tx`），不得另起第三个 Scene Commit 事务；replay 零重改。
+- **V3-5R 最小读路（§26.2.3 重写）**：V3 cognition read face（`elc/world/cognition.py`）——V3 event 判定走**显式 lineage**（`segment_commit.event_id` JOIN；legacy 事件无 lineage 行，不进 V3 读）；排序用 lineage actual 区间（`actual_start_tick, actual_end_tick, event_id`）；公共层 = `participants` 空、亲历层 = viewer ∈ participants（**canonical `actor_id` / `player_character_id` 直接过滤**——不得经 persona id 或 Package user-character mapping 判断 V3 亲历）。`ScenePlanner` 以当前 POV 的该读面作为 dossier/context 输入（`SceneContext` + `SceneOpening.context`）；legacy C1（`host.py` 世界端口）保持 legacy 读面不改写；V3-7 物化 actor memory/belief 后该面降为兼容/fallback。
+
 **V3-3R identity/seed 冻结（外审，2026-10-12）**：
 
 - **canonical participant identity**：AI-controlled durable character = `world_actor.actor_id`；user-controlled character = `world_player_character.player_character_id`。**`persona_id` 是 CharacterCard / template identity，不作为 Narrative V3 canonical world participant identity**（V3 链不做 actor↔persona 转换）。
@@ -1778,10 +1784,17 @@ V3 事件行的叙事时间 = 其提交事务的 actual tick，经**显式 linea
 
 ```text
 1) 事实读：world_event（含 participants/effects）+ world_state_fact(CURRENT)（V3-3R 注：该列的 legacy 词汇 = persona ids ∪ user id；V3 canonical identity 见 §26.2.1 冻结——区分归 V3-5 lineage）
-2) 认知读：现役 C1 cognition view（host.py 世界端口：公共 ∪ 亲历 ∪ 用户层）
-   —— scene planner 以 POV 角色的 C1 视图（章内事件过滤）作为 dossier 输入
+2) 认知读（V3-5R 落法，DEC-OPI-dc1bafdf-…11）：elc/world/cognition.py 的
+   v3_cognition_view(conn, world_id, viewer_id) 纯读——
+   · V3 event 判定走显式 lineage（segment_commit.event_id JOIN；legacy 事件绝不出现在 V3 读）
+   · 排序用 lineage actual 区间（actual_start_tick, actual_end_tick, event_id）
+   · 公共层 = participants 空；亲历层 = viewer ∈ participants
+     （canonical actor_id / player_character_id 直接过滤——不得经 persona id
+     或 Package user-character mapping 判断 V3 亲历）
+   · ScenePlanner 以当前 POV 的该读面作为 dossier/context 输入（SceneContext）
+   · legacy C1（host.py 世界端口：公共 ∪ 亲历 ∪ 用户层）保持 legacy 读面，不改写
 V3-7 物化 actor memory/belief 后：commit 增加该臂；dossier 改读 actor memory；
-C1 读面降为兼容/兜底。
+本读面降为兼容/fallback（C1 同位）。
 ```
 
 ### 26.2.4 幂等与键

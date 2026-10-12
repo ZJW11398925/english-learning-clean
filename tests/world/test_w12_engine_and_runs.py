@@ -240,30 +240,32 @@ def test_0025_is_the_registered_head() -> None:
     C1-a's 0027_chronicle_attribution and C2's 0028_world_storyline
     (the stamp-pin discipline every head move has followed since P8-4;
     the pin read "0025 is the head" while 0025 was the head); the shared
-    constants say so, and the stamp a fresh database carries is 33 (the
+    constants say so, and the stamp a fresh database carries is 34 (the
     head literal moved with each later head, most recently V3-5's
-    0033_segment_commit)."""
+    0033_segment_commit and V3-5R's 0034_segment_terminality)."""
 
     # The head literal moves with each head (the P9-1 way); the
     # migration-shape claims in the sibling tests stay 0025's own.
-    assert MIGRATION_IDS[-1] == "0033_segment_commit"
-    assert MIGRATION_IDS[-2] == "0032_actor_profile_world_fk"
-    assert MIGRATION_IDS[-3] == "0031_world_cast"
-    assert MIGRATION_IDS[-4] == "0030_world_bible"
-    assert MIGRATION_IDS[-5] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-6] == "0028_world_storyline"
-    assert SCHEMA_HEAD_FILE == "0033_segment_commit.sql"
+    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-2] == "0033_segment_commit"
+    assert MIGRATION_IDS[-3] == "0032_actor_profile_world_fk"
+    assert MIGRATION_IDS[-4] == "0031_world_cast"
+    assert MIGRATION_IDS[-5] == "0030_world_bible"
+    assert MIGRATION_IDS[-6] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-7] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "33"
+    assert SCHEMA_HEAD_VERSION == "34"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0033_segment_commit"
-    assert applied[-2] == "0032_actor_profile_world_fk"
-    assert applied[-3] == "0031_world_cast"
-    assert applied[-4] == "0030_world_bible"
-    assert applied[-5] == "0029_narrative_v3_foundations"
-    assert applied[-6] == "0028_world_storyline"
+    assert applied[-1] == "0034_segment_terminality"
+    assert applied[-2] == "0033_segment_commit"
+    assert applied[-3] == "0032_actor_profile_world_fk"
+    assert applied[-4] == "0031_world_cast"
+    assert applied[-5] == "0030_world_bible"
+    assert applied[-6] == "0029_narrative_v3_foundations"
+    assert applied[-7] == "0028_world_storyline"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 

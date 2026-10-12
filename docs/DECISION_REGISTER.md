@@ -239,3 +239,17 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 9. **通道纪律（总控自报，如实留痕）**：本刀处置期间总控本人一次 Bash heredoc Python 写仓内 `.py`（say_33→say_the_chain_head 改名，两文件各一行）——违反落盘通道纪律①；**第一次＝训诫留痕**（改动纯改名、零行为副作用、主动自报、随即验证 diff 精确 1+/1−）。
 
 授权：独立评审（executor-pro 新上下文只读，2026-10-12）+ 总控处置（V3-1/V3-3/V3-4/V3-4R 处置先例：总控亲写）；处置提交随本条目同刀。
+
+### v1.4.2 — 2026-10-12 V3-5R 开工裁决（外审 2 HIGH + 1 MEDIUM-HIGH + 时间语义修正 + provider Writer 硬门登记；范围受限；授权：外审结论转呈）
+
+**结论**：V3-5 主体（NCP-3 / lineage 写侧 / reader exposure 解耦 / Director crash-replay）通过；**暂不进入 V3-6**，先做**范围受限 V3-5R**——不扩大到 User Gate / Action Resolver。已铸 V3-6 三件（`DEC-OPI-dc1bafdf-…5` / `TASK-…7` / `VAL-…9`）**暂缓执行**（重放行时迁移号顺延修订）。
+
+1. **HIGH-1（cognition read gate）**：建立 Narrative V3 专用最小 cognition read face（`src/elc/world/cognition.py`）——V3 event 判定走**显式 lineage**（`segment_commit.event_id` JOIN）；排序用 `segment_commit.actual_start_tick / actual_end_tick`；公共/亲历直接以 canonical `actor_id / player_character_id` 过滤（**不得** persona id 或 Package user-character mapping）；legacy C1（`host.py` 世界端口）**不改写**、保持 legacy 读面。`ScenePlanner` 把当前 POV 的该读面作为 dossier/context 输入（`SceneContext` + `SceneOpening.context`）。V3-7 Actor Memory 上线后该面降为兼容/fallback。
+2. **HIGH-2（scene actual span）**：NCP-3 成为 `world_scene.actual_start_tick / actual_end_tick` 的**唯一写者**——首段同事务写 start、每段同事务推进 end、最后一段同时 `ACTIVE → COMMITTED`（**一个 UPDATE 一次版本推进**，不得另起第三事务）；replay 不重改。
+3. **MEDIUM-HIGH（顺序与 terminality 幂等）**：fresh segment 严格 `max(committed_seq)+1`（第一段必须 1；拒绝 0 / 负数 / 跳号 / 倒序——replay arm 仍先行）；**terminality 持久化**：`migration 0034_segment_terminality.sql`——`ALTER TABLE segment_commit ADD COLUMN is_last_segment INTEGER NOT NULL DEFAULT 0 CHECK (is_last_segment IN (0,1))` + 精确回填（`COMMITTED/CLOSED` 场的最大 seq 行 = 1；推演式「等价记录」被否：`commit_scene` 显式面可造出无对应 terminality 的 COMMITTED 场，推演会误报 CONFLICT）；replay 形状比对含该列（同 key 不同 `is_last_segment` ⇒ 明确 `CONFLICT`）。
+4. **时间语义修正**：dossier `planned_start_tick = max(current_tick, blueprint_scene.planned_start_tick)`——现实拖延时 current 获胜、未来计划保留；actual 仍只由 commit 推进。
+5. **provider Writer 硬门登记**：现役 literal `must_hide` substring guard **不是** POV knowledge firewall（语义改写可绕过）；真实 LLM Writer 上线前必须采用 **POV-safe context compilation**（Writer 默认拿不到不可知秘密），lexical guard 仅作第二道 deterministic guard——登记入 `writer.py` docstring + 本条目 + 窗口回归册。
+6. **迁移刀纪律**：搬迁面预写名单（conftest 三常量 0034/34 / 负索引 shift 族 / SCHEMA_HEAD 字面族 / aoci drift 0034 条目 + cognition.py 条目 + 三模块更新）；`GLOBAL_CONTENT_TABLES` **不变**（无新表，18 员）；`behavioral_baselines/` 与 0001–0033 迁移文件零改动；旧链零改；UI 不动。
+7. **合同增量（总控亲写、随刀提交）**：`DATA §26.2.1` 增补（segment_commit `is_last_segment` 列 + 回填律）+ `§26.2.3` 重写（V3-5R 最小读路：V3 cognition read face + C1 legacy 兼容）；`STATE §25`（NCP-3 增补：span 臂 / 顺序律 / 终态列）+ `§26`（scene actual span 唯一写者）；`RA §28` NCP-3 落法句。
+
+授权：外审（用户转呈，2026-10-12）；DMCP 开工裁决 `DEC-OPI-dc1bafdf-…11`（rev 794）。

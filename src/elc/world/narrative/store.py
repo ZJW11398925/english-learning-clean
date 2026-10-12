@@ -11,9 +11,13 @@ where a later cut's commit transaction must be the real mover (the
 scene's ``COMMITTED`` flip, the actual tick columns) the docstring says
 so plainly — the flip face exists so the state machine is testable and
 so the commit cut has a named, composable arm inside its own short
-transaction (**since V3-5**: ``_flip_scene_committed_tx`` /
-``_flip_chapter_activated_tx`` are the arms
-:mod:`elc.world.settlement` calls inside NCP-3's one atomic group).
+transaction (**since V3-5**: ``_flip_chapter_activated_tx`` is the arm
+:mod:`elc.world.settlement` calls inside NCP-3's one atomic group;
+**since V3-5R** (TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11):
+``_advance_scene_actual_span_tx`` is the scene's own span-and-flip arm
+the same transaction calls — the actual tick columns are the
+commit's — and ``_flip_scene_committed_tx`` stays the separate explicit
+lifecycle face :meth:`commit_scene` wraps).
 
 Discipline (the house store law, :mod:`elc.world.store`'s posture):
 
@@ -566,11 +570,14 @@ class SqliteNarrativeStore:
         itself** — the SCENE COMMIT is the scene's last SEGMENT COMMIT
         (the alias law, STATE_MACHINES §22 / the disposition's M4), and
         the SEGMENT COMMIT transaction (passage + event + state + tick,
-        NCP-3) is V3-5's, which calls :meth:`_flip_scene_committed_tx` —
-        the same composable arm this explicit face wraps in its own
-        short transaction — inside its own. The ``ACTIVE → COMMITTED``
-        flip and that segment land in the same transaction there. Legal
-        only from ``ACTIVE`` — a committed scene's canon face is
+        NCP-3) is V3-5's. **Since V3-5R** (TASK-OPI-dc1bafdf…13 /
+        DEC-OPI-dc1bafdf…11) that transaction's scene write is
+        :meth:`_advance_scene_actual_span_tx` — the actual span and, on
+        the scene's last segment, the same UPDATE's ``ACTIVE →
+        COMMITTED`` flip — so this face and its arm
+        (:meth:`_flip_scene_committed_tx`) are exactly what the name
+        says: the **explicit** lifecycle move, spelling no span at all.
+        Legal only from ``ACTIVE`` — a committed scene's canon face is
         settled, and an earlier word cannot jump there.
         """
 
@@ -1450,12 +1457,14 @@ class SqliteNarrativeStore:
     ) -> Result[None]:
         """The scene-commit flip — ``ACTIVE → COMMITTED`` — as a
         **no-transaction arm** (the V3-5 split, DEC-OPI-be7b094f…32):
-        :meth:`commit_scene` wraps it in its own ``BEGIN IMMEDIATE``, and
-        V3-5's SEGMENT COMMIT calls it inside NCP-3's one short atomic
-        group when a segment is the scene's last (the alias law: the
-        scene's last SEGMENT COMMIT *is* the SCENE COMMIT — the flip and
-        the segment land in the same transaction). The caller owns the
-        transaction; this arm runs no BEGIN/COMMIT of its own.
+        :meth:`commit_scene` wraps it in its own ``BEGIN IMMEDIATE``.
+        **Since V3-5R the SEGMENT COMMIT does not call this arm**: the
+        commit's scene write is
+        :meth:`_advance_scene_actual_span_tx` — the span and, on the
+        last segment, the flip, in one UPDATE — so this face is the
+        **explicit** ``commit_scene`` move's arm, and it writes no span
+        at all. The caller owns the transaction; this arm runs no
+        BEGIN/COMMIT of its own.
 
         The CAS guard is the one every transition rides (a rowcount of
         zero answers ``NOT_FOUND`` / ``CONFLICT`` through
@@ -1469,6 +1478,58 @@ class SqliteNarrativeStore:
             " state_version = state_version + 1, updated_at = ?"
             " WHERE scene_id = ? AND state_version = ?",
             (now, scene_id, expected_state_version),
+        )
+        if cursor.rowcount != 1:
+            return self._cas_miss("world_scene", scene_id)
+        return Ok(None)
+
+    def _advance_scene_actual_span_tx(
+        self,
+        scene_id: str,
+        actual_start_tick: int,
+        actual_end_tick: int,
+        is_last: bool,
+        now: str,
+        expected_state_version: int,
+    ) -> Result[None]:
+        """The scene's actual span — NCP-3's **only** span writer
+        (V3-5R, TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11's HIGH-2;
+        STATE §25/§26) — as a **no-transaction arm**: the SEGMENT COMMIT
+        transaction (:func:`elc.world.settlement.commit_segment`) calls
+        it inside NCP-3's one short atomic group. The caller owns the
+        transaction; this arm runs no BEGIN/COMMIT of its own.
+
+        One UPDATE, one version bump: ``actual_start_tick`` is written
+        through ``COALESCE`` (the first committed segment's start
+        stands), ``actual_end_tick`` advances to this segment's end, and
+        when ``is_last`` the same UPDATE carries the ``ACTIVE →
+        COMMITTED`` flip (the SCENE COMMIT alias — never a third
+        transaction). :meth:`commit_scene`'s explicit face keeps its own
+        separate arm (:meth:`_flip_scene_committed_tx`) and writes no
+        span; a replayed segment never reaches this arm (the settlement
+        answers the stored outcome first) — the span is not re-written
+        on replay.
+
+        The CAS guard is the one every transition rides — a rowcount of
+        zero answers ``NOT_FOUND`` / ``CONFLICT`` through
+        :meth:`_cas_miss`.
+        """
+
+        cursor = self._conn.execute(
+            "UPDATE world_scene SET"
+            " actual_start_tick = COALESCE(actual_start_tick, ?),"
+            " actual_end_tick = ?,"
+            " status = CASE WHEN ? THEN 'COMMITTED' ELSE status END,"
+            " state_version = state_version + 1, updated_at = ?"
+            " WHERE scene_id = ? AND state_version = ?",
+            (
+                actual_start_tick,
+                actual_end_tick,
+                int(is_last),
+                now,
+                scene_id,
+                expected_state_version,
+            ),
         )
         if cursor.rowcount != 1:
             return self._cas_miss("world_scene", scene_id)

@@ -1257,10 +1257,11 @@ def test_no_migration_carries_the_view() -> None:
     # V3-2 再随迁至 0030（World Bible 一表，同样不是本刀的表）；
     # V3-3 再随迁至 0031（世界 cast 两表，同样不是本刀的表）；
     # V3-3R 再随迁至 0032（actor_profile 复合 FK 重建，同样不是本刀的表）；
-    # V3-5 再随迁至 0033（段落提交三表，同样不是本刀的表）。
-    assert MIGRATION_IDS[-1] == "0033_segment_commit"
-    assert SCHEMA_HEAD_FILE == "0033_segment_commit.sql"
-    assert SCHEMA_HEAD_VERSION == "33"
+    # V3-5 再随迁至 0033（段落提交三表，同样不是本刀的表）；
+    # V3-5R 再随迁至 0034（terminality 一列，同样不是本刀的表）。
+    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
+    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
+    assert SCHEMA_HEAD_VERSION == "34"
     schema = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted((REPO_ROOT / "migrations").glob("*.sql"))

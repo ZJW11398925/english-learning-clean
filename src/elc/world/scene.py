@@ -25,9 +25,19 @@ dossier from durable data alone:
   ``exit_condition`` / ``elasticity`` / ``revealable`` / ``must_hide``
   — the canonical ten minus the two the planner owns, ``scene_id`` and
   the tick), with **one deliberate substitution**: ``planned_start_tick``
-  is the context's ``current_tick`` (the canonical story time the
-  Director context reads — STATE §26's #3 authority: the dossier plans
-  from the world's reality, not from the Blueprint's older guess);
+  is ``max(context.current_tick, element's planned_start_tick)`` — the
+  V3-5R time law (TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11's item 4,
+  DATA §26.2.1's "V3-5R 落法"): when the world's reality has run past
+  the Blueprint's older guess the current tick wins, a future-planned
+  start is kept — and the scene's actual span still moves only through
+  the commits (STATE §26);
+- **the scene's planning context** (:class:`SceneContext`, V3-5R's
+  HIGH-1): ``current_tick`` as the Director context reads it, the POV's
+  canonical identity, and the POV's **V3 cognition view**
+  (:func:`elc.world.cognition.v3_cognition_view`) — the lineage-based
+  read (V3 events only via their ``segment_commit`` row, actual-interval
+  order, canonical-identity layers). The view rides out on
+  :attr:`SceneOpening.context`; a read refusal rides out unchanged;
 - the write chain is the store's own faces, each idempotent by id:
   create dossier revision 1 (``f"{scene_id}-d1"`` — the planner's local
   naming for replays; the contract freezes three derivation laws and
@@ -41,8 +51,10 @@ Refusals are value semantics (never an exception): a dangling scene —
 ``NOT_FOUND``; a scene not ``PLANNED`` (including ``DISCARDED`` — a
 retired anchor is never activatable) — ``VALIDATION_FAILED``; a chapter
 without an ``ADOPTED`` Blueprint, a plan carrying no element for the
-scene, or an element missing / mistyping a canonical field —
-``VALIDATION_FAILED``; any store refusal rides out unchanged.
+scene, or an element missing / mistyping a canonical field (the
+``planned_start_tick`` tick included — a corrupted plan row answered
+honestly) — ``VALIDATION_FAILED``; any store or cognition refusal rides
+out unchanged.
 
 **The replay boundary, stated honestly**: a retry after a crash between
 the dossier's adoption and the scene's activation is refused loudly (the
@@ -78,6 +90,7 @@ from elc.platform.types import (
 )
 from elc.world.bible import SqliteBibleStore
 from elc.world.cast import SqliteCastStore
+from elc.world.cognition import V3CognitionView, v3_cognition_view
 from elc.world.director import build_director_context
 from elc.world.narrative.store import SqliteNarrativeStore
 from elc.world.narrative.types import (
@@ -87,13 +100,14 @@ from elc.world.narrative.types import (
 )
 from elc.world.store import SqliteWorldStore
 
-__all__ = ["SceneOpening", "ScenePlanner", "dossier_id_for"]
+__all__ = ["SceneContext", "SceneOpening", "ScenePlanner", "dossier_id_for"]
 
 #: The element's plain-text keys the dossier carries verbatim (the
 #: canonical ten minus ``scene_id`` / ``scene_ref`` (identity, not
-#: dossier content), ``participants`` / ``pov_actor_id`` (checked
-#: separately) and ``planned_start_tick`` (the planner substitutes the
-#: context's canonical time — see the module docstring).
+#: dossier content), ``participants`` / ``pov_actor_id`` /
+#: ``planned_start_tick`` (checked separately — the tick's own law is
+#: the V3-5R ``max(current_tick, element)`` substitution — see the
+#: module docstring).
 _DOSSIER_TEXT_KEYS = (
     "place",
     "entry_goals",
@@ -114,14 +128,33 @@ def dossier_id_for(scene_id: str, dossier_revision: int) -> str:
 
 
 @dataclass(frozen=True)
+class SceneContext:
+    """One scene's planning context (V3-5R, TASK-OPI-dc1bafdf…13 /
+    DEC-OPI-dc1bafdf…11's HIGH-1): the canonical story time the Director
+    context reads (``current_tick``), the POV's own canonical identity,
+    and the POV's V3 cognition view — the lineage read
+    (:func:`elc.world.cognition.v3_cognition_view`) the scene plans
+    from. The view is built for this scene's POV, so its ``viewer_id``
+    equals ``pov_actor_id``; the dossier's ``planned_start_tick`` rides
+    ``max(current_tick, element's)`` (the V3-5R time law)."""
+
+    current_tick: int
+    pov_actor_id: str
+    cognition: V3CognitionView
+
+
+@dataclass(frozen=True)
 class SceneOpening:
     """One ``open_scene`` ``Ok`` shape: the activated scene row, the
-    adopted dossier revision, and the Blueprint element both were built
-    from (the caller's own mapping — the content source, verbatim)."""
+    adopted dossier revision, the Blueprint element both were built
+    from (the caller's own mapping — the content source, verbatim), and
+    the scene's planning context (:class:`SceneContext` — the canonical
+    tick and the POV's cognition view this open read)."""
 
     scene: WorldSceneRecord
     dossier: WorldSceneDossierRecord
     element: dict[str, Any]
+    context: SceneContext
 
 
 class ScenePlanner:
@@ -153,7 +186,10 @@ class ScenePlanner:
     def open_scene(self, scene_id: str, now: str) -> Result[SceneOpening]:
         """Open one planned scene — the deterministic chain the module
         docstring spells (refusals included). ``now`` stamps every row;
-        no tick moves (the commits own ``world.current_tick``)."""
+        no tick moves (the commits own ``world.current_tick``). The
+        POV's V3 cognition view is read here (its refusal rides out
+        unchanged) and the dossier's ``planned_start_tick`` rides
+        ``max(current_tick, element's)`` — the V3-5R time law."""
 
         scene = self._narrative.get_scene(scene_id)
         if scene is None:
@@ -221,12 +257,31 @@ class ScenePlanner:
         fields = _element_fields(element, ordinal)
         if isinstance(fields, Err):
             return Err(fields.error)
-        context = build_director_context(
+        director_context = build_director_context(
             self._conn,
             chapter.world_id,
             world_store=self._worlds,
             cast_store=self._cast,
             bible_store=self._bible,
+        )
+        # The POV's V3 cognition view (V3-5R HIGH-1): the lineage-based
+        # read this scene plans from; a refusal rides out unchanged.
+        cognition = v3_cognition_view(
+            self._conn,
+            world_id=chapter.world_id,
+            viewer_id=fields.value["pov_actor_id"],
+        )
+        if isinstance(cognition, Err):
+            return Err(cognition.error)
+        context = SceneContext(
+            current_tick=director_context.current_tick,
+            pov_actor_id=fields.value["pov_actor_id"],
+            cognition=cognition.value,
+        )
+        # The V3-5R time law (DEC-OPI-dc1bafdf…11's item 4): the later
+        # of the world's reality and the Blueprint's own guess.
+        planned_start_tick = max(
+            context.current_tick, fields.value["planned_start_tick"]
         )
         dossier_id = dossier_id_for(scene_id, 1)
         created = self._narrative.create_dossier(
@@ -236,7 +291,7 @@ class ScenePlanner:
             pov_actor_id=fields.value["pov_actor_id"],
             participants=fields.value["participants"],
             place=fields.value["place"],
-            planned_start_tick=context.current_tick,
+            planned_start_tick=planned_start_tick,
             revealable=fields.value["revealable"],
             must_hide=fields.value["must_hide"],
             entry_goals=fields.value["entry_goals"],
@@ -261,6 +316,7 @@ class ScenePlanner:
                 scene=activated.value,
                 dossier=adopted.value,
                 element=element,
+                context=context,
             )
         )
 
@@ -298,7 +354,9 @@ def _element_fields(
     own ordinal language (``scenes[N]`` — the coordinate every plan
     refusal uses). The adopted plan passed the Director's schema, so a
     malformed element here is a corrupted plan row answered honestly,
-    not a caller mistake."""
+    not a caller mistake; the ``planned_start_tick`` tick is validated
+    here too (the Director's schema guarantees an int — the V3-5R time
+    law reads the value, and a corrupted row is refused, never guessed)."""
 
     pov = element.get("pov_actor_id")
     if not isinstance(pov, str):
@@ -322,9 +380,16 @@ def _element_fields(
                 f" entry {word!r}"
             )
         words.append(word)
+    planned_start = element.get("planned_start_tick")
+    if not isinstance(planned_start, int) or isinstance(planned_start, bool):
+        return _refuse(
+            f"scenes[{ordinal}].planned_start_tick must be an integer tick;"
+            f" got {type(planned_start).__name__}"
+        )
     fields: dict[str, Any] = {
         "pov_actor_id": pov,
         "participants": tuple(words),
+        "planned_start_tick": planned_start,
     }
     for key in _DOSSIER_TEXT_KEYS:
         value = element.get(key)
