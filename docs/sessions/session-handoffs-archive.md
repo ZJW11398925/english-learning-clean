@@ -1,6 +1,15 @@
-# 会话交接块归档（从 AGENTS.md 移出，2026-10-11）
+# 会话交接块归档（从 AGENTS.md 移出，2026-10-11；末次增补 2026-10-12）
 
-> 以下是各会话的完整交接块，从新到旧排列。AGENTS.md 只留索引。
+> 以下是各会话的完整（或压缩）交接块，从新到旧排列。AGENTS.md 只留索引与当前会话块。
+
+0. **🔴 第三十九会话（2026-10-12 · 范式转折 + V3-0R..V3-3R 六刀）——两块（「范式转折块」+「终末换总控交接块」）压缩归档**：
+   - **用户明令（原话）**：「本对话上下文太长，我要换一个新总控对话，请你确保可以凭DMCP等接续项目，并维持后续AOCI-CODE的合理利用。新总控务必先完全理解整个设计再布置执行任务」。
+   - **范式转折（用户明令，rev 757；`DEC-OPI-bab4da9f-…7`）**：停止 E 程序与一切编码；产品核心 = 「**一个持续存在、能够自己发展剧情的小说世界；用户本人是其中一个真实角色，章内只控制自己的角色、章间有限参与故事方向**」；信件降为 UI/narrative presentation element；旧理解七条废止/降 legacy（信件发动机/通信者身份/回信启动 run/停点协议/混排时间线/高频导演/单体 Narrator）；职责分离（World Director / Chapter Blueprint / Scene Planner·Dossier / POV Writer / User Gate / Action Resolver / Chapter Settlement）；**Plan≠Canon**；**story_tick 单一时间刻度**；**Passage≠Event**；记忆六分（温度→retrieval policy）；actor memory 独立域；用户角色升格 durable entity（不改 world_actor）；并行新链（旧链保留全绿）。交付（纯文档）：设计篇 `docs/design/2026-10-12-narrative-v3-paradigm-shift.md`（v3.1）+ living-world-spec **v3** + cognition **v1.3** + IP **§20** + DECISION_REGISTER v1.2.0/v1.2.1；`DEC-OPI-bab4da9f-…5`（E 取证，dogfood 二期四缺口被 V3 吸收）。
+   - **六刀全貌（rev 755→778）**：**V3-0R**（外评六项+追加三项落盘：结算两级/Bible 权威独立/WorldActorProfile 入 V3-3/Reader Exposure 本体/tick 语义/canonical 隔离；`…9`）→ **V3-1 Narrative Foundations**（四 canonical V3 节 design-first 合同 `…11`+`…16`；交付 `44ff63e`〔0029 四表+`world.current_tick` / `time.py` / `narrative/{types,store}.py`〕+处置 `2a00162`；VR `…25` PASS；收口 `…22`；**外审五项跨刀义务 `…27`**：#1 lineage 硬门〔V3-5〕/#2 exposure 解耦〔V3-5〕/#3 lifecycle tick authority〔V3-4/V3-5〕/#4 transition prerequisites〔V3-4 起强制〕/#5 两事务澄清）→ **V3-2 World Bible**（交付 `4ed28ab`〔0030+bible.py+BibleContent+单 CURRENT partial UNIQUE〕+处置 `103a1c2`；VR `…35`；收口 `…38`）→ **V3-2R**（外审 revision concurrency HIGH 三项：ABA/stale-write 双校验+seed 内容模型+原子性表述勘正；交付 `1831ab9`；VR `…46`；收口 `…50`）→ **V3-3 World Cast**（交付 `b39ee98`〔0031+cast.py+包 v8〕+处置 `e4faa27`；VR `…56`；收口 `…59`）→ **V3-3R identity correction**（外审五项：canonical participant identity 冻结〔AI=`actor_id`/user=`player_character_id`；persona 不入口径〕/residents 暂不 durable/seed 语义冻结/0032 composite FK/cast-input durable 配方；交付 `6430afb`；VR `…66`；收口 `…69`）。读数 5864→**5941/0/0**；迁移 0028→**0032**；每刀全链。
+   - **该会话「下一动」款（已由第四十会话履行完毕）**：V3-4 → V3-4R → V3-5 全毕——详 AGENTS.md「第四十会话」三块与终末交接块。
+   - **AOCI（该期）**：V3-1..V3-3R 全在册（0029[PB3T]/0030[WB2T]/0031[WD7T]/0032[WD8T]/time[WT3A]/narrative 三件/bible.py[WB3M]/cast.py[WD9M]；package.py[W14A] v8 墙句、berrymoor.json[FQ8W] 六键、deletion[DD7M] 十五员）；drift 族迁移覆盖律 0029–0032 全抓。
+   - **防坑增量（㉔–㉙）**：㉔错误词表 docstring⇔代码映射互相可证 ㉕钉的「名与字面」两分（数字戳记名随迁归耐久形）㉖改公共签名⇒VAL 路径集同刻覆盖调用点 ㉗跨版本 CAS 必须锚定行身份（ABA；V3-2R 先例）㉘包升版刀（vN→vN+1）扫尾必须含散文层 ㉙编码探测别信 iconv（Git Bash 常无此命令——用 `od -c`/Read 判字节）。两工作教训：换总控/外审轮前必刷 DMCP 基；外审刀节奏（每刀收口后走该刀外审→范围受限修正→不借机扩面，V3-2R/V3-3R 闭环）。
+   - **新总控「先完全理解设计」指引（该版）**：两份正典 v3/v1.3 + 设计篇 v3.1 + 四 canonical V3 节 + IP §20 + DEC 链 + 现役代码（time/bible/cast + narrative 两件 + package v8 + host 装配 + V3 钉族 + 迁移 0029–0032）；理解标准六问（世界怎么转/用户在世界里是谁/Plan≠Canon 物理落点/教学怎么藏/四个程序/HOLD 与 sealed）。
 
 0. **🔴 第三十八会话·接续与 dogfood 第二期取证块（2026-10-11——发 E 程序而止；其「下一动=E 程序」款已被第三十九会话范式转折废止）**：
    - **接续验证（当时开工亲跑）**：①`design_status` rev 755 READY / SYNCED；②全量 **5864 passed / 0 failed / 0 skipped（608.96s，exit 0；`-o addopts="" -q -rf`，日志落仓外）** + ruff clean + mypy 186 文件 0 error + compileall OK；③git tip `2bc17df` 干净；④**D-4 验收探测（副本库 8761 服务，live 库零扰动——防坑⑪）四验收点全绿**：世界指示器「Berrymoor · 11月15日」/ navdock 四项（案头/世界/温故/抽屉）/ 沓=「Berrymoor 的居民」（你+Nell+镇民+看看这个世界链）/ 世界屏五区（世界架/你的角色/世界的人/剧情线/编年史）全真加载、控制台零错零警；证据截图 `%TEMP%\elc-probe\d4-acceptance-*.png`。
