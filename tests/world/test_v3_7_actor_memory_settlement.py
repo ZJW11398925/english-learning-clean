@@ -838,6 +838,22 @@ def test_record_belief_writes_the_four_caller_kinds_and_refuses_experienced(
     assert "automatic arm" in (witnessed.error.message or "")
 
 
+def test_memory_id_for_spells_the_contract_literal() -> None:
+    """The memory identity law is a frozen literal — DATA §26.2.1's
+    ``f"mem:{event_id}:{participant_id}:{kind}"`` (the V3-5 ``sg:``-family
+    literal pin's sibling; the review's F3: an assertion that walks both
+    sides through the same function cannot catch a respelling)."""
+
+    assert (
+        memory_id_for("world-town-ch01-s01-e0001", "actor-lia", MemoryKind.EXPERIENCED)
+        == "mem:world-town-ch01-s01-e0001:actor-lia:EXPERIENCED"
+    )
+    assert (
+        memory_id_for("ev-2", "pc-you", MemoryKind.MISTAKEN)
+        == "mem:ev-2:pc-you:MISTAKEN"
+    )
+
+
 def test_record_belief_replay_and_shape_conflict(
     conn: sqlite3.Connection,
     world_store: SqliteWorldStore,
@@ -1002,6 +1018,20 @@ def test_v3_memory_view_layers_by_kind_and_orders_by_tick(
         learned_at_tick=7,
     )
     assert isinstance(heard_early, Ok)
+    # an INFERRED row whose tick PRECEDES the EXPERIENCED rows: the kind
+    # layering and the tick order now pull opposite ways, so dropping the
+    # CASE-kind layering (leaving only the tick order) is discriminated —
+    # this row would sort first under tick order alone (the review's F1).
+    # (a second HEARD row on the same event would collide the derived id
+    # with heard_late's — INFERRED keeps the same discriminating power.)
+    inferred_predating = _belief(
+        conn,
+        event_id=first.value.event_id,
+        kind=MemoryKind.INFERRED,
+        content="inferred before witnessing",
+        learned_at_tick=2,
+    )
+    assert isinstance(inferred_predating, Ok)
 
     view = v3_memory_view(conn, world_id=TOWN, viewer_id="actor-lia")
     assert isinstance(view, Ok)
@@ -1011,10 +1041,12 @@ def test_v3_memory_view_layers_by_kind_and_orders_by_tick(
         (MemoryKind.EXPERIENCED, 5),
         (MemoryKind.HEARD, 7),
         (MemoryKind.HEARD, 9),
+        (MemoryKind.INFERRED, 2),
     ]
     assert [m.content for m in view.value.memories[2:]] == [
         "heard early",
         "heard late",
+        "inferred before witnessing",
     ]
 
     as_player = v3_memory_view(conn, world_id=TOWN, viewer_id="pc-you")
@@ -1300,6 +1332,64 @@ def test_director_context_carries_the_chapter_summaries(
     assert after.bible is not None
     assert after.cast.player_character is not None
     assert after.current_tick == 3
+
+
+def test_chapter_settlements_of_orders_two_chapters_by_index(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    bible_store: SqliteBibleStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+    planner: ScenePlanner,
+) -> None:
+    """``chapter_settlements_of``'s ``chapter_index ASC`` is discriminated
+    only with two settled chapters — settle ch01, then open / commit /
+    settle ch02 and the read must walk them ch01 → ch02 (a single-row
+    fixture cannot tell ASC from DESC; the review's F2)."""
+
+    _settling_chapter(
+        conn, world_store, cast_store, bible_store, narrative, director, planner
+    )
+    first = settle_chapter(
+        conn,
+        narrative_store=narrative,
+        world_store=world_store,
+        chapter_id=CH,
+        now=LATER,
+    )
+    assert isinstance(first, Ok)
+
+    # the second chapter: open it (ch01 now CLOSED, so the overlap ban is
+    # satisfied), open its default first scene, commit one segment, then
+    # settle it through both faces.
+    opened = director.open_next_chapter(TOWN, _blueprint(), LATER)
+    assert isinstance(opened, Ok)
+    assert opened.value.chapter.chapter_id == "world-town-ch02"
+    scene2 = planner.open_scene("world-town-ch02-s01", LATER)
+    assert isinstance(scene2, Ok)
+    committed2 = _commit(conn, narrative, world_store, scene_id="world-town-ch02-s01")
+    assert isinstance(committed2, Ok)
+    moved = narrative.settle_chapter(
+        "world-town-ch02", now=LATER, expected_state_version=2
+    )
+    assert isinstance(moved, Ok)
+    second = settle_chapter(
+        conn,
+        narrative_store=narrative,
+        world_store=world_store,
+        chapter_id="world-town-ch02",
+        now=LATER,
+    )
+    assert isinstance(second, Ok)
+
+    assert [s.chapter_id for s in chapter_settlements_of(conn, TOWN)] == [
+        CH,
+        "world-town-ch02",
+    ]
+    assert [
+        s.chapter_id for s in director.context(TOWN).chapter_summaries
+    ] == [CH, "world-town-ch02"]
 
 
 def test_open_scene_carries_the_povs_memory_view(

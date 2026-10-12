@@ -337,3 +337,18 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 8. **范围收紧与登记**：确定性基线（EXPERIENCED 自动臂 + 调用方供值面 + 保守拼接摘要）；LLM 显著性评估/摘要生成/传闻失真归 provider 生产面后刀（与 Writer/Planner/Resolver 同批，V3-8 前置族）；**P1 传闻失真未触发**（触发条件〔dogfood「知道得太准」信号或多世界开工〕未命中——本刀是 P1 落点归属刀但不兑现、维持后置、留痕）；`salience` 只存储透传（retrieval policy 后刀）。**搬迁面预写（四查④）**：conftest 0037/37；GLOBAL_CONTENT_TABLES 21→23 员 + deletion/types.py 注释与钉随迁；aoci.code.txt 0037 条目 + 受影响模块条目（覆盖律会红）；负索引钉族 grep（`MIGRATION_IDS[-N]`/`applied[-N]`）；散文扫尾（0036 头注释改历史层；本刀触 deletion/types.py ⇒ 顺笔核其 docstring 与 RETAINED_TABLES 不符句——V3-6 处置 F4 候选）。**窗口回归册核对**：LLM 生产面/replan 自动路由/reader 渲染 ack/record_exposure race-free/chapter_activated 读时推导——均维持登记不动。**禁改面**：behavioral_baselines 一字节不动；sealed 0029–0036 不改；reader_exposure 写面不动；legacy V2 链不动。**门**：pytest（自 6127 起）/ruff/mypy（198 起）/compileall 亲跑全绿。
 
 授权：IP §20 刀序 + 外审放行；DMCP 开工裁决 `DEC-OPI-d274a7fb-bf78-4149-b38d-1e59b44b697c.6`（rev 806）；三件 = TASK `…8`（rev 807）/ VAL `…10`（rev 808）。
+
+### v1.6.1 — 2026-10-13 V3-7 独立评审处置（ACCEPT-WITH-FINDINGS 无 HIGH/MEDIUM-HIGH/MEDIUM；授权：评审结论转呈）
+
+**结论**：V3-7 **维持推进**（不重开）；八面逐项在码在册；**26 承重变异在其「有害方向」全红**（tick 推进/写事件/双落/跳参与者/接受 EXPERIENCED/序翻转/守卫对/认知行为均被抓）；禁改面全空；吸收完整性确认（产物完整自洽、无半落地痕迹）；副本全量 6154/0/0 + 静态三门绿。LOW×3 + INFO×4 全处置——**F1/F2/F3 修（总控亲写），F4/F5/F6/F7 留痕登记**。
+
+1. **执行者中断与吸收（如实留痕，防坑㊲ 第二型，V3-5/V3-6R 先例同族）**：执行者派单后 600s 静默中断（长命令），遗留**未提交半成品**（40 文件：37 改 + 3 新〔0037/memory.py/test_v3_7〕，六面代码与 26 新钉俱在）。总控取证（新钉 26/26 绿、全量 6154/0/0、ruff/mypy(199)/compileall 全绿、禁改面空、无残标、六面逐面在码）→ 裁**「吸收+复核」**→ 代提交 **`c263192`**（40 文件 +3613/−429；提交信息载明中断与吸收裁定）。
+2. **F1（LOW，修）**：`v3_memory_view` 的 kind 分层判别盲区（删整段 CASE 全族绿——夹具 kind 层与 tick 序同向不可判别）——补一条 `learned_at_tick=2` 的 `INFERRED` 行（先于 EXPERIENCED 行），使分层与 tick 序互斥：删 CASE 则该行排最前必红。（不用第二条 HEARD：同 `(event, participant, kind)` 撞派生 id CONFLICT；INFERRED 判别力相同。）
+3. **F2（LOW，修一半+登记一半）**：两处「升序」子句单行夹具不可判别——①`chapter_settlements_of` 的 `chapter_index ASC`：**修**（新钉 `test_chapter_settlements_of_orders_two_chapters_by_index`——settle ch01 后开 ch02、commit、双 face settle，断言两章 ch01→ch02 序）；②recovery 第六族 `settling_chapters` 的 `world_id, chapter_index ASC`：**登记**（同世界物理上不可达两 SETTLING 章——章重叠禁止；判别需两世界夹具，成本/收益不合，归后刀按需）。
+4. **F3（LOW，修）**：`memory_id` 派生拼写无字面钉（两侧同走 `memory_id_for` 的断言不可判别）——新钉 `test_memory_id_for_spells_the_contract_literal`（字面断言 `mem:<event>:<participant>:<KIND>`，照 V3-5 `sg:` 先例）。
+5. **F4（INFO，登记）**：腐坏 kind 词的 `ValueError` 姿态全仓无钉（正常写入不可达、CHECK 兜底；探针 P4b 经 `PRAGMA ignore_check_constraints` 正面验证两读面一致）——未钉防御臂，登记。
+6. **F5（INFO，登记）**：`settle_chapter` 的「重跑=no-op」是同形条件——结算后活跃剧情线快照漂移则重跑 CONFLICT（探针 P2）；与合同「形状异 CONFLICT」逐字一致，且交付恢复窗口（第六族只扫 SETTLING）不可达该路径；消费刀编排者知悉。
+7. **F6（INFO，登记）**：`record_belief` 不校验源事件的 V3 lineage（legacy 事件为源可写入，探针 P3）——合同拒案清单未要求 lineage；若后刀收紧需显式加面。
+8. **F7（INFO，变异台账留痕）**：两处等效变异（M03 仅删外层 SETTLING 守卫——第二守卫+事务回滚行为全同；M20 删 CLOSED 过滤——公开面下结算行只与 CLOSED 共存）——防御纵深，成对变异（M03b）已红。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v37_review\` / `D:\v37_mut\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交随本条目同刀。
