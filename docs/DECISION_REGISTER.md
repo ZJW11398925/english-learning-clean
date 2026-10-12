@@ -282,3 +282,16 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 6. **搬迁面预写**：conftest 0035/35；负索引 shift（[-7]→[-8]）；SCHEMA_HEAD 字面族再挪（0034 头已随 V3-5R 搬迁）；aoci 0035 条目 + action.py 条目 + 三模块更新；散文扫尾（0034 为历史层句保留）。
 
 授权：外审放行（用户转呈：完成 V3-5R 后再重放行 V3-6）；DMCP 重放行裁决 `DEC-OPI-dc1bafdf-…21`（rev 798）；三件 = TASK `…23`（rev 799）/ VAL `…25`（rev 800）；原始开工裁决 `…5` 内容维持（两处修订见上）。
+
+### v1.5.1 — 2026-10-12 V3-6 独立评审处置（ACCEPT-WITH-FINDINGS 无 HIGH/MEDIUM；授权：评审结论转呈）
+
+**结论**：V3-6 **维持推进**（不重开）；`…5` 十一项 + `…21` 两处修订逐项在码在册；17 项承重变异 14 红；迁移 0035 专项探针（重建保留 `is_last_segment` 逐值全等、六类违例全拒）；禁改面全空；副本全量 6099/0/0。LOW×2 + INFO×2 全处置——**F1/F2/F3 修，F4 留痕**。
+
+1. **F1（LOW，修）**：NCP-1 无行为注入钉且扫描钉为字面量族（`conn.commit()` 方法调用形可静默拆事务——变异 1b 全绿）。修正：①扫描钉补 AST 断言（action.py 全树无 `commit`/`rollback` 属性调用——事务控制只许 `execute("…")` 字面形）；②新钉 `test_ncp1_rolls_the_whole_group_back_on_a_deep_failure`（mid-group 注入 `_action_row` 抛 `OperationalError` ⇒ gate 仍 `OPEN`、零 action 行、重试落成——与 NCP-2 注入钉同形）。
+2. **F2（LOW，修）**：`replan_scope` 落库值无钉（变异 14 写死 NONE 全绿；仅 `ActionOutcome` 入参面被钉）。修正：新钉 `test_the_ruling_scope_is_persisted_and_its_replay_is_a_no_op`（CHAPTER 裁决 → `action_of` 读回 `ReplanScope.CHAPTER`；同形重放 `ActionOutcome` 全等 + 零第二 event/零 tick 再推进）。
+3. **F3（INFO，修）**：options 上限（4）无钉（变异 17 全绿）。修正：`test_ncp1_judges_the_option_and_the_scenes_status` 补 5 选项拒案。
+4. **F4（INFO，留痕）**：`_replay_action` 腐坏残骸 `assert` 姿态（与 V3-5 `_replay_outcome` 同族；单事务下不可达）——消费刀知悉。
+5. **执行者自报偏差裁定（六项全采）**：`commit_action` 增 `world_store`/`narrative_store` 参（与 `commit_segment` 同姿态，namespace/章节臂所需）／`player_character_id_of` 公开（一真源+钉）／`_element_fields` 拆 `_checked_fields`（一躯两址，双坐标消息均有钉）／`chapter_activated` 读时推导维持现形（v1.5.0 第 5 条登记）／腐坏 `assert` 姿态／intermediate 6094/1（p9_1 第二元组漏迁、最终态已含双元组）。
+6. **观察入册（后刀散文扫尾候选）**：`time.py`/`narrative/store.py`/`narrative/types.py` 的「V3-1 ships no commit transaction / the later cuts'」类现在时句自 V3-5 起不精确（切面作用域可读为历史归属句）；`deletion/types.py` 模块 docstring 的「ALL_USER_DATA keeps」与 `RETAINED_TABLES` 五员不符（非本刀引入）——归后刀散文扫尾。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v36_review\`，2026-10-12）+ 总控处置（历刀先例：总控亲写）；处置提交随本条目同刀。

@@ -964,6 +964,17 @@ def test_ncp1_judges_the_option_and_the_scenes_status(
     )
     assert isinstance(too_few, Err)
     assert "two to four" in too_few.error.message
+    # The upper bound too (the review's F3): five options are no gate —
+    # the face judges both edges of the 2–4 window.
+    too_many = open_gate(
+        conn,
+        scene_id=SCENE,
+        gate_seq=4,
+        options=("one", "two", "three", "four", "five"),
+        now=LATER,
+    )
+    assert isinstance(too_many, Err)
+    assert "two to four" in too_many.error.message
 
 
 def test_open_gate_replays_and_conflicts(
@@ -1396,6 +1407,47 @@ def test_ncp2_rolls_the_whole_group_back_on_a_deep_failure(
     assert retried.value.actual_start_tick == 0
 
 
+def test_ncp1_rolls_the_whole_group_back_on_a_deep_failure(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    bible_store: SqliteBibleStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+    planner: ScenePlanner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """N-R-INV-004 at NCP-1's deepest point (the review's F1): with the
+    row read injected to fail after both writes, the gate stays ``OPEN``
+    and no action row survives — the flip and the birth are one
+    transaction, and the retry lands cleanly."""
+
+    _active_scene(
+        conn, world_store, cast_store, bible_store, narrative, director, planner
+    )
+    assert isinstance(_gate(conn), Ok)
+
+    def _explode(*args: Any, **kwargs: Any) -> None:
+        raise sqlite3.OperationalError("injected failure")
+
+    import elc.world.action as action_module
+
+    monkeypatch.setattr(action_module, "_action_row", _explode)
+    refused = _submitted(conn)
+    assert isinstance(refused, Err)
+    assert refused.error.code is DomainErrorCode.DEPENDENCY_UNAVAILABLE
+    assert "injected failure" in refused.error.message
+
+    monkeypatch.undo()
+    gate = get_gate(conn, GATE)
+    assert gate is not None and gate.status is GateStatus.OPEN
+    assert action_of(conn, GATE) is None
+    assert _row_counts(conn, ("user_action",)) == {"user_action": 0}
+    landed = _submitted(conn)
+    assert isinstance(landed, Ok)
+    assert landed.value.status is ActionStatus.ANSWERED
+
+
 def test_a_first_action_opens_the_chapter(
     conn: sqlite3.Connection,
     world_store: SqliteWorldStore,
@@ -1777,6 +1829,52 @@ def test_a_chapter_ruling_revises_the_blueprint_and_the_next_open_reads_it(
     assert opened.value.dossier.planned_start_tick == 7
 
 
+def test_the_ruling_scope_is_persisted_and_its_replay_is_a_no_op(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    bible_store: SqliteBibleStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+    planner: ScenePlanner,
+) -> None:
+    """The persisted ``replan_scope`` (the review's F2): the terminal
+    column carries the adjudicated word — read back through ``action_of``
+    — and the same-shape replay answers the stored outcome instead of
+    re-landing the group (no second event, no second tick advance)."""
+
+    _active_scene(
+        conn, world_store, cast_store, bible_store, narrative, director, planner
+    )
+    assert isinstance(_gate(conn), Ok)
+    assert isinstance(_submitted(conn), Ok)
+    landed = _committed_action(
+        conn,
+        world_store,
+        narrative,
+        adjudication=_ruling(replan_scope=ReplanScope.CHAPTER),
+    )
+    assert isinstance(landed, Ok)
+    action = action_of(conn, GATE)
+    assert action is not None
+    assert action.status is ActionStatus.COMMITTED
+    assert action.replan_scope is ReplanScope.CHAPTER
+    events_before = _rows(conn, "SELECT COUNT(*) FROM world_event")[0][0]
+    tick_before = _rows(conn, "SELECT current_tick FROM world")[0][0]
+    replayed = _committed_action(
+        conn,
+        world_store,
+        narrative,
+        adjudication=_ruling(replan_scope=ReplanScope.CHAPTER),
+    )
+    assert isinstance(replayed, Ok)
+    assert replayed.value == landed.value
+    assert _rows(conn, "SELECT COUNT(*) FROM world_event")[0][0] == events_before
+    assert _rows(conn, "SELECT current_tick FROM world")[0][0] == tick_before
+    still = action_of(conn, GATE)
+    assert still is not None and still.replan_scope is ReplanScope.CHAPTER
+
+
 # ---------------------------------------------------------------------------
 # 7. the interlock
 # ---------------------------------------------------------------------------
@@ -2120,6 +2218,13 @@ def test_every_write_face_is_one_transaction() -> None:
             assert text != "BEGIN IMMEDIATE", (name, text)
             assert text != "COMMIT", (name, text)
             assert text != "ROLLBACK", (name, text)
+    # The method-call spelling is the review's F1 blind spot
+    # (``conn.commit()`` splits the group without touching a constant):
+    # transaction control must ride the literal ``execute("…")``
+    # spelling, so no attribute call may be named commit / rollback.
+    for node in ast.walk(ACTION_TREE):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            assert node.func.attr not in {"commit", "rollback"}, node.func.attr
 
 
 def test_the_module_builds_no_sql_and_reads_no_package() -> None:
