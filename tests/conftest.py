@@ -134,12 +134,19 @@ MIGRATION_IDS: tuple[str, ...] = (
     # is_last_segment (the persisted SCENE COMMIT alias fact; one ALTER
     # plus the exact back-fill for the V3-5 pipeline's own product).
     "0034_segment_terminality",
+    # V3-6 (TASK-OPI-dc1bafdf…23 / the opening ruling …5, re-run …21):
+    # the User Gate and the Action Resolver's durable half — user_gate
+    # and user_action (two new tables) plus segment_commit's rebuild
+    # ('ACTION_OUTCOME' joins the kind vocabulary, action_id arrives,
+    # segment_seq / passage_id go NULLable, is_last_segment and the
+    # UNIQUE survive); elc.world.action is the NCP-1 / NCP-2 face.
+    "0035_user_gate_action",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0034_segment_terminality.sql"
-SCHEMA_HEAD_VERSION = "34"
+SCHEMA_HEAD_FILE = "0035_user_gate_action.sql"
+SCHEMA_HEAD_VERSION = "35"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

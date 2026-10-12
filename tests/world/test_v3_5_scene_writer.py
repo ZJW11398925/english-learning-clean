@@ -1934,21 +1934,23 @@ def test_the_v2_surfaces_and_vocabulary_stay_untouched(
 
 def test_the_chain_head_and_the_stamps_agree() -> None:
     """The migration self-pin: the shared constants and a fresh database
-    end at V3-5R's ``0034_segment_terminality`` / ``34`` — behind it
-    V3-5's ``0033_segment_commit``, and V3-1's four tables and V3-5's
+    end at V3-6's ``0035_user_gate_action`` / ``35`` — behind it
+    V3-5R's ``0034_segment_terminality`` and V3-5's
+    ``0033_segment_commit``, and V3-1's four tables and V3-5's
     three join the chain behind that."""
 
-    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
-    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
-    assert SCHEMA_HEAD_VERSION == "34"
+    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
+    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
+    assert SCHEMA_HEAD_VERSION == "35"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0034_segment_terminality"
-    assert applied[-2] == "0033_segment_commit"
-    assert applied[-3] == "0032_actor_profile_world_fk"
-    assert applied[-4] == "0031_world_cast"
-    assert applied[-5] == "0030_world_bible"
-    assert applied[-6] == "0029_narrative_v3_foundations"
+    assert applied[-1] == "0035_user_gate_action"
+    assert applied[-2] == "0034_segment_terminality"
+    assert applied[-3] == "0033_segment_commit"
+    assert applied[-4] == "0032_actor_profile_world_fk"
+    assert applied[-5] == "0031_world_cast"
+    assert applied[-6] == "0030_world_bible"
+    assert applied[-7] == "0029_narrative_v3_foundations"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -1956,8 +1958,8 @@ def test_the_chain_head_and_the_stamps_agree() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "34",
-        "runtime_schema_version": "34",
+        "schema_version": "35",
+        "runtime_schema_version": "35",
     }
     tables = {
         str(row[0])

@@ -4,6 +4,17 @@ design's §2.3 Scene Planner: read the chapter's adopted Blueprint, locate
 the scene's own element in its ``scenes`` table, land the Dossier's
 revision 1 and activate the scene.
 
+**V3-6 (TASK-OPI-dc1bafdf…23 / the opening ruling DEC-OPI-dc1bafdf…5,
+re-run …21) adds the SCENE arm of a ruling's ``replan_scope``**:
+:meth:`ScenePlanner.replan_scene` re-plans the **remaining part** of an
+``ACTIVE`` scene — a new Dossier revision (``max + 1``, the local
+``dossier_id_for`` naming) created and adopted in the store's own short
+transaction (the previous ``ADOPTED`` revision superseded there), with
+the ``planned_start_tick`` riding the same V3-5R ``max(current_tick,
+the element's)`` law ``open_scene`` keeps. The consumption is outside
+NCP-2's transaction (STATE §25): the ruling records ``replan_scope``,
+and this face is what the pipeline calls when it reads ``SCENE``.
+
 **What ships here is the structure, not the prose** (the same
 schema-and-table-side-only scope V3-4 spelled for the Blueprint): the
 LLM-driven scene-planning face — reading the POV character's cognition
@@ -183,6 +194,125 @@ class ScenePlanner:
         self._bible = bible_store
         self._narrative = narrative_store
 
+    def replan_scene(
+        self,
+        scene_id: str,
+        element: Mapping[str, Any],
+        now: str,
+    ) -> Result[WorldSceneDossierRecord]:
+        """Re-plan one **ACTIVE** scene's remaining part — the SCENE arm
+        of a ruling's ``replan_scope`` (STATE §25's "V3-6 落法": the
+        plan-face consumption is outside NCP-2's transaction, and this
+        is its SCENE face).
+
+        The move is the Dossier's own version chain: the scene's
+        existing maximum ``dossier_revision`` plus one is created
+        (``PROPOSED`` — the element's fields validated in the
+        ``_element_fields`` family, ``planned_start_tick`` riding
+        ``max(current_tick, the element's)`` — the same V3-5R time law
+        :meth:`open_scene` spells, so a replanning is never dated
+        before the world it lands in) and adopted at once (the store's
+        own face supersedes the previous ``ADOPTED`` revision in the
+        same short transaction — ``ADOPTED`` is unique per scene, the
+        Plan face is append-only). **No scene is activated and no other
+        row is touched**: the scene is already ``ACTIVE``, and a
+        replanning has no write power over what the world has touched
+        (N-INV-003 — ``COMMITTED`` / ``CLOSED`` scenes are past this
+        door, refused below).
+
+        Refusals, all value semantics, nothing written: a dangling
+        scene — ``NOT_FOUND``; a scene not ``ACTIVE`` —
+        ``VALIDATION_FAILED`` (「只重规划剩余部分」: only the remaining
+        part of a running scene is re-plannable — a retired, settled or
+        never-opened scene's plan is not this face's to move); an
+        element missing or mistyping a canonical field —
+        ``VALIDATION_FAILED`` (the ``scenes[N]``-family sentence, with
+        the scene's own coordinate); any store refusal rides out
+        unchanged. ``now`` stamps the new revision; no tick moves (the
+        commits own ``world.current_tick``).
+        """
+
+        scene = self._narrative.get_scene(scene_id)
+        if scene is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"scene {scene_id!r} not replanned: it does not"
+                        " exist"
+                    ),
+                )
+            )
+        if scene.status is not SceneStatus.ACTIVE:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"scene {scene_id!r} is {scene.status.value!r}; only"
+                        " the remaining part of an ACTIVE scene is"
+                        " replanned — a settled scene's canon is not this"
+                        " face's to move, and a PLANNED one opens first"
+                        " (STATE §24: 只重规划剩余部分)"
+                    ),
+                )
+            )
+        chapter = self._narrative.get_chapter(scene.chapter_id)
+        if chapter is None:  # the FK makes this unreachable; answered honestly
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"scene {scene_id!r} not replanned: chapter"
+                        f" {scene.chapter_id!r} does not exist"
+                    ),
+                )
+            )
+        fields = _checked_fields(element, f"scene {scene_id!r}")
+        if isinstance(fields, Err):
+            return Err(fields.error)
+        director_context = build_director_context(
+            self._conn,
+            chapter.world_id,
+            world_store=self._worlds,
+            cast_store=self._cast,
+            bible_store=self._bible,
+        )
+        # The V3-5R time law, the same one open_scene keeps: the later
+        # of the world's reality and the element's own guess.
+        planned_start_tick = max(
+            director_context.current_tick, fields.value["planned_start_tick"]
+        )
+        revisions = self._narrative.dossiers_of(scene_id)
+        dossier_revision = (
+            max(dossier.dossier_revision for dossier in revisions) + 1
+            if revisions
+            else 1
+        )
+        dossier_id = dossier_id_for(scene_id, dossier_revision)
+        created = self._narrative.create_dossier(
+            dossier_id,
+            scene_id,
+            dossier_revision,
+            pov_actor_id=fields.value["pov_actor_id"],
+            participants=fields.value["participants"],
+            place=fields.value["place"],
+            planned_start_tick=planned_start_tick,
+            revealable=fields.value["revealable"],
+            must_hide=fields.value["must_hide"],
+            entry_goals=fields.value["entry_goals"],
+            exit_condition=fields.value["exit_condition"],
+            elasticity=fields.value["elasticity"],
+            now=now,
+        )
+        if isinstance(created, Err):
+            return Err(created.error)
+        adopted = self._narrative.adopt_dossier(
+            dossier_id, now, expected_state_version=created.value.state_version
+        )
+        if isinstance(adopted, Err):
+            return Err(adopted.error)
+        return Ok(adopted.value)
+
     def open_scene(self, scene_id: str, now: str) -> Result[SceneOpening]:
         """Open one planned scene — the deterministic chain the module
         docstring spells (refusals included). ``now`` stamps every row;
@@ -358,10 +488,22 @@ def _element_fields(
     here too (the Director's schema guarantees an int — the V3-5R time
     law reads the value, and a corrupted row is refused, never guessed)."""
 
+    return _checked_fields(element, f"scenes[{ordinal}]")
+
+
+def _checked_fields(
+    element: Mapping[str, Any], coordinate: str
+) -> Result[dict[str, Any]]:
+    """The same validation, addressed by the caller's own coordinate —
+    ``open_scene`` passes ``scenes[N]`` (the plan's ordinal language),
+    ``replan_scene`` passes the scene's own identity (a replanning's
+    element is the caller's, not necessarily a row of the adopted
+    table). One body, two addresses — no second schema to drift."""
+
     pov = element.get("pov_actor_id")
     if not isinstance(pov, str):
         return _refuse(
-            f"scenes[{ordinal}].pov_actor_id must be a string; got"
+            f"{coordinate}.pov_actor_id must be a string; got"
             f" {type(pov).__name__}"
         )
     participants = element.get("participants")
@@ -369,21 +511,21 @@ def _element_fields(
         participants, (list, tuple)
     ):
         return _refuse(
-            f"scenes[{ordinal}].participants must be a sequence of"
+            f"{coordinate}.participants must be a sequence of"
             f" participant identities; got {type(participants).__name__}"
         )
     words: list[str] = []
     for word in participants:
         if not isinstance(word, str):
             return _refuse(
-                f"scenes[{ordinal}].participants carries a non-string"
+                f"{coordinate}.participants carries a non-string"
                 f" entry {word!r}"
             )
         words.append(word)
     planned_start = element.get("planned_start_tick")
     if not isinstance(planned_start, int) or isinstance(planned_start, bool):
         return _refuse(
-            f"scenes[{ordinal}].planned_start_tick must be an integer tick;"
+            f"{coordinate}.planned_start_tick must be an integer tick;"
             f" got {type(planned_start).__name__}"
         )
     fields: dict[str, Any] = {
@@ -395,7 +537,7 @@ def _element_fields(
         value = element.get(key)
         if not isinstance(value, str):
             return _refuse(
-                f"scenes[{ordinal}].{key} must be a string; got"
+                f"{coordinate}.{key} must be a string; got"
                 f" {type(value).__name__}"
             )
         fields[key] = value

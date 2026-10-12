@@ -43,6 +43,15 @@ V3-5R (``TASK-OPI-dc1bafdf…13`` / the opening ruling
 terminality), ``scene.py`` (the cognition input and the ``max`` time
 law) and the narrative ``store.py`` (the one-UPDATE span writer) — and
 the pin below carries those faces too.
+
+V3-6 (``TASK-OPI-dc1bafdf…23`` / the opening ruling ``…5``, re-run
+``…21``) adds the gate-and-action migration
+(``0035_user_gate_action.sql``), the new action face
+(``action.py``) and re-touches three entries in place —
+``settlement.py`` (the V3-6 interlock's two arms and the promoted
+``participant_namespace_of``), ``scene.py`` (``replan_scene``) and
+``deletion/types.py`` (the keep set's eighteen → twenty members) — and
+the pin below carries those faces too.
 """
 
 from __future__ import annotations
@@ -311,7 +320,7 @@ def test_the_six_touched_entries_are_single_lines() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_deletion_entry_counts_eighteen_global_content_tables() -> None:
+def test_deletion_entry_counts_twenty_global_content_tables() -> None:
     """The disposition's fixed falsehood (review MEDIUM-1, one live lie
     found by the mechanical sweep): ``GLOBAL_CONTENT_TABLES`` gained
     ``world_storyline`` at C2 — the entry's 「七员」 was false; 「八员」
@@ -320,24 +329,28 @@ def test_deletion_entry_counts_eighteen_global_content_tables() -> None:
     (TASK-OPI-bab4da9f…29) adds migration 0030's
     ``world_bible_revision``, V3-3 (TASK-OPI-bab4da9f…52) adds
     migration 0031's two cast tables (``world_player_character`` /
-    ``world_actor_profile``) and V3-5 (TASK-OPI-be7b094f…34) adds
+    ``world_actor_profile``), V3-5 (TASK-OPI-be7b094f…34) adds
     migration 0033's three narrative-commit tables
     (``narrative_passage`` / ``reader_exposure`` / ``segment_commit``)
-    — 「十八员」 is the truth now, and the source constant must carry
-    the same eighteen."""
+    and V3-6 (TASK-OPI-dc1bafdf…23) adds migration 0035's two tables
+    (``user_gate`` / ``user_action``)
+    — 「二十员」 is the truth now, and the source constant must carry
+    the same twenty."""
 
     from elc.deletion.types import GLOBAL_CONTENT_TABLES
 
     entry = _entry_line_in_section(
         "===D:/english-learning-clean/src/elc/deletion/===", "types.py[DD7M]"
     )
-    assert "十八员" in entry
+    assert "二十员" in entry
+    assert "十八员" not in entry
     assert "十五员" not in entry
     assert "十三员" not in entry
     assert "十二员" not in entry
-    # 「八员」 lives only inside 「十八员」 now — a standalone stale claim
+    # 「十员」 lives only inside 「二十员」 now — a standalone stale claim
     # would make the count two.
-    assert entry.count("八员") == 1
+    assert entry.count("十员") == 1
+    assert "八员" not in entry
     assert "七员" not in entry
     assert "world_storyline" in entry
     assert "world_scene_dossier" in entry
@@ -347,7 +360,9 @@ def test_deletion_entry_counts_eighteen_global_content_tables() -> None:
     assert "narrative_passage" in entry
     assert "reader_exposure" in entry
     assert "segment_commit" in entry
-    assert len(GLOBAL_CONTENT_TABLES) == 18
+    assert "user_gate" in entry
+    assert "user_action" in entry
+    assert len(GLOBAL_CONTENT_TABLES) == 20
     assert "world_storyline" in GLOBAL_CONTENT_TABLES
     assert "world_scene_dossier" in GLOBAL_CONTENT_TABLES
     assert "world_bible_revision" in GLOBAL_CONTENT_TABLES
@@ -356,6 +371,8 @@ def test_deletion_entry_counts_eighteen_global_content_tables() -> None:
     assert "narrative_passage" in GLOBAL_CONTENT_TABLES
     assert "reader_exposure" in GLOBAL_CONTENT_TABLES
     assert "segment_commit" in GLOBAL_CONTENT_TABLES
+    assert "user_gate" in GLOBAL_CONTENT_TABLES
+    assert "user_action" in GLOBAL_CONTENT_TABLES
 
 
 def test_v3_5_entries_carry_the_segment_commit_faces() -> None:
@@ -567,3 +584,70 @@ def test_v3_5r_entries_carry_the_terminality_and_cognition_faces() -> None:
         "commit_scene",
     ):
         assert keyword in store_entry, keyword
+
+
+# ---------------------------------------------------------------------------
+# V3-6 (TASK-OPI-dc1bafdf…23): the gate-and-action migration, the action
+# read/write face and the three updated entries
+# ---------------------------------------------------------------------------
+
+
+def test_v3_6_entries_carry_the_gate_and_action_faces() -> None:
+    """V3-6's ledger faces ride their entries: the 0035 migration (the
+    two tables, the ``segment_commit`` rebuild, the terminal-integrity
+    CHECK, the ``UNIQUE (gate_id, submission_id)`` anchor and its
+    stamps), the new ``action.py`` face (NCP-1 / NCP-2, the
+    ``Adjudication`` shape, the interlock, ``replan_scene`` and the
+    recovery scan) and the three updated entries — ``settlement.py``
+    (the V3-6 interlock and the promoted namespace face),
+    ``scene.py`` (``replan_scene``) and ``deletion/types.py`` (the keep
+    set's twenty members). The coverage law above keeps the 0035 entry
+    present; this pin keeps the words true."""
+
+    section = "\n".join(_migrations_section())
+    assert "0035_user_gate_action.sql[" in section
+    migration_entry = _entry_line("0035_user_gate_action.sql[")
+    for keyword in (
+        "user_gate",
+        "user_action",
+        "'ACTION_OUTCOME'",
+        "终态完整性",
+        "UNIQUE (gate_id, submission_id)",
+        "双 stamp '35'",
+    ):
+        assert keyword in migration_entry, keyword
+
+    world_section = "===D:/english-learning-clean/src/elc/world/==="
+    for tag, keywords in (
+        (
+            "action.py[",
+            (
+                "open_gate",
+                "submit_gate",
+                "begin_resolving",
+                "commit_action",
+                "Adjudication",
+                "recovery_scan",
+                "NCP-1",
+                "NCP-2",
+            ),
+        ),
+        (
+            "settlement.py[",
+            (
+                "user_gate",
+                "participant_namespace_of",
+                "V3-6",
+            ),
+        ),
+        (
+            "scene.py[",
+            (
+                "replan_scene",
+                "V3-6",
+            ),
+        ),
+    ):
+        entry = _entry_line_in_section(world_section, tag)
+        for keyword in keywords:
+            assert keyword in entry, (tag, keyword)

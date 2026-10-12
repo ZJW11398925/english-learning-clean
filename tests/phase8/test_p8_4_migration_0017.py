@@ -103,16 +103,17 @@ def test_0017_is_registered_and_0018_follows_it() -> None:
     0026_world_reveal, then C1-a's 0027_chronicle_attribution,
     then C2's 0028_world_storyline, then V3-1's
     0029_narrative_v3_foundations, then V3-2's 0030_world_bible, then
-    V3-3's 0031_world_cast, then V3-3R's 0032_actor_profile_world_fk —
-    V3-5's 0033_segment_commit, and now V3-5R's
-    0034_segment_terminality is the head), and the
+    V3-3's 0031_world_cast, then V3-3R's 0032_actor_profile_world_fk,
+    then V3-5's 0033_segment_commit, then V3-5R's
+    0034_segment_terminality, and now V3-6's
+    0035_user_gate_action is the head), and the
     successor
     is a **literal** — a ``SCHEMA_HEAD_FILE`` reference here would silently
     become false at the next migration (the pin's own rule, restated by
     the 0016 suite)."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
     assert names[names.index(HEAD_0017) + 1] == "0018_delivery_records.sql"
     assert names[names.index(PRE_0017) + 1] == HEAD_0017
     assert [name[:4] for name in names] == [
@@ -145,8 +146,8 @@ def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
     # 22 → 23；W-1-1 再随迁 23 → 24；W-1-2 再随迁 24 → 25；W-1-3 再随迁
     # 25 → 26；C1-a 再随迁 26 → 27；C2 再随迁 27 → 28；V3-1 再随迁 28 → 29；
     # V3-2 再随迁 29 → 30；V3-3 再随迁 30 → 31；V3-3R 再随迁 31 → 32；
-    # V3-5 再随迁 32 → 33；V3-5R 再随迁 33 → 34。
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "34"
+    # V3-5 再随迁 32 → 33；V3-5R 再随迁 33 → 34；V3-6 再随迁 34 → 35。
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "35"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

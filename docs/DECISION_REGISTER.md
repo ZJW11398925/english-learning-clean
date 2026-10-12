@@ -269,3 +269,16 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 9. **评审外同族观察（总控，留痕）**：`chapter_activated` 的重放答仍为读时推导（`chapter.opened_at_tick == actual_start`）——零时长段（`duration_ticks=0`）可造同 tick 误报（F1 同类；持久见证需另一列 ⇒ 归后续刀显式重开）。V3-5 既有行为，本刀不扩。
 
 授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v35r_review\copy` 变异，2026-10-12）+ 总控处置（V3-1/V3-3/V3-4/V3-4R/V3-5 处置先例：总控亲写）；处置提交随本条目同刀。
+
+### v1.5.0 — 2026-10-12 V3-6 重放行 + 开工裁决修订（迁移号顺延 0035 + 吸收 V3-5R 面；授权：外审放行条件达成〔V3-5R 收口 `DEC-OPI-dc1bafdf-…19`〕）
+
+**结论**：V3-6 按 `DEC-OPI-dc1bafdf-…5`（十一项）重放行——**迁移号 0034→0035 顺延**（`0034_segment_terminality.sql` 已占用），任务书吸收 V3-5R 面。
+
+1. **迁移 0035_user_gate_action.sql**：`user_gate` + `user_action` 两表逐字（含终态完整性复合 CHECK、`UNIQUE(gate_id, submission_id)`、五词/三词 status）；`segment_commit` **重建**——`kind` CHECK 扩 `('SEGMENT','ACTION_OUTCOME')`、新增 `action_id` FK、`segment_seq`/`passage_id` 改 NULLable、两条 kind 一致性 CHECK（ACTION_OUTCOME 行 `is_last_segment`=0——门面不翻场）、**`is_last_segment`（0034）与 `UNIQUE(scene_id, segment_seq)` 原样保留**、显式列名 INSERT…SELECT；建表序 gate→action→重建；双 stamp '35'。
+2. **action.py**（NCP-1/NCP-2 单事务全臂 + 门面组 + Adjudication 形状 + recovery_scan）与**互锁两臂**（`settlement.commit_segment`）与 **`ScenePlanner.replan_scene`** 与 **replan 三值**（CHAPTER=现役 `revise_blueprint`；F1 放宽路径不重开）——按 `…5` 逐字。
+3. **V3-5R 面联动**：`v3_cognition_view` 自 V3-6 起可见 ACTION_OUTCOME 事件（lineage JOIN kind 无关）；`SceneContext`/`max` 时间律沿用；`_replay_outcome` 与 `stored_is_last` 语义不扰。
+4. **两表入 `GLOBAL_CONTENT_TABLES`**（18→20 尾插；deletion 钉族与 aoci「十八员」→「二十员」随迁）。
+5. **开工四查新裁**：`chapter_activated` 同族观察（读时推导类）在 NCP-2 章臂同形——**默认维持现形**（消费刀知悉；持久见证归后续刀显式重开）。
+6. **搬迁面预写**：conftest 0035/35；负索引 shift（[-7]→[-8]）；SCHEMA_HEAD 字面族再挪（0034 头已随 V3-5R 搬迁）；aoci 0035 条目 + action.py 条目 + 三模块更新；散文扫尾（0034 为历史层句保留）。
+
+授权：外审放行（用户转呈：完成 V3-5R 后再重放行 V3-6）；DMCP 重放行裁决 `DEC-OPI-dc1bafdf-…21`（rev 798）；三件 = TASK `…23`（rev 799）/ VAL `…25`（rev 800）；原始开工裁决 `…5` 内容维持（两处修订见上）。

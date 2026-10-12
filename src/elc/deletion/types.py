@@ -375,6 +375,19 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: them, and they add no consequential FK to the registered deletion
 #: face. The three join at the tuple's tail, the chronological append
 #: law every V3 cut before them followed (0029 → 0030 → 0031 → 0033).
+#:
+#: V3-6 (TASK-OPI-dc1bafdf…23 / the opening ruling DEC-OPI-dc1bafdf…5,
+#: re-run revision …21) adds migration 0035's two tables —
+#: ``user_gate`` (the user's will as a durable stop: the gate row a
+#: scene's story pauses at) and ``user_action`` (the submission and,
+#: once committed, the Action Resolver's ruling) — to the same keep
+#: rule, same conservative reading (registration, not deletion
+#: semantics; zero sweep face). Both FK chains
+#: (gate → ``world_scene`` → ``world_chapter`` → ``world``; action →
+#: gate) are keep-side at every link, so no sweep can be refused
+#: through them, and they add no consequential FK to the registered
+#: deletion face. The two join at the tuple's tail (the same
+#: chronological append law; 0035 is the head this registration rides).
 GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_lore_fact",
     "world",
@@ -394,6 +407,8 @@ GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "narrative_passage",
     "reader_exposure",
     "segment_commit",
+    "user_gate",
+    "user_action",
 )
 
 

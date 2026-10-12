@@ -11,7 +11,8 @@ write faces that land a Blueprint as an adopted plan revision plus its
 ``world_scene`` identity anchors. **Zero migration**: 0029's four
 tables were V3-1's; this cut is pure code (the chain head then ended at
 ``0032_actor_profile_world_fk`` / ``32`` — V3-5's
-``0033_segment_commit`` and V3-5R's ``0034_segment_terminality`` moved
+``0033_segment_commit``, V3-5R's ``0034_segment_terminality`` and
+V3-6's ``0035_user_gate_action`` moved
 it afterwards, and group 6 speaks the
 live lineage). The #4 prerequisites (an
 ``ADOPTED`` Blueprint / Dossier before an activation; the overlap ban
@@ -2426,14 +2427,16 @@ def test_the_v2_surfaces_are_untouched(
 def test_the_chain_head_moved_on_after_this_cut() -> None:
     """The cut's own historical pin: V3-4 shipped **zero migration** —
     the shared constants and the applied chain ended at 0032 while it
-    was the head — and V3-5's ``0033_segment_commit`` then V3-5R's
-    ``0034_segment_terminality`` moved them
-    afterwards (TASK-OPI-be7b094f…34 / TASK-OPI-dc1bafdf…13). The live
+    was the head — and V3-5's ``0033_segment_commit``, V3-5R's
+    ``0034_segment_terminality`` then V3-6's ``0035_user_gate_action``
+    moved them
+    afterwards (TASK-OPI-be7b094f…34 / TASK-OPI-dc1bafdf…13 /
+    …23). The live
     lineage the shared
     constants carry is pinned here; V3-4's own claim is the sentence
     above, kept as history."""
 
-    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
-    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
-    assert SCHEMA_HEAD_VERSION == "34"
+    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
+    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
+    assert SCHEMA_HEAD_VERSION == "35"
     assert "0032_actor_profile_world_fk" in MIGRATION_IDS

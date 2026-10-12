@@ -165,33 +165,35 @@ def test_0027_is_the_registered_head() -> None:
     0026_world_reveal; C2's 0028_world_storyline, V3-1's
     0029_narrative_v3_foundations, V3-2's 0030_world_bible, V3-3's
     0031_world_cast and V3-3R's 0032_actor_profile_world_fk sit
-    behind V3-5's 0033_segment_commit and V3-5R's
-    0034_segment_terminality,
+    behind V3-5's 0033_segment_commit, V3-5R's
+    0034_segment_terminality and V3-6's 0035_user_gate_action,
     the head now; the
     shared constants say so, and the stamp a fresh
-    database carries is 34 (the stamp-pin discipline every head move
+    database carries is 35 (the stamp-pin discipline every head move
     has followed since P8-4; this pin read "0026 is the head" while 0026
     was the head, and the head literal has moved with each head since)."""
 
-    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
-    assert MIGRATION_IDS[-2] == "0033_segment_commit"
-    assert MIGRATION_IDS[-3] == "0032_actor_profile_world_fk"
-    assert MIGRATION_IDS[-4] == "0031_world_cast"
-    assert MIGRATION_IDS[-5] == "0030_world_bible"
-    assert MIGRATION_IDS[-6] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-7] == "0028_world_storyline"
-    assert MIGRATION_IDS[-8] == "0027_chronicle_attribution"
-    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
+    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
+    assert MIGRATION_IDS[-2] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-3] == "0033_segment_commit"
+    assert MIGRATION_IDS[-4] == "0032_actor_profile_world_fk"
+    assert MIGRATION_IDS[-5] == "0031_world_cast"
+    assert MIGRATION_IDS[-6] == "0030_world_bible"
+    assert MIGRATION_IDS[-7] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-8] == "0028_world_storyline"
+    assert MIGRATION_IDS[-9] == "0027_chronicle_attribution"
+    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
     assert (REPO_ROOT / "migrations" / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "34"
+    assert SCHEMA_HEAD_VERSION == "35"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0034_segment_terminality"
-    assert applied[-2] == "0033_segment_commit"
-    assert applied[-3] == "0032_actor_profile_world_fk"
-    assert applied[-4] == "0031_world_cast"
-    assert applied[-5] == "0030_world_bible"
+    assert applied[-1] == "0035_user_gate_action"
+    assert applied[-2] == "0034_segment_terminality"
+    assert applied[-3] == "0033_segment_commit"
+    assert applied[-4] == "0032_actor_profile_world_fk"
+    assert applied[-5] == "0031_world_cast"
+    assert applied[-6] == "0030_world_bible"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 

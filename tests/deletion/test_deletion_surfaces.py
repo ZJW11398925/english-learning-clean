@@ -205,6 +205,13 @@ def test_no_global_content_table_lives_in_app_db() -> None:
         "narrative_passage",
         "reader_exposure",
         "segment_commit",
+        # V3-6 (TASK-OPI-dc1bafdf…23): migration 0035's two tables —
+        # the user's gate and its submission/ruling row — append at the
+        # tail (the same chronological law); every FK link is keep-side
+        # (gate → world_scene → world_chapter → world; action → gate),
+        # zero sweep face.
+        "user_gate",
+        "user_action",
     )
     for table in GLOBAL_CONTENT_TABLES:
         assert table not in SWEPT_TABLES

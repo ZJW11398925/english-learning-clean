@@ -693,7 +693,7 @@ PLANNED → DISCARDED（Plan Revision）
 - **一旦有 segment commit，场景不可 DISCARDED / 取消**——已发生事实不可重写；只能按实际发生的方向 `COMMITTED`（提前收束合法）。
 - 场内段落顺序 commit；段与段之间世界可被读取（下一段看得到上一段的事实）。
 - 崩溃于 `ACTIVE`：从最后已 commit 段落续跑（未 commit 的正文草案不构成事实）；同 `segment_key` 重放 = no-op（§25）。
-- User Gate 是场内的停点：gate `OPEN` 时 scene 保持 `ACTIVE`。
+- User Gate 是场内的停点：gate `OPEN` 时 scene 保持 `ACTIVE`。（**V3-6 落法**：场的 gate 处于 `OPEN` / `ANSWERED` / `RESOLVING` 时新段落提交被拒——「故事停止」的物理形；新段落提交落成时该场全部 `COMMITTED` gate **同事务**转 `CLOSED`——「续写已开始」的物理形。）
 
 ## 23. User Gate Lifecycle（Narrative V3）
 
@@ -718,6 +718,8 @@ OPEN → ANSWERED → RESOLVING → COMMITTED → CLOSED
 - `RESOLVING` 崩溃 → recovery 以同一 `submission_id` 重新裁定；**绝不产生第二份 outcome**。
 - `COMMITTED` 后不可回到 `ANSWERED` / `RESOLVING`；修正走后续叙事。
 - 选项与自由输入都只是 **intent**，不是事实（DOMAIN_MODEL §20.3-1）。
+
+**V3-6 落法（开工裁决 `DEC-OPI-dc1bafdf-…5`；重放行修订 `…21`）**：门面与提交面落于 `elc/world/action.py`——`open_gate`（仅 `ACTIVE` 场；`options` 2–4 非空串；一场同一时间至多一个非终态门——`OPEN`/`ANSWERED`/`RESOLVING`，查在开门的短事务内而非部分 UNIQUE 索引）、`submit_gate`（**NCP-1**：`OPEN → ANSWERED` + `user_action` `ANSWERED` 行同一短事务；`(gate_id, submission_id)` 已存 ⇒ 形状同返回存行 / 异 `CONFLICT`；非 `OPEN` 且非本 submission 重放 ⇒ `VALIDATION_FAILED`——一个 gate 只接受一次 submission）、`begin_resolving`（`ANSWERED → RESOLVING` 两行同事务——事务外 provider 裁定前的 durable 停点；自 `RESOLVING` 重呼幂等）、`commit_action`（**NCP-2**，全臂见 §25）。`COMMITTED → CLOSED` 不需要独立面：下一条新段落提交即「续写已开始」（§22 互锁句，同事务）。崩溃语义：NCP-1 后未 `COMMITTED` ⇒ recovery 以同一 `submission_id` 重新裁定（唯一终态）；`COMMITTED` 后重放 = 幂等 no-op。
 
 ## 24. Plan Revision Lifecycle（Narrative V3）
 
@@ -785,6 +787,8 @@ replan 记录（replan_scope = NONE | SCENE | CHAPTER）
 ANSWERED 后、COMMITTED 前崩溃 → recovery 以同一 submission_id 重新裁定（只此一次终态）
 COMMITTED 后重放            → 幂等 no-op；呈现层从 durable 状态重读
 ```
+
+**V3-6 落法（开工裁决 `DEC-OPI-dc1bafdf-…5`；重放行修订 `…21`）**：`commit_action`（`elc/world/action.py`）一个 `BEGIN IMMEDIATE`…`COMMIT` 落全臂——① `user_action` 终态八列（`interpretation` / `outcome` / `actual_action` / `consequences` / `state_effects` / `participants` / `replan_scope` / `actual_tick`=推进后 `actual_end`）；② `world_event` 行为事实行（id 派生 `f"ac:{gate_id}:{submission_id}:event"`，`kind='action'`，participants 含用户角色，effects=裁定 `state_effects`）；③ `world_state_fact` 结算（`_settle_effects_in_transaction` 一真源）；④ `world.current_tick` 推进（`duration_ticks ≥ 0`；`actual_start`=事务内推进前读）；⑤ `segment_commit` 行（`kind='ACTION_OUTCOME'`，`commit_id=f"ac:{gate_id}:{submission_id}"`，`action_id` 载、`passage_id`/`segment_seq` 空、**`is_last_segment`=0（门面不翻场）**）；⑥ gate `(ANSWERED|RESOLVING) → COMMITTED`；⑦ 章若仍 `PLANNED` ⇒ 同事务 `PLANNED→ACTIVE` 且 `opened_at_tick=actual_start`（#3 同 commit_segment 律——首段或首次行动裁定开启章）。幂等：同 `action_commit_key=(gate_id, submission_id)` 形状同重放 = 全组 no-op；形状异 `CONFLICT`（形状比对含语义载荷——裁定四文本/effects/participants/replan_scope/duration；簿记戳不比——SEGMENT COMMIT 同律）。**`replan_scope ≠ NONE` 的计划面消费不在本事务**：SCENE ⇒ `ScenePlanner.replan_scene`（新 dossier revision=max+1，PROPOSED→ADOPT 由 store 面同短事务 supersede）；CHAPTER ⇒ `Director.revise_blueprint`（现役 V3-4 面，语义不改）。
 
 ### 两条提交的共同纪律
 

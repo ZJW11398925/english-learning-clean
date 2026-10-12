@@ -197,6 +197,8 @@ def test_the_retained_set_is_unchanged() -> None:
         "narrative_passage",
         "reader_exposure",
         "segment_commit",
+        "user_gate",
+        "user_action",
     )
     for table in LEDGER_TABLES:
         assert table not in RETAINED_TABLES
@@ -535,6 +537,8 @@ def test_the_ledger_tables_are_absent_from_the_content_db_sweep(
         "narrative_passage",
         "reader_exposure",
         "segment_commit",
+        "user_gate",
+        "user_action",
     )
     assert _tables(db) == (
         set(SWEPT_TABLES) | set(RETAINED_TABLES) | set(GLOBAL_CONTENT_TABLES)

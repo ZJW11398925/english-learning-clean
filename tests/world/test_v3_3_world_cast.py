@@ -32,9 +32,10 @@ the card), IMPLEMENTATION_PLAN §20's V3-3 row. The groups:
    is not bound to refuses at the database's own surface; the rebuilt
    DDL carries ``FOREIGN KEY (actor_id, world_id)`` — the store's
    precheck stays the human-words layer), and the chain self-pin (the
-   shared constants say ``0034_segment_terminality`` / ``34``, a
+   shared constants say ``0035_user_gate_action`` / ``35``, a
    fresh database stamps exactly that — the head literal moved on with
-   V3-5's 0033_segment_commit and V3-5R's 0034_segment_terminality);
+   V3-5's 0033_segment_commit, V3-5R's 0034_segment_terminality and
+   V3-6's 0035_user_gate_action);
 2. **the open-time seed from the package** — a builtin package's
    birth carries its cast's durable half: Nell's profile with the six
    fields verbatim (``PROTAGONIST`` / ``True`` / ``1`` / the three arc
@@ -299,13 +300,13 @@ def _rerun_seed(
 
 
 def test_the_shared_constants_and_a_fresh_db_say_the_chain_head() -> None:
-    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
-    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
-    assert SCHEMA_HEAD_VERSION == "34"
+    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
+    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
+    assert SCHEMA_HEAD_VERSION == "35"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0034_segment_terminality"
-    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "34"
+    assert applied[-1] == "0035_user_gate_action"
+    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "35"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -313,8 +314,8 @@ def test_the_shared_constants_and_a_fresh_db_say_the_chain_head() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "34",
-        "runtime_schema_version": "34",
+        "schema_version": "35",
+        "runtime_schema_version": "35",
     }
 
 

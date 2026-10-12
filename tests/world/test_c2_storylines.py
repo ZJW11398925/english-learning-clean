@@ -179,37 +179,40 @@ def _land_claim(store: SqliteWorldStore, line_id: str, statement: str) -> None:
 def test_0028_is_the_registered_head() -> None:
     """C2's migration is in the chain, immediately behind
     C1-a's 0027; the shared constants say so, and the stamp a fresh
-    database carries is 34 (the head literal moves with each head —
+    database carries is 35 (the head literal moves with each head —
     this pin read 0028's own name while 0028 was the head, then
     V3-1's 0029_narrative_v3_foundations, then V3-2's
     0030_world_bible, then V3-3's 0031_world_cast, then V3-3R's
     0032_actor_profile_world_fk, then V3-5's 0033_segment_commit, then
-    V3-5R's 0034_segment_terminality; the
+    V3-5R's 0034_segment_terminality, then V3-6's
+    0035_user_gate_action; the
     lineage claim
     behind it — 0028 in place —
     stands)."""
 
-    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
-    assert MIGRATION_IDS[-2] == "0033_segment_commit"
-    assert MIGRATION_IDS[-3] == "0032_actor_profile_world_fk"
-    assert MIGRATION_IDS[-4] == "0031_world_cast"
-    assert MIGRATION_IDS[-5] == "0030_world_bible"
-    assert MIGRATION_IDS[-6] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-7] == "0028_world_storyline"
-    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
-    assert SCHEMA_HEAD_VERSION == "34"
+    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
+    assert MIGRATION_IDS[-2] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-3] == "0033_segment_commit"
+    assert MIGRATION_IDS[-4] == "0032_actor_profile_world_fk"
+    assert MIGRATION_IDS[-5] == "0031_world_cast"
+    assert MIGRATION_IDS[-6] == "0030_world_bible"
+    assert MIGRATION_IDS[-7] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-8] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
+    assert SCHEMA_HEAD_VERSION == "35"
     assert (REPO_ROOT / "migrations" / SCHEMA_HEAD_FILE).is_file()
 
     fresh = sqlite3.connect(":memory:")
     fresh.execute("PRAGMA foreign_keys=ON")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0034_segment_terminality"
-    assert applied[-2] == "0033_segment_commit"
-    assert applied[-3] == "0032_actor_profile_world_fk"
-    assert applied[-4] == "0031_world_cast"
-    assert applied[-5] == "0030_world_bible"
-    assert applied[-6] == "0029_narrative_v3_foundations"
-    assert applied[-7] == "0028_world_storyline"
+    assert applied[-1] == "0035_user_gate_action"
+    assert applied[-2] == "0034_segment_terminality"
+    assert applied[-3] == "0033_segment_commit"
+    assert applied[-4] == "0032_actor_profile_world_fk"
+    assert applied[-5] == "0031_world_cast"
+    assert applied[-6] == "0030_world_bible"
+    assert applied[-7] == "0029_narrative_v3_foundations"
+    assert applied[-8] == "0028_world_storyline"
 
 
 def test_world_storyline_carries_its_columns_and_posture() -> None:

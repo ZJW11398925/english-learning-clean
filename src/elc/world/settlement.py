@@ -84,7 +84,26 @@ sources are read inside the transaction: the actor ids through
 :meth:`elc.world.store.SqliteWorldStore.actors_of`, the player id
 through a parameter-bound read of ``world_player_character`` (the
 store face that owns it lives in :mod:`elc.world.cast`, outside this
-function's given signature).
+function's given signature). **Since V3-6** the assembly is the public
+:func:`participant_namespace_of` (the one truth the action module's
+``commit_action`` calls too), and the player-row read is the public
+:func:`player_character_id_of`.
+
+**The User Gate interlock (V3-6, TASK-OPI-dc1bafdf…23 /
+DEC-OPI-dc1bafdf…5, re-run …21; STATE §22/§23/§25)** — two arms ride
+this same transaction, both on the **fresh** path only (a stored
+segment's replay is answered first and touches nothing):
+
+- before a fresh segment lands, the scene must hold **no non-terminal
+  gate** (``user_gate`` in ``OPEN`` / ``ANSWERED`` / ``RESOLVING``) —
+  a story stopped at a User Gate does not write on, refused
+  ``VALIDATION_FAILED`` naming the standing gate (the physical form of
+  §22's "the story stops");
+- when a fresh segment lands, the scene's every ``COMMITTED`` gate
+  moves to ``CLOSED`` in this same transaction (one UPDATE, one version
+  bump each) — "the writing resumed" (§23; the segment commit is the
+  continuation, and the ``COMMITTED → CLOSED`` step has no face of its
+  own by design).
 
 Discipline (the house store law): **value semantics** — every refusal
 is a ``Result`` ``Err`` (``VALIDATION_FAILED`` for the caller's own
@@ -135,6 +154,8 @@ __all__ = [
     "CommitOutcome",
     "ExposureRecord",
     "commit_segment",
+    "participant_namespace_of",
+    "player_character_id_of",
     "record_exposure",
     "story_time_of",
 ]
@@ -214,6 +235,10 @@ def commit_segment(
       is not ``ACTIVE`` — ``VALIDATION_FAILED`` (only an active scene
       takes segments; a replay is answered before this check, so a
       committed scene's stored segments still replay as no-ops);
+    - a **fresh** segment whose scene holds a non-terminal User Gate
+      (``OPEN`` / ``ANSWERED`` / ``RESOLVING``) —
+      ``VALIDATION_FAILED`` naming the standing gate (the story stops
+      at a gate, STATE §22/§23; the replay arm answers first here too);
     - a **fresh** segment whose ``segment_seq`` is not
       ``max(committed_seq) + 1`` (the first segment is 1) — a 0,
       negative, skipped or out-of-order sequence is
@@ -416,6 +441,31 @@ def _commit_segment_tx(
                 ),
             )
         )
+
+    # The User Gate interlock's stop half (V3-6): a story stopped at a
+    # gate does not write on — the scene must hold no non-terminal gate
+    # (OPEN / ANSWERED / RESOLVING), judged inside this transaction
+    # (STATE §22/§23). The replay arm above answered first, so a
+    # committed scene's stored segments still replay as no-ops.
+    standing = conn.execute(
+        "SELECT gate_id, status FROM user_gate WHERE scene_id = ?"
+        " AND status IN ('OPEN','ANSWERED','RESOLVING')"
+        " ORDER BY gate_id ASC",
+        (scene_id,),
+    ).fetchone()
+    if standing is not None:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=(
+                    f"segment {segment_seq} of scene {scene_id!r} not"
+                    " committed: the story stops at the User Gate"
+                    f" {str(standing[0])!r} (its status is"
+                    f" {str(standing[1])!r}) — a stopped story does not"
+                    " write on (STATE §22/§23)"
+                ),
+            )
+        )
     chapter = narrative_store.get_chapter(scene.chapter_id)
     if chapter is None:  # the FK makes this unreachable; answered honestly
         return Err(
@@ -429,7 +479,9 @@ def _commit_segment_tx(
             )
         )
     world_id = chapter.world_id
-    namespace = _participant_namespace(conn, world_store, world_id)
+    namespace = participant_namespace_of(
+        conn, world_store=world_store, world_id=world_id
+    )
     for word in participants:
         if word not in namespace:
             return Err(
@@ -519,6 +571,18 @@ def _commit_segment_tx(
         return Err(span.error)
     if is_last_segment:
         scene_committed = True
+
+    # The User Gate interlock's resume half (V3-6): this fresh segment
+    # is the continuation, so the scene's every COMMITTED gate turns
+    # CLOSED in this same transaction (one UPDATE, one version bump
+    # each) — the physical form of §23's "the writing resumed"; the
+    # COMMITTED → CLOSED step has no face of its own by design.
+    conn.execute(
+        "UPDATE user_gate SET status = 'CLOSED',"
+        " state_version = state_version + 1, updated_at = ?"
+        " WHERE scene_id = ? AND status = 'COMMITTED'",
+        (now, scene_id),
+    )
 
     chapter_activated = False
     if chapter.status is ChapterStatus.PLANNED:
@@ -814,30 +878,48 @@ def _exposure_record(row: tuple[Any, ...]) -> ExposureRecord:
     )
 
 
-def _participant_namespace(
+def participant_namespace_of(
     conn: sqlite3.Connection,
+    *,
     world_store: SqliteWorldStore,
     world_id: str,
 ) -> frozenset[str]:
     """The world's canonical participant vocabulary, assembled from its
     two durable identity sources **inside the caller's transaction** —
     the frozen recipe (:func:`elc.world.cast.participant_namespace`)
-    over :meth:`SqliteWorldStore.actors_of`'s ``actor_id`` halves and a
-    parameter-bound read of ``world_player_character`` (one row per
-    world; the cast store that owns the richer face is outside this
-    function's given signature — the read is of the same durable row).
+    over :meth:`SqliteWorldStore.actors_of`'s ``actor_id`` halves and
+    :func:`player_character_id_of`'s parameter-bound read of
+    ``world_player_character`` (one row per world; the cast store that
+    owns the richer face is outside this function's given signature —
+    the read is of the same durable row).
+
+    **The one truth since V3-6** (TASK-OPI-dc1bafdf…23): this face and
+    the action module's ``commit_action`` both assemble the namespace
+    here — one recipe, no second spelling.
     """
 
     actor_ids = [str(actor.actor_id) for actor in world_store.actors_of(world_id)]
+    return participant_namespace(
+        actor_ids=actor_ids,
+        player_character_id=player_character_id_of(conn, world_id),
+    )
+
+
+def player_character_id_of(
+    conn: sqlite3.Connection, world_id: str
+) -> str | None:
+    """One world's durable user role — the ``world_player_character``
+    row's id — or ``None`` (an honest world without a declared player
+    contributes nothing, the conditional law). A pure read, no
+    transaction of its own; the action module's user-role check is the
+    second caller (V3-6)."""
+
     row = conn.execute(
         "SELECT player_character_id FROM world_player_character"
         " WHERE world_id = ?",
         (world_id,),
     ).fetchone()
-    player_id = None if row is None else str(row[0])
-    return participant_namespace(
-        actor_ids=actor_ids, player_character_id=player_id
-    )
+    return None if row is None else str(row[0])
 
 
 def _refusal_code(exc: sqlite3.Error) -> DomainErrorCode:

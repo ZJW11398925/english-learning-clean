@@ -138,31 +138,33 @@ def test_0025_is_the_registered_head() -> None:
     move has
     followed since P8-4; the pin read "0024 is the head" while 0024 was
     the head); the shared constants say so, and the stamp a fresh
-    database carries is 34 (the head literal moved with each later
-    head, most recently V3-5's 0033_segment_commit and V3-5R's
-    0034_segment_terminality)."""
+    database carries is 35 (the head literal moved with each later
+    head, most recently V3-5's 0033_segment_commit, V3-5R's
+    0034_segment_terminality and V3-6's 0035_user_gate_action)."""
 
     # The head literal moves with each head (the P9-1 way); the
     # migration-shape claims in the sibling tests stay 0024's own.
-    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
-    assert MIGRATION_IDS[-2] == "0033_segment_commit"
-    assert MIGRATION_IDS[-3] == "0032_actor_profile_world_fk"
-    assert MIGRATION_IDS[-4] == "0031_world_cast"
-    assert MIGRATION_IDS[-5] == "0030_world_bible"
-    assert MIGRATION_IDS[-6] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-7] == "0028_world_storyline"
-    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
+    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
+    assert MIGRATION_IDS[-2] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-3] == "0033_segment_commit"
+    assert MIGRATION_IDS[-4] == "0032_actor_profile_world_fk"
+    assert MIGRATION_IDS[-5] == "0031_world_cast"
+    assert MIGRATION_IDS[-6] == "0030_world_bible"
+    assert MIGRATION_IDS[-7] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-8] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "34"
+    assert SCHEMA_HEAD_VERSION == "35"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0034_segment_terminality"
-    assert applied[-2] == "0033_segment_commit"
-    assert applied[-3] == "0032_actor_profile_world_fk"
-    assert applied[-4] == "0031_world_cast"
-    assert applied[-5] == "0030_world_bible"
-    assert applied[-6] == "0029_narrative_v3_foundations"
+    assert applied[-1] == "0035_user_gate_action"
+    assert applied[-2] == "0034_segment_terminality"
+    assert applied[-3] == "0033_segment_commit"
+    assert applied[-4] == "0032_actor_profile_world_fk"
+    assert applied[-5] == "0031_world_cast"
+    assert applied[-6] == "0030_world_bible"
+    assert applied[-7] == "0029_narrative_v3_foundations"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 
@@ -615,7 +617,7 @@ def test_the_registry_carries_the_six_world_objects() -> None:
             assert entry.schema is schema, key
 
 
-def test_global_content_tables_carry_the_eighteen_members() -> None:
+def test_global_content_tables_carry_the_twenty_members() -> None:
     """W-1-1's two tables and W-1-2's run row joined the keep half
     (SEC-025's conservative reading) and W-1-3's reveal queue joins it the
     same way, while W-1-3's deletion face moves ``world_conversation``
@@ -630,7 +632,10 @@ def test_global_content_tables_carry_the_eighteen_members() -> None:
     ``world_actor_profile`` — each AI actor's narrative profile) the
     same way, and V3-5 (TASK-OPI-be7b094f…34) adds migration 0033's
     three narrative-commit tables (``narrative_passage`` /
-    ``reader_exposure`` / ``segment_commit``) the same way: eighteen
+    ``reader_exposure`` / ``segment_commit``) the same way, V3-6
+    (TASK-OPI-dc1bafdf…23) adds migration 0035's two tables
+    (``user_gate`` — the story's stop — and ``user_action`` — the
+    submission and its ruling) the same way: twenty
     members, and the
     classification is registration — no sweep walks the world-owned half,
     nothing keeps it as retained either."""
@@ -654,6 +659,8 @@ def test_global_content_tables_carry_the_eighteen_members() -> None:
         "narrative_passage",
         "reader_exposure",
         "segment_commit",
+        "user_gate",
+        "user_action",
     )
     for table in ("world_event", "world_state_fact", "world_run",
                   "world_reveal_item"):

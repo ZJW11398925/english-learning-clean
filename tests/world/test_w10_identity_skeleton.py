@@ -160,33 +160,35 @@ def test_0023_is_in_place_behind_the_head() -> None:
     stamp-pin discipline every head
     move has followed since P8-4; the pin read "0023 is the head" while
     0023 was the head). The shared constants say so, and the stamp a
-    fresh database carries is 34 (the head literal moved with each
-    later head, most recently V3-5's 0033_segment_commit and V3-5R's
-    0034_segment_terminality)."""
+    fresh database carries is 35 (the head literal moved with each
+    later head, most recently V3-5's 0033_segment_commit, V3-5R's
+    0034_segment_terminality and V3-6's 0035_user_gate_action)."""
 
-    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
-    assert MIGRATION_IDS[-2] == "0033_segment_commit"
-    assert MIGRATION_IDS[-3] == "0032_actor_profile_world_fk"
-    assert MIGRATION_IDS[-4] == "0031_world_cast"
-    assert MIGRATION_IDS[-5] == "0030_world_bible"
-    assert MIGRATION_IDS[-6] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-7] == "0028_world_storyline"
-    assert MIGRATION_IDS[-8] == "0027_chronicle_attribution"
-    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
+    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
+    assert MIGRATION_IDS[-2] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-3] == "0033_segment_commit"
+    assert MIGRATION_IDS[-4] == "0032_actor_profile_world_fk"
+    assert MIGRATION_IDS[-5] == "0031_world_cast"
+    assert MIGRATION_IDS[-6] == "0030_world_bible"
+    assert MIGRATION_IDS[-7] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-8] == "0028_world_storyline"
+    assert MIGRATION_IDS[-9] == "0027_chronicle_attribution"
+    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
     assert (MIGRATIONS / "0023_world_identity.sql").is_file()
-    assert SCHEMA_HEAD_VERSION == "34"
+    assert SCHEMA_HEAD_VERSION == "35"
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0034_segment_terminality"
-    assert applied[-2] == "0033_segment_commit"
-    assert applied[-3] == "0032_actor_profile_world_fk"
-    assert applied[-4] == "0031_world_cast"
-    assert applied[-5] == "0030_world_bible"
-    assert applied[-6] == "0029_narrative_v3_foundations"
-    assert applied[-7] == "0028_world_storyline"
-    assert applied[-8] == "0027_chronicle_attribution"
+    assert applied[-1] == "0035_user_gate_action"
+    assert applied[-2] == "0034_segment_terminality"
+    assert applied[-3] == "0033_segment_commit"
+    assert applied[-4] == "0032_actor_profile_world_fk"
+    assert applied[-5] == "0031_world_cast"
+    assert applied[-6] == "0030_world_bible"
+    assert applied[-7] == "0029_narrative_v3_foundations"
+    assert applied[-8] == "0028_world_storyline"
+    assert applied[-9] == "0027_chronicle_attribution"
     assert schema_version(conn) == SCHEMA_HEAD_VERSION
 
 

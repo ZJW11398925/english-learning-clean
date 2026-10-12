@@ -872,6 +872,8 @@ user_action: 建 ANSWERED 行（intent_text / selected_option? / submission_id�
 
 在裁定（provider 调用）之前必须成功（gate 行与 action 行**同事务**落，不得拆开）；此点之后重复到达按 `(gate_id, submission_id)` 去重；action 族 event/outcome id 由 `action_commit_key` 派生。
 
+**V3-6 落法（开工裁决 `DEC-OPI-dc1bafdf-…5`；重放行修订 `…21`）**：`submit_gate`（`elc/world/action.py`）——`user_action_id` 派生 `f"{gate_id}-a"`；`selected_option` 给定时须为该门已录选项之一（否则 `VALIDATION_FAILED` 点名）；重复到达：`(gate_id, submission_id)` 已存且形状同 ⇒ 返回存行（零写）、形状异 ⇒ `CONFLICT`；门非 `OPEN` 且非本 submission 重放 ⇒ `VALIDATION_FAILED`。
+
 ### NCP-2 — Action Outcome Commit
 
 原子组（一个短事务）：
@@ -884,6 +886,8 @@ story_tick actual 推进
 replan 记录（NONE | SCENE | CHAPTER）
 （V3-7 起）actor memory / belief 增量
 ```
+
+**V3-6 落法（开工裁决 `DEC-OPI-dc1bafdf-…5`；重放行修订 `…21`）**：`commit_action`（`elc/world/action.py`）——八列终态一次写齐（`actual_tick` = 推进后 `actual_end`）；行为事实行 id 派生 `f"ac:{gate_id}:{submission_id}:event"`（`kind='action'`，canonical participants ⊇ 用户角色）；lineage 行 `kind='ACTION_OUTCOME'`（`commit_id=f"ac:{gate_id}:{submission_id}"`、`action_id` 载、`passage_id`/`segment_seq` 空、`is_last_segment`=0）；章 `PLANNED→ACTIVE` 臂与 NCP-3 同律（#3）；重放形状同 = 全组 no-op、形状异 `CONFLICT`。完整臂序见 `STATE_MACHINES §25`「V3-6 落法」段。
 
 ### NCP-3 — Segment Commit
 
@@ -939,6 +943,8 @@ world_chapter（ACTIVE / SETTLING）
 - 不重复用户行为裁定（N-INV-002）：submission 幂等键是恢复锚点。
 - 未 commit 的正文草案不是事实——恢复时可按 dossier 重新生成该段。
 - 旧链 recovery（§22/§23）不受影响；两套恢复面互不写对方的行。
+
+**V3-6 落法（开工裁决 `DEC-OPI-dc1bafdf-…5`；重放行修订 `…21`）**：扫描面落于 `elc/world/action.py` 的 `recovery_scan`（纯读；四族逐字：gates `ANSWERED`/`RESOLVING` 未 `COMMITTED`、actions `RESOLVING` 未 `COMMITTED`、scenes `ACTIVE`、chapters `ACTIVE`/`SETTLING`）；resume 的自动编排归管线刀（V3-8 前置），本阶段交扫描面与「submission 幂等键是恢复锚」的语义（NCP-1 后中断 ⇒ 扫描见 gate ⇒ 同一 `submission_id` 重裁定 ⇒ 唯一 outcome）。
 
 ## 30. Narrative V3 Runtime Invariants
 

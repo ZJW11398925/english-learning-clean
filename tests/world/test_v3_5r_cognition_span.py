@@ -1532,17 +1532,20 @@ def test_the_terminality_column_is_spelled_in_the_insert_and_the_read() -> None:
 
 def test_the_chain_head_and_the_stamps_agree() -> None:
     """The migration self-pin: the shared constants and a fresh database
-    end at V3-5R's ``0034_segment_terminality`` / ``34``, immediately
-    behind V3-5's ``0033_segment_commit``."""
+    end at V3-6's ``0035_user_gate_action`` / ``35``, immediately
+    behind V3-5R's ``0034_segment_terminality`` and V3-5's
+    ``0033_segment_commit``."""
 
-    assert MIGRATION_IDS[-1] == "0034_segment_terminality"
-    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
-    assert SCHEMA_HEAD_VERSION == "34"
-    assert MIGRATION_IDS[-2] == "0033_segment_commit"
+    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
+    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
+    assert SCHEMA_HEAD_VERSION == "35"
+    assert MIGRATION_IDS[-2] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-3] == "0033_segment_commit"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0034_segment_terminality"
-    assert applied[-2] == "0033_segment_commit"
+    assert applied[-1] == "0035_user_gate_action"
+    assert applied[-2] == "0034_segment_terminality"
+    assert applied[-3] == "0033_segment_commit"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -1550,8 +1553,8 @@ def test_the_chain_head_and_the_stamps_agree() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "34",
-        "runtime_schema_version": "34",
+        "schema_version": "35",
+        "runtime_schema_version": "35",
     }
     columns = {
         str(row[1])

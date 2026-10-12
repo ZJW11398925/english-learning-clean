@@ -184,12 +184,12 @@ def test_0013_is_present_and_not_the_head() -> None:
     assert [name[:4] for name in names] == [
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
-    # The head literal is 0034 (V3-5R's 0034_segment_terminality; the
+    # The head literal is 0035 (V3-6's 0035_user_gate_action; the
     # pin read 0018, then 0019, then each 0020/0021/0022/0023/0024/0025/0026,
     # then 0027, then 0028, then 0029, then 0030, then 0031, then 0032,
-    # then 0033,
+    # then 0033, then 0034,
     # while those were the heads, moving with each, the P9-1 way).
-    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
+    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
 
 
 def test_the_table_exists_with_the_canonical_column_set(

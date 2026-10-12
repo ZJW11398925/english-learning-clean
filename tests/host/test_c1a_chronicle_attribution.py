@@ -174,11 +174,12 @@ def test_0027_columns_stamps_and_legacy_honesty() -> None:
     # read 0028's names while 0028 was the head, then V3-1's
     # 0029_narrative_v3_foundations, then V3-2's 0030_world_bible, then
     # V3-3's 0031_world_cast, then V3-3R's 0032_actor_profile_world_fk,
-    # then V3-5's 0033_segment_commit, and now V3-5R's
-    # 0034_segment_terminality — the column claims stay
+    # then V3-5's 0033_segment_commit, then V3-5R's
+    # 0034_segment_terminality, and now V3-6's 0035_user_gate_action —
+    # the column claims stay
     # 0027's own.
-    assert SCHEMA_HEAD_FILE == "0034_segment_terminality.sql"
-    assert SCHEMA_HEAD_VERSION == "34"
+    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
+    assert SCHEMA_HEAD_VERSION == "35"
     fresh = sqlite3.connect(":memory:")
     apply_migrations(fresh)
     columns = [
@@ -199,8 +200,8 @@ def test_0027_columns_stamps_and_legacy_honesty() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "34",
-        "runtime_schema_version": "34",
+        "schema_version": "35",
+        "runtime_schema_version": "35",
     }
     # The legacy shape: a pre-0027 write names none of the new columns —
     # the DEFAULT carries it, and the store reads it back honestly.

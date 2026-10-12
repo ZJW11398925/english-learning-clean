@@ -283,7 +283,9 @@ def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> No
     # V3-3 再随迁：世界 cast 两表入 keep 半（0031 两表——读者 durable
     # 角色一世界一行 + AI actor 叙事档案）；V3-5 再随迁：段落提交三表
     # 入 keep 半（0033 三表——正文 CANON 行 / 解耦曝光记录 / story-time
-    # lineage 行）。
+    # lineage 行）；V3-6 再随迁：User Gate/用户行动两表入 keep 半（0035
+    # 两表——FK 链 gate → scene → chapter → world、action → gate 全 keep
+    # 侧）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -303,6 +305,8 @@ def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> No
         "narrative_passage",
         "reader_exposure",
         "segment_commit",
+        "user_gate",
+        "user_action",
     )
     for table in TABLES:
         assert table in SWEPT_TABLES
