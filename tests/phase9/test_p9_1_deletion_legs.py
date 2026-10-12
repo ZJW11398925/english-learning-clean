@@ -285,7 +285,8 @@ def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> No
     # 入 keep 半（0033 三表——正文 CANON 行 / 解耦曝光记录 / story-time
     # lineage 行）；V3-6 再随迁：User Gate/用户行动两表入 keep 半（0035
     # 两表——FK 链 gate → scene → chapter → world、action → gate 全 keep
-    # 侧）。
+    # 侧）；V3-6R 再随迁：replan 义务一表入 keep 半（0036 一表——FK 链
+    # obligation → action → gate 全 keep 侧）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -307,6 +308,7 @@ def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> No
         "segment_commit",
         "user_gate",
         "user_action",
+        "action_replan",
     )
     for table in TABLES:
         assert table in SWEPT_TABLES

@@ -721,6 +721,8 @@ OPEN → ANSWERED → RESOLVING → COMMITTED → CLOSED
 
 **V3-6 落法（开工裁决 `DEC-OPI-dc1bafdf-…5`；重放行修订 `…21`）**：门面与提交面落于 `elc/world/action.py`——`open_gate`（仅 `ACTIVE` 场；`options` 2–4 非空串；一场同一时间至多一个非终态门——`OPEN`/`ANSWERED`/`RESOLVING`，查在开门的短事务内而非部分 UNIQUE 索引）、`submit_gate`（**NCP-1**：`OPEN → ANSWERED` + `user_action` `ANSWERED` 行同一短事务；`(gate_id, submission_id)` 已存 ⇒ 形状同返回存行 / 异 `CONFLICT`；非 `OPEN` 且非本 submission 重放 ⇒ `VALIDATION_FAILED`——一个 gate 只接受一次 submission）、`begin_resolving`（`ANSWERED → RESOLVING` 两行同事务——事务外 provider 裁定前的 durable 停点；自 `RESOLVING` 重呼幂等）、`commit_action`（**NCP-2**，全臂见 §25）。`COMMITTED → CLOSED` 不需要独立面：下一条新段落提交即「续写已开始」（§22 互锁句，同事务）。崩溃语义：NCP-1 后未 `COMMITTED` ⇒ recovery 以同一 `submission_id` 重新裁定（唯一终态）；`COMMITTED` 后重放 = 幂等 no-op。
 
+**V3-6R 收紧（开工裁决 `DEC-OPI-dc1bafdf-…31`）**：① **`RESOLVING` 为唯一入终态前驱**——`commit_action` 仅接受 `RESOLVING`（`ANSWERED` 直达 ⇒ `VALIDATION_FAILED` 点名 `begin_resolving`）；确定性 Resolver 基线以 `begin_resolving → commit_action` 为正链（单条主路径，不留旁路）。② **一场一未 `CLOSED` 门**——`open_gate` 拒绝场景存在**任何非 `CLOSED` gate**（`COMMITTED` 未续写亦拦）；先以带 `outcome_ref` 的续写段关闭前一门（§25 强制律），方可开下一门。③ `COMMITTED → CLOSED` 的物理形**收紧为显式臂**：携带 `outcome_ref` 的 fresh 段同事务关闭其被引 gate（不再泛关全部 COMMITTED 门）。
+
 ## 24. Plan Revision Lifecycle（Narrative V3）
 
 适用范围：Chapter 重规划（replan_scope=CHAPTER）与 Scene 重规划（replan_scope=SCENE，落为 Dossier 新版本）。
@@ -760,6 +762,8 @@ story_tick actual 推进（该段 duration_ticks）
 
 **V3-5R 落法（开工裁决 `DEC-OPI-dc1bafdf-…11`）**：① **场景 actual 区间 = 本事务唯一写权**——fresh 段提交的同一事务内，一个 UPDATE（store 无事务臂 `_advance_scene_actual_span_tx`）写 `actual_start_tick = COALESCE(actual_start_tick, 段 actual_start)`、`actual_end_tick = 段 actual_end`、`is_last` 时 `status='COMMITTED'`（**一次版本推进**；SCENE COMMIT 仍不是第三个事务）；replay 不改 span。② **顺序律**：fresh 段严格 `segment_seq == max(committed_seq) + 1`（首段必须 1；0 / 负数 / 跳号 / 倒序 ⇒ `VALIDATION_FAILED` 点名 given 与 expected；replay arm 先行——已存 key 的重放不受本律约束）。③ **terminality**：`segment_commit.is_last_segment`（migration 0034）持久化该段的 SCENE COMMIT 身份；replay 形状比对含之（同 segment_key 不同 `is_last_segment` ⇒ `CONFLICT`）。
 
+**V3-6R 落法（开工裁决 `DEC-OPI-dc1bafdf-…31`）**：**`outcome_ref` 臂**——`PovWriter.write_segment(..., outcome_ref)` 直通本提交：ref 存在 ⇒ 必须指向真实 **COMMITTED** `user_action`（缺失 `NOT_FOUND` / 非 COMMITTED `VALIDATION_FAILED`）且其 gate 的 `scene_id` 属于本段 scene；`narrative_passage.outcome_ref` 落 `user_action_id`；**同一事务**将该 gate `COMMITTED → CLOSED`（§22 互锁句的 V3-6R 显式形）；**强制律**：场存在 `COMMITTED` 未 `CLOSED` gate ⇒ 本 fresh 段必须携带其 action 的 `outcome_ref`（缺/异 `VALIDATION_FAILED`）；replay 形状比对含 `outcome_ref`。span 臂本体不变（NCP-2 与 NCP-3 各自事务调用同一臂——§26 两臂律）。
+
 幂等键：`segment_key = (scene_id, segment_seq)`；passage 与 event 的 id 由 segment_key 派生（重放写同一批 id）。
 
 ```text
@@ -790,6 +794,8 @@ COMMITTED 后重放            → 幂等 no-op；呈现层从 durable 状态重
 
 **V3-6 落法（开工裁决 `DEC-OPI-dc1bafdf-…5`；重放行修订 `…21`）**：`commit_action`（`elc/world/action.py`）一个 `BEGIN IMMEDIATE`…`COMMIT` 落全臂——① `user_action` 终态八列（`interpretation` / `outcome` / `actual_action` / `consequences` / `state_effects` / `participants` / `replan_scope` / `actual_tick`=推进后 `actual_end`）；② `world_event` 行为事实行（id 派生 `f"ac:{gate_id}:{submission_id}:event"`，`kind='action'`，participants 含用户角色，effects=裁定 `state_effects`）；③ `world_state_fact` 结算（`_settle_effects_in_transaction` 一真源）；④ `world.current_tick` 推进（`duration_ticks ≥ 0`；`actual_start`=事务内推进前读）；⑤ `segment_commit` 行（`kind='ACTION_OUTCOME'`，`commit_id=f"ac:{gate_id}:{submission_id}"`，`action_id` 载、`passage_id`/`segment_seq` 空、**`is_last_segment`=0（门面不翻场）**）；⑥ gate `(ANSWERED|RESOLVING) → COMMITTED`；⑦ 章若仍 `PLANNED` ⇒ 同事务 `PLANNED→ACTIVE` 且 `opened_at_tick=actual_start`（#3 同 commit_segment 律——首段或首次行动裁定开启章）。幂等：同 `action_commit_key=(gate_id, submission_id)` 形状同重放 = 全组 no-op；形状异 `CONFLICT`（形状比对含语义载荷——裁定四文本/effects/participants/replan_scope/duration；簿记戳不比——SEGMENT COMMIT 同律）。**`replan_scope ≠ NONE` 的计划面消费不在本事务**：SCENE ⇒ `ScenePlanner.replan_scene`（新 dossier revision=max+1，PROPOSED→ADOPT 由 store 面同短事务 supersede）；CHAPTER ⇒ `Director.revise_blueprint`（现役 V3-4 面，语义不改）。
 
+**V3-6R 落法（开工裁决 `DEC-OPI-dc1bafdf-…31`）**：⑧ **义务出生**——`replan_scope ≠ NONE` ⇒ 同事务建 `action_replan` `PENDING` 行（`replan_request_id = f"rp:{gate_id}:{submission_id}"`；`NONE` ⇒ 零行）；**消费协议改为 claim → work → complete**：`ScenePlanner.replan_scene(replan_request_id, …)`（SCENE）/ `Director.apply_action_replan(replan_request_id, …)`（CHAPTER）——`APPLIED` 重试零写返回 `target_ref`；`PENDING` 先写 `target_ref`（claim）再执行，崩溃重试收敛**同一 revision**、零第二次计划变更。**场 span 臂**：`advance_scene_actual_span_tx(..., close_scene=False)`——扩展场 actual 区间、不关场（§26 两臂律）。`status` 仅自 `RESOLVING` 入 `COMMITTED`（§23 V3-6R 收紧①）。
+
 ### 两条提交的共同纪律
 
 - 每个 commit 各自全或无；正文与其**本段新产生的非用户事实**同批提交（零撕裂）。
@@ -810,7 +816,7 @@ actual_*_tick：Canon 面（只由 SEGMENT / ACTION OUTCOME COMMIT 写；单调�
 
 - `actual_start_tick` = 推进行为前的 world tick；`actual_end_tick` = 加 `duration_ticks` 后的 world tick（`duration_ticks >= 0`）。
 - 同一世界 actual 区间非递减；跨章继续；章/场的 actual 区间由 commit 决定（可与 planned 不同——用户行为可改变时间进程）。
-- **场 actual 区间的唯一写者（V3-5R 落法，`DEC-OPI-dc1bafdf-…11`）**：`world_scene.actual_start_tick` / `actual_end_tick` 只由 SEGMENT COMMIT（NCP-3）的同一事务写——首段写 `actual_start_tick`（COALESCE 保首值）、每段推进 `actual_end_tick`、末段随 `ACTIVE → COMMITTED` 翻转（**一次版本推进**；`commit_scene` 显式面不写 span；replay 零重改）。
+- **场 actual 区间的写者 = 两个提交事务的共同臂（V3-5R 立、V3-6R 泛化，`DEC-OPI-dc1bafdf-…31`）**：`world_scene.actual_start_tick` / `actual_end_tick` 只由提交事务经同一无事务臂 `advance_scene_actual_span_tx(scene_id, actual_start, actual_end, close_scene, …)` 写——NCP-2（ACTION OUTCOME）扩展 span、`close_scene=False`（不关场）；NCP-3（SEGMENT）扩展 span、`close_scene=is_last_segment` 时才随 `ACTIVE → COMMITTED` 翻转；首写 `actual_start_tick` 用 COALESCE 保首值；各自事务内**一次版本推进**；`commit_scene` 显式面不写 span；replay 零重改。
 - 排序与因果读 actual；显示由 Calendar 把 tick 解释成世界日期（不依赖地球公历）。
 - 章规划中的时间只写 planned；不得预写 actual。
 

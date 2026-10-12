@@ -388,6 +388,18 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: through them, and they add no consequential FK to the registered
 #: deletion face. The two join at the tuple's tail (the same
 #: chronological append law; 0035 is the head this registration rides).
+#:
+#: V3-6R (TASK-OPI-dc1bafdf…33 / the opening ruling DEC-OPI-dc1bafdf…31)
+#: adds migration 0036's one table — ``action_replan``, the durable
+#: replan obligation a ruling's ``replan_scope ≠ NONE`` leaves behind
+#: (the crash-proof anchor between NCP-2 and the plan face that consumes
+#: the verdict) — to the same keep rule, same conservative reading
+#: (registration, not deletion semantics; zero sweep face). Its FK chain
+#: (``user_action_id`` → ``user_action`` → gate → scene → chapter →
+#: world) is keep-side at every link, so no sweep can be refused through
+#: it, and it adds no consequential FK to the registered deletion face.
+#: It joins at the tuple's tail (the same chronological append law;
+#: 0036 is the head this registration rides).
 GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_lore_fact",
     "world",
@@ -409,6 +421,7 @@ GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "segment_commit",
     "user_gate",
     "user_action",
+    "action_replan",
 )
 
 

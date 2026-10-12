@@ -257,35 +257,37 @@ def test_0019_is_the_registered_head() -> None:
     them again to 28, V3-1's 0029_narrative_v3_foundations to 29, V3-2's
     0030_world_bible to 30, V3-3's 0031_world_cast to 31, V3-3R's
     0032_actor_profile_world_fk to 32, V3-5's 0033_segment_commit
-    to 33, V3-5R's 0034_segment_terminality to 34 and V3-6's
-    0035_user_gate_action to 35
+    to 33, V3-5R's 0034_segment_terminality to 34, V3-6's
+    0035_user_gate_action to 35 and V3-6R's 0036_action_replan to 36
     (the head
     assertion migrates with the newest slice; this pin's *lineage* claim —
     0019 in place — stands)."""
 
-    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
-    assert MIGRATION_IDS[-2] == "0034_segment_terminality"
-    assert MIGRATION_IDS[-3] == "0033_segment_commit"
-    assert MIGRATION_IDS[-4] == "0032_actor_profile_world_fk"
-    assert MIGRATION_IDS[-5] == "0031_world_cast"
-    assert MIGRATION_IDS[-6] == "0030_world_bible"
-    assert MIGRATION_IDS[-7] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-8] == "0028_world_storyline"
+    assert MIGRATION_IDS[-1] == "0036_action_replan"
+    assert MIGRATION_IDS[-2] == "0035_user_gate_action"
+    assert MIGRATION_IDS[-3] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-4] == "0033_segment_commit"
+    assert MIGRATION_IDS[-5] == "0032_actor_profile_world_fk"
+    assert MIGRATION_IDS[-6] == "0031_world_cast"
+    assert MIGRATION_IDS[-7] == "0030_world_bible"
+    assert MIGRATION_IDS[-8] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-9] == "0028_world_storyline"
     assert "0019_character_cards" in MIGRATION_IDS
-    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
+    assert SCHEMA_HEAD_FILE == "0036_action_replan.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "35"
+    assert SCHEMA_HEAD_VERSION == "36"
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0035_user_gate_action"
-    assert applied[-2] == "0034_segment_terminality"
-    assert applied[-3] == "0033_segment_commit"
-    assert applied[-4] == "0032_actor_profile_world_fk"
-    assert applied[-5] == "0031_world_cast"
-    assert applied[-6] == "0030_world_bible"
-    assert applied[-7] == "0029_narrative_v3_foundations"
-    assert applied[-8] == "0028_world_storyline"
+    assert applied[-1] == "0036_action_replan"
+    assert applied[-2] == "0035_user_gate_action"
+    assert applied[-3] == "0034_segment_terminality"
+    assert applied[-4] == "0033_segment_commit"
+    assert applied[-5] == "0032_actor_profile_world_fk"
+    assert applied[-6] == "0031_world_cast"
+    assert applied[-7] == "0030_world_bible"
+    assert applied[-8] == "0029_narrative_v3_foundations"
+    assert applied[-9] == "0028_world_storyline"
     assert "0019_character_cards" in applied
     assert schema_version(conn) == SCHEMA_HEAD_VERSION
 

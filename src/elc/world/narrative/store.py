@@ -17,7 +17,11 @@ transaction (**since V3-5**: ``_flip_chapter_activated_tx`` is the arm
 ``_advance_scene_actual_span_tx`` is the scene's own span-and-flip arm
 the same transaction calls — the actual tick columns are the
 commit's — and ``_flip_scene_committed_tx`` stays the separate explicit
-lifecycle face :meth:`commit_scene` wraps).
+lifecycle face :meth:`commit_scene` wraps; **since V3-6R**
+(TASK-OPI-dc1bafdf…33 / DEC-OPI-dc1bafdf…31) the span arm is *two*
+commit transactions' shared arm: NCP-3 calls it with
+``close_scene=is_last_segment``, NCP-2 with ``close_scene=False`` —
+STATE §26's two-caller law).
 
 Discipline (the house store law, :mod:`elc.world.store`'s posture):
 
@@ -1488,21 +1492,27 @@ class SqliteNarrativeStore:
         scene_id: str,
         actual_start_tick: int,
         actual_end_tick: int,
-        is_last: bool,
+        close_scene: bool,
         now: str,
         expected_state_version: int,
     ) -> Result[None]:
-        """The scene's actual span — NCP-3's **only** span writer
-        (V3-5R, TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11's HIGH-2;
-        STATE §25/§26) — as a **no-transaction arm**: the SEGMENT COMMIT
-        transaction (:func:`elc.world.settlement.commit_segment`) calls
-        it inside NCP-3's one short atomic group. The caller owns the
-        transaction; this arm runs no BEGIN/COMMIT of its own.
+        """The scene's actual span — **the two commit transactions'
+        shared arm** (V3-5R, TASK-OPI-dc1bafdf…13 /
+        DEC-OPI-dc1bafdf…11's HIGH-2; generalized by the V3-6R
+        correction, TASK-OPI-dc1bafdf…33 / DEC-OPI-dc1bafdf…31; STATE
+        §26's two-caller law) — as a **no-transaction arm**: NCP-3
+        (:func:`elc.world.settlement.commit_segment`) calls it inside its
+        one short atomic group with ``close_scene=is_last_segment``, and
+        NCP-2 (:func:`elc.world.action.commit_action`) calls it with
+        ``close_scene=False`` — a gate's action extends the scene's
+        actual interval and never closes a scene (the flip stays the
+        last SEGMENT's). The caller owns the transaction; this arm runs
+        no BEGIN/COMMIT of its own.
 
         One UPDATE, one version bump: ``actual_start_tick`` is written
-        through ``COALESCE`` (the first committed segment's start
-        stands), ``actual_end_tick`` advances to this segment's end, and
-        when ``is_last`` the same UPDATE carries the ``ACTIVE →
+        through ``COALESCE`` (the first committed write's start stands),
+        ``actual_end_tick`` advances to this commit's end, and when
+        ``close_scene`` the same UPDATE carries the ``ACTIVE →
         COMMITTED`` flip (the SCENE COMMIT alias — never a third
         transaction). :meth:`commit_scene`'s explicit face keeps its own
         separate arm (:meth:`_flip_scene_committed_tx`) and writes no
@@ -1525,7 +1535,7 @@ class SqliteNarrativeStore:
             (
                 actual_start_tick,
                 actual_end_tick,
-                int(is_last),
+                int(close_scene),
                 now,
                 scene_id,
                 expected_state_version,

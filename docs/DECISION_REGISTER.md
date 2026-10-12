@@ -295,3 +295,17 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 6. **观察入册（后刀散文扫尾候选）**：`time.py`/`narrative/store.py`/`narrative/types.py` 的「V3-1 ships no commit transaction / the later cuts'」类现在时句自 V3-5 起不精确（切面作用域可读为历史归属句）；`deletion/types.py` 模块 docstring 的「ALL_USER_DATA keeps」与 `RETAINED_TABLES` 五员不符（非本刀引入）——归后刀散文扫尾。
 
 授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v36_review\`，2026-10-12）+ 总控处置（历刀先例：总控亲写）；处置提交随本条目同刀。
+
+### v1.5.2 — 2026-10-13 V3-6R 开工裁决（外审 2 HIGH + 1 MEDIUM-HIGH + RESOLVING 收紧；范围受限；授权：外审结论转呈）
+
+**结论**：V3-6 主体（Gate/NCP-1/NCP-2/Intent≠Fact/Action lineage）通过；**暂不进入 V3-7**，先做**范围受限 V3-6R**——不扩 Actor Memory/Chapter Settlement。
+
+1. **HIGH-1 durable replan obligation**：新表 `action_replan`（**migration 0036**）——`replan_request_id` 派生 `f"rp:{gate_id}:{submission_id}"` / `user_action_id` UNIQUE FK / `scope` SCENE|CHAPTER / `status` PENDING|APPLIED / `target_ref`（eager claim；APPLIED ⇒ NOT NULL 复合 CHECK）/ 双 stamp / state_version；入 `GLOBAL_CONTENT_TABLES`（20→21）。**NCP-2 第⑧臂**：scope≠NONE ⇒ 同事务建 PENDING（NONE 零行）。**消费协议 claim → work → complete**：`replan_scene(replan_request_id, …)` / `apply_action_replan(replan_request_id, …)`——APPLIED 零写返回 target_ref；PENDING 先写 target_ref 再执行；崩溃重试收敛同一 revision、零第二次计划变更；`revise_blueprint` 语义不动。`recovery_scan` **第五族**：PENDING obligations。
+2. **HIGH-2 `outcome_ref` 链**：`PovWriter.write_segment(..., outcome_ref)` → NCP-3 校验（指向真实 COMMITTED action；gate 属本场）→ passage 落 `outcome_ref` → **同事务**关其 gate；**强制律**：场有 COMMITTED 未 CLOSED gate ⇒ fresh 段必须携带该 ref；replay 形状含 `outcome_ref`。链：`intent → adjudication → committed action → outcome_ref → passage`。
+3. **一场一未 CLOSED 门**：`open_gate` 拒绝场景存在任何非 CLOSED gate（COMMITTED 未续写亦拦）。
+4. **MEDIUM-HIGH span 覆盖 ACTION_OUTCOME**：臂语义化 `advance_scene_actual_span_tx(..., close_scene)`——NCP-2（close_scene=False）/ NCP-3（close_scene=is_last_segment）共同臂；V3-6「ACTION 不写场 span」钉反转（不翻场保留）。
+5. **RESOLVING 收紧**：`commit_action` 仅接受 RESOLVING（ANSWERED 直达拒、点名 `begin_resolving`）；单一主路径无旁路；测试随迁。
+6. **Resolver 生产面硬门维持**（非本刀 blocker；V3-8 Gold Scenario 前必须建成——intent+Bible+state+capability/environment → Adjudication）。
+7. **迁移刀纪律**：0036 头（conftest 0036/36、负索引 shift、SCHEMA_HEAD 字面族、GLOBAL_CONTENT_TABLES 20→21 + aoci 廿一员钉、0036 条目）；禁改面；四门亲跑。
+
+授权：外审（用户转呈，2026-10-13）；DMCP 开工裁决 `DEC-OPI-dc1bafdf-…31`（rev 802）。

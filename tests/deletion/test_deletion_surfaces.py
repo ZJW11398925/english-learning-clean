@@ -212,6 +212,13 @@ def test_no_global_content_table_lives_in_app_db() -> None:
         # zero sweep face.
         "user_gate",
         "user_action",
+        # V3-6R (TASK-OPI-dc1bafdf…33): migration 0036's one table —
+        # the durable replan obligation a ruling's replan_scope ≠ NONE
+        # leaves behind — appends at the tail (the same chronological
+        # law); its FK chain (user_action_id → user_action → gate →
+        # world_scene → world_chapter → world) is keep-side at every
+        # link, zero sweep face.
+        "action_replan",
     )
     for table in GLOBAL_CONTENT_TABLES:
         assert table not in SWEPT_TABLES

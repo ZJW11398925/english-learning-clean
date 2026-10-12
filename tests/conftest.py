@@ -141,12 +141,18 @@ MIGRATION_IDS: tuple[str, ...] = (
     # segment_seq / passage_id go NULLable, is_last_segment and the
     # UNIQUE survive); elc.world.action is the NCP-1 / NCP-2 face.
     "0035_user_gate_action",
+    # V3-6R (TASK-OPI-dc1bafdf…33 / the opening ruling …31): the
+    # external review's HIGH-1 — action_replan, the durable replan
+    # obligation a ruling's replan_scope ≠ NONE leaves behind (the
+    # crash-proof anchor between NCP-2's short transaction and the plan
+    # face that consumes the verdict; claim → work → complete).
+    "0036_action_replan",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0035_user_gate_action.sql"
-SCHEMA_HEAD_VERSION = "35"
+SCHEMA_HEAD_FILE = "0036_action_replan.sql"
+SCHEMA_HEAD_VERSION = "36"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

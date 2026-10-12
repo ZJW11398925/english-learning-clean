@@ -52,6 +52,17 @@ V3-6 (``TASK-OPI-dc1bafdf…23`` / the opening ruling ``…5``, re-run
 ``participant_namespace_of``), ``scene.py`` (``replan_scene``) and
 ``deletion/types.py`` (the keep set's eighteen → twenty members) — and
 the pin below carries those faces too.
+
+V3-6R (``TASK-OPI-dc1bafdf…33`` / the opening ruling ``…31``) adds the
+obligation migration (``0036_action_replan.sql``) and re-touches five
+entries in place — ``action.py`` (the one-gate law, the RESOLVING-only
+door, the span arm ④b and the claim/complete helpers), ``settlement.py``
+(the ``outcome_ref`` arm and the targeted close), ``scene.py`` (the
+obligation-keyed replan), ``director.py`` (``apply_action_replan``),
+``writer.py`` (the reference pass-through), the narrative ``store.py``
+(the span arm's ``close_scene`` two-caller law) and
+``deletion/types.py`` (the keep set's twenty → twenty-one members) — and
+the pins below carry those faces too.
 """
 
 from __future__ import annotations
@@ -73,6 +84,7 @@ TOUCHED_TAGS = (
     "package.py[W14A]",
     "berrymoor.json[FQ8W]",
     "0028_world_storyline.sql[PD7T]",
+    "0036_action_replan.sql[",
 )
 
 
@@ -292,10 +304,11 @@ def test_every_migration_file_carries_a_ledger_entry() -> None:
         assert f"{name}[" in section, f"migration {name!r} has no ledger entry"
 
 
-def test_the_six_touched_entries_are_single_lines() -> None:
+def test_the_touched_entries_are_single_lines() -> None:
     """The ledger's layout law for the touched entries: one line each,
     tag at the start, no stray carriage returns — a split or duplicated
-    entry is drift too.
+    entry is drift too (the name is count-neutral since V3-6R: the set
+    grows with each re-touch).
 
     Review F4 (D-2 disposition): the CR check reads **raw bytes** — the
     old ``read_text`` default (universal newlines) normalized ``\\r\\n``
@@ -320,7 +333,7 @@ def test_the_six_touched_entries_are_single_lines() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_deletion_entry_counts_twenty_global_content_tables() -> None:
+def test_deletion_entry_counts_the_twenty_one_global_content_tables() -> None:
     """The disposition's fixed falsehood (review MEDIUM-1, one live lie
     found by the mechanical sweep): ``GLOBAL_CONTENT_TABLES`` gained
     ``world_storyline`` at C2 — the entry's 「七员」 was false; 「八员」
@@ -333,23 +346,23 @@ def test_deletion_entry_counts_twenty_global_content_tables() -> None:
     migration 0033's three narrative-commit tables
     (``narrative_passage`` / ``reader_exposure`` / ``segment_commit``)
     and V3-6 (TASK-OPI-dc1bafdf…23) adds migration 0035's two tables
-    (``user_gate`` / ``user_action``)
-    — 「二十员」 is the truth now, and the source constant must carry
-    the same twenty."""
+    (``user_gate`` / ``user_action``) and V3-6R (TASK-OPI-dc1bafdf…33)
+    migration 0036's one (``action_replan``)
+    — 「廿一员」 is the truth now, and the source constant must carry
+    the same twenty-one."""
 
     from elc.deletion.types import GLOBAL_CONTENT_TABLES
 
     entry = _entry_line_in_section(
         "===D:/english-learning-clean/src/elc/deletion/===", "types.py[DD7M]"
     )
-    assert "二十员" in entry
+    assert "廿一员" in entry
+    assert entry.count("廿一员") == 1
+    assert "二十员" not in entry
     assert "十八员" not in entry
     assert "十五员" not in entry
     assert "十三员" not in entry
     assert "十二员" not in entry
-    # 「十员」 lives only inside 「二十员」 now — a standalone stale claim
-    # would make the count two.
-    assert entry.count("十员") == 1
     assert "八员" not in entry
     assert "七员" not in entry
     assert "world_storyline" in entry
@@ -362,7 +375,8 @@ def test_deletion_entry_counts_twenty_global_content_tables() -> None:
     assert "segment_commit" in entry
     assert "user_gate" in entry
     assert "user_action" in entry
-    assert len(GLOBAL_CONTENT_TABLES) == 20
+    assert "action_replan" in entry
+    assert len(GLOBAL_CONTENT_TABLES) == 21
     assert "world_storyline" in GLOBAL_CONTENT_TABLES
     assert "world_scene_dossier" in GLOBAL_CONTENT_TABLES
     assert "world_bible_revision" in GLOBAL_CONTENT_TABLES
@@ -373,6 +387,7 @@ def test_deletion_entry_counts_twenty_global_content_tables() -> None:
     assert "segment_commit" in GLOBAL_CONTENT_TABLES
     assert "user_gate" in GLOBAL_CONTENT_TABLES
     assert "user_action" in GLOBAL_CONTENT_TABLES
+    assert "action_replan" in GLOBAL_CONTENT_TABLES
 
 
 def test_v3_5_entries_carry_the_segment_commit_faces() -> None:
@@ -651,3 +666,99 @@ def test_v3_6_entries_carry_the_gate_and_action_faces() -> None:
         entry = _entry_line_in_section(world_section, tag)
         for keyword in keywords:
             assert keyword in entry, (tag, keyword)
+
+
+# ---------------------------------------------------------------------------
+# V3-6R (TASK-OPI-dc1bafdf…33): the obligation migration and the
+# re-touched entries
+# ---------------------------------------------------------------------------
+
+
+def test_v3_6r_entries_carry_the_obligation_and_outcome_faces() -> None:
+    """V3-6R's ledger faces ride their entries: the 0036 migration (the
+    obligation table, the eager claim, the protocol and its stamps), the
+    re-touched ``action.py`` (the one-gate law, the RESOLVING-only door
+    and the claim/complete helpers), ``settlement.py`` (the
+    ``outcome_ref`` arm, the forced law and the targeted close),
+    ``scene.py`` (the obligation-keyed replan), ``director.py``
+    (``apply_action_replan``), ``writer.py`` (the reference pass-through)
+    and the narrative ``store.py`` (the span arm's ``close_scene``
+    two-caller law). The coverage law above keeps the 0036 entry
+    present; this pin keeps the words true."""
+
+    section = "\n".join(_migrations_section())
+    assert "0036_action_replan.sql[" in section
+    migration_entry = _entry_line("0036_action_replan.sql[")
+    for keyword in (
+        "action_replan",
+        "replan_request_id",
+        "user_action",
+        "('SCENE','CHAPTER')",
+        "('PENDING','APPLIED')",
+        "target_ref",
+        "claim→work→complete",
+        "recovery_scan",
+        "廿一员",
+        "双 stamp '36'",
+    ):
+        assert keyword in migration_entry, keyword
+
+    world_section = "===D:/english-learning-clean/src/elc/world/==="
+    for tag, keywords in (
+        (
+            "action.py[",
+            (
+                "claim_replan_target",
+                "mark_replan_applied",
+                "replan_request_id_for",
+                "scene_of_action",
+                "pending_replans",
+                "close_scene",
+                "V3-6R",
+            ),
+        ),
+        (
+            "settlement.py[",
+            (
+                "outcome_ref",
+                "强制律",
+                "定向",
+                "close_scene",
+                "V3-6R",
+            ),
+        ),
+        (
+            "scene.py[",
+            (
+                "replan_request_id",
+                "claim_replan_target",
+                "replan_obligation",
+                "V3-6R",
+            ),
+        ),
+        (
+            "director.py[",
+            (
+                "apply_action_replan",
+                "claim_replan_target",
+                "V3-6R",
+            ),
+        ),
+        (
+            "writer.py[",
+            (
+                "outcome_ref",
+                "V3-6R",
+            ),
+        ),
+    ):
+        entry = _entry_line_in_section(world_section, tag)
+        for keyword in keywords:
+            assert keyword in entry, (tag, keyword)
+
+    narrative_section = (
+        "===D:/english-learning-clean/src/elc/world/narrative/==="
+    )
+    store_entry = _entry_line_in_section(narrative_section, "store.py[PD9T]")
+    for keyword in ("close_scene", "_advance_scene_actual_span_tx", "V3-6R"):
+        assert keyword in store_entry, keyword

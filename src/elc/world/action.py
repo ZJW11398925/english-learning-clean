@@ -1,8 +1,10 @@
 """The Narrative V3 User Gate and Action Resolver's deterministic machine
 face (V3-6, TASK-OPI-dc1bafdf…23 / the opening ruling
-DEC-OPI-dc1bafdf…5, re-run revision …21) — the gate a story stops at,
-the user's own submission, the adjudication and the ACTION OUTCOME
-COMMIT's one short atomic group (NCP-2).
+DEC-OPI-dc1bafdf…5, re-run revision …21; the V3-6R correction,
+TASK-OPI-dc1bafdf…33 / the opening ruling DEC-OPI-dc1bafdf…31) — the
+gate a story stops at, the user's own submission, the adjudication, the
+ACTION OUTCOME COMMIT's one short atomic group (NCP-2) and the durable
+replan obligation that group leaves behind.
 
 **The gates** (STATE §23): the story stops when the world cannot
 honestly decide for the user. The face set is the lifecycle's own:
@@ -10,9 +12,12 @@ honestly decide for the user. The face set is the lifecycle's own:
 - :func:`open_gate` — ``OPEN``: only an ``ACTIVE`` scene takes a gate,
   ``options`` are two to four non-empty strings (the design supplement
   §2.5's 2–4 natural behaviour options; the free-text arm is implied),
-  and a scene holds **at most one non-terminal gate** (``OPEN`` /
-  ``ANSWERED`` / ``RESOLVING`` — the check runs inside the opening
-  face's own short transaction, not in a partial UNIQUE index).
+  and a scene holds **no gate short of ``CLOSED``** — ``OPEN`` /
+  ``ANSWERED`` / ``RESOLVING`` and a ``COMMITTED`` gate nobody resumed
+  past all refuse (the V3-6R one-gate law: close the previous gate
+  first with a continuing segment carrying its ``outcome_ref``,
+  :func:`elc.world.settlement.commit_segment`; the check runs inside the
+  opening face's own short transaction, not in a partial UNIQUE index).
   ``opened_at_tick`` is the transaction's own read of
   ``world.current_tick`` — the #3 lifecycle tick authority's extension:
   opening a stop is not a commit, so the tick is read and never
@@ -42,22 +47,52 @@ honestly decide for the user. The face set is the lifecycle's own:
   ``world_state_fact`` settlement through the world store's one-truth
   helper (:func:`elc.world.store._settle_effects_in_transaction`);
   ``world.current_tick`` advanced by ``duration_ticks`` (the only
-  sanctioned mover — N-INV-007 / N-R-INV-005); the lineage row
-  (``kind='ACTION_OUTCOME'``, ``commit_id`` derived
-  ``f"ac:{gate_id}:{submission_id}"``, ``action_id`` carried,
-  ``passage_id`` / ``segment_seq`` NULL and ``is_last_segment`` = 0 —
-  **an action does not carry a SCENE COMMIT**: the scene's span and
-  flip stay its segments', V3-5R's one span writer); the gate's flip
-  (``ANSWERED`` / ``RESOLVING`` → ``COMMITTED``); and the chapter's
-  opening when it is still ``PLANNED`` — through the narrative store's
-  own arm, the same move and the same ``opened_at_tick`` law NCP-3
-  keeps (``actual_start``, the transaction's own read before the
-  advance: the chapter opens with its first segment or its first action
-  ruling).
+  sanctioned mover — N-INV-007 / N-R-INV-005); the scene's actual span
+  extended through the narrative store's shared span arm with
+  ``close_scene=False`` (the **V3-6R span law**: NCP-2 and NCP-3 are the
+  two callers of one UPDATE that never closes a scene — a gate's action
+  carries no SCENE COMMIT; the flip stays the last SEGMENT's, STATE
+  §26); the lineage row (``kind='ACTION_OUTCOME'``, ``commit_id``
+  derived ``f"ac:{gate_id}:{submission_id}"``, ``action_id`` carried,
+  ``passage_id`` / ``segment_seq`` NULL and ``is_last_segment`` = 0);
+  the gate's flip (``RESOLVING`` → ``COMMITTED`` — **since V3-6R the
+  only door in**: an ``ANSWERED`` gate has not passed the resolver's
+  durable stop, and ``begin_resolving`` is the deterministic baseline's
+  single main path); the chapter's opening when it is still ``PLANNED``
+  — through the narrative store's own arm, the same move and the same
+  ``opened_at_tick`` law NCP-3 keeps (``actual_start``, the
+  transaction's own read before the advance: the chapter opens with its
+  first segment or its first action ruling); and ⑧ the **replan
+  obligation's birth** (:func:`commit_action`'s own arm ⑧, the V3-6R
+  HIGH-1): ``replan_scope ≠ NONE`` ⇒ an ``action_replan`` row born
+  ``PENDING`` in this same transaction (``NONE`` ⇒ zero rows — zero
+  rows is "no obligation"), its ``replan_request_id`` derived
+  ``f"rp:{gate_id}:{submission_id}"``; a replayed commit_action touches
+  it never (the replay arm answers first).
+
+**The replan obligation** (:func:`claim_replan_target` /
+:func:`mark_replan_applied`, the V3-6R HIGH-1): the ruling's
+``replan_scope`` verdict is consumed **through the obligation**, never
+by a bare plan face — ``ScenePlanner.replan_scene(replan_request_id, …)``
+(``SCENE``) and ``Director.apply_action_replan(replan_request_id, …)``
+(``CHAPTER``) are the two consumers, and the protocol is
+``claim → work → complete`` (all three steps idempotent):
+:func:`claim_replan_target` writes the target revision's identity into
+``target_ref`` **before** the plan change executes (the eager claim —
+a crash retry recomputes the same target and converges on the same
+revision, never a second one); the plan change runs; the complete step
+moves ``PENDING → APPLIED`` (refused while no claim stands — the
+storage's composite CHECK is the same law one layer down). An
+``APPLIED`` retry is a zero-write read of ``target_ref``.
+:func:`replan_obligation` / :func:`pending_replans` are the read faces
+(``PENDING`` in ``gate_id`` order — the recovery survey's fifth
+family), and :func:`scene_of_action` resolves the obligation's durable
+chain (obligation → action → gate → scene) for the two consumers.
 - :func:`recovery_scan` — RA §29's scan face for this cut's families,
   plainly read: gates ``ANSWERED`` / ``RESOLVING``, actions
-  ``RESOLVING``, scenes ``ACTIVE``, chapters ``ACTIVE`` / ``SETTLING``,
-  each family deterministically ordered. The automatic resume 编排
+  ``RESOLVING``, scenes ``ACTIVE``, chapters ``ACTIVE`` / ``SETTLING``
+  and **replan obligations ``PENDING``** (the V3-6R fifth family), each
+  family deterministically ordered. The automatic resume 编排
   belongs to the pipeline cut; this face is the durable survey, and the
   semantics it carries are the contract's: after NCP-1 an interruption
   re-adjudicates with the **same ``submission_id``** (the unique
@@ -81,17 +116,23 @@ the face that lands its verdict.
 **``replan_scope`` is the ruling's own three-word verdict** (NONE /
 SCENE / CHAPTER; §2.6's first version), recorded in the terminal
 columns; the plan face's *consumption* is deliberately outside NCP-2's
-transaction (STATE §25's "V3-6 落法"): ``SCENE`` goes to
+transaction (STATE §25's "V3-6 落法") **and rides the obligation born in
+it** (the V3-6R HIGH-1): ``SCENE`` goes to
 :meth:`elc.world.scene.ScenePlanner.replan_scene` (a new dossier
-revision, ``max + 1``), ``CHAPTER`` to the existing
-:meth:`elc.world.director.Director.revise_blueprint` face (V3-4's
-semantics, unchanged).
+revision, ``max + 1``), ``CHAPTER`` to
+:meth:`elc.world.director.Director.apply_action_replan` — entered by
+``replan_request_id``, whose residue decision mirrors
+:meth:`elc.world.director.Director.revise_blueprint`'s own
+(``revise_blueprint``'s semantics are untouched; the obligation face
+composes the same law under the claim/complete protocol).
 
 **The action family's derivation laws** (§26.2.4's named form, disjoint
 from the ``sg:`` / ``-p{seq:04d}`` / ``-e{seq:04d}`` namespaces):
 ``commit_id = f"ac:{gate_id}:{submission_id}"``, ``event_id =
 f"ac:{gate_id}:{submission_id}:event"``, ``action_commit_key =
-(gate_id, submission_id)``. The shape comparison of a replayed
+(gate_id, submission_id)`` and, since V3-6R, ``replan_request_id =
+f"rp:{gate_id}:{submission_id}"`` (the action key's stable function —
+:func:`replan_request_id_for`). The shape comparison of a replayed
 ``commit_action`` covers the semantic payload (the four ruling texts,
 the effects, the participants, ``replan_scope``, ``duration_ticks``)
 and not the bookkeeping stamps (the SEGMENT COMMIT law, spelled once
@@ -172,20 +213,28 @@ from elc.world.types import (
 
 __all__ = [
     "ActionOutcome",
+    "ActionReplanRecord",
     "ActionStatus",
     "Adjudication",
     "GateStatus",
     "RecoveryScan",
     "ReplanScope",
+    "ReplanStatus",
     "UserActionRecord",
     "UserGateRecord",
     "action_of",
     "begin_resolving",
+    "claim_replan_target",
     "commit_action",
     "gates_of",
     "get_gate",
+    "mark_replan_applied",
     "open_gate",
+    "pending_replans",
     "recovery_scan",
+    "replan_obligation",
+    "replan_request_id_for",
+    "scene_of_action",
     "submit_gate",
 ]
 
@@ -199,9 +248,11 @@ class GateStatus(StrEnum):
     ``RESOLVING`` — the adjudication's durable stop (the provider call
     runs outside the database); ``COMMITTED`` — the ruling landed
     (NCP-2's terminal word); ``CLOSED`` — a later segment commit began
-    the continuation (§22's "the writing resumed" form: the next
-    committed segment closes the scene's committed gates in its own
-    transaction).
+    the continuation (§22's "the writing resumed" form; **since V3-6R
+    the close is explicit and targeted**: the fresh segment that
+    carries this gate's action as its ``outcome_ref`` closes this gate
+    in its own transaction — §23's V3-6R tightening ③, never a blanket
+    close of every committed gate).
     """
 
     OPEN = "OPEN"
@@ -219,6 +270,11 @@ class ActionStatus(StrEnum):
     action), steps through ``RESOLVING`` (:func:`begin_resolving`) and
     ends ``COMMITTED`` (NCP-2's eight terminal columns written at once,
     the storage's own composite CHECK backing the all-or-nothing).
+    **Since V3-6R ``RESOLVING`` is the only door into ``COMMITTED``**:
+    the deterministic resolver baseline's main path is
+    ``begin_resolving → commit_action``, and an ``ANSWERED`` row
+    reaching for the terminal word directly is refused (STATE §23's
+    V3-6R tightening ① — one main path, no byway).
     """
 
     ANSWERED = "ANSWERED"
@@ -243,6 +299,46 @@ class ReplanScope(StrEnum):
     NONE = "NONE"
     SCENE = "SCENE"
     CHAPTER = "CHAPTER"
+
+
+class ReplanStatus(StrEnum):
+    """The ``action_replan`` row's two-word lifecycle (migration 0036's
+    CHECK, DATA §26.2.1's "V3-6R 落法" block verbatim).
+
+    ``PENDING`` — the obligation is outstanding; ``APPLIED`` — the plan
+    change landed and the obligation is discharged. There is no
+    third word: ``NONE`` never births a row, so "no obligation" is zero
+    rows, not a word.
+    """
+
+    PENDING = "PENDING"
+    APPLIED = "APPLIED"
+
+
+@dataclass(frozen=True)
+class ActionReplanRecord:
+    """One durable replan obligation (migration 0036's ``action_replan``).
+
+    The row is born ``PENDING`` in NCP-2's own short transaction (arm ⑧,
+    the V3-6R HIGH-1) and discharged by the plan face's
+    ``claim → work → complete`` protocol. ``scope`` is the ruling's own
+    word (``SCENE`` / ``CHAPTER``); ``target_ref`` is the claimed target
+    revision's identity — ``dossier_id`` for ``SCENE``,
+    ``chapter_plan_id`` for ``CHAPTER`` — written by
+    :func:`claim_replan_target` before the plan change executes (the
+    eager claim: a crash retry converges on the same revision), ``None``
+    until then, and never ``None`` once ``status`` is ``APPLIED`` (the
+    storage's composite CHECK).
+    """
+
+    replan_request_id: str
+    user_action_id: str
+    scope: ReplanScope
+    status: ReplanStatus
+    target_ref: str | None
+    created_at: str
+    updated_at: str
+    state_version: int
 
 
 @dataclass(frozen=True)
@@ -348,19 +444,24 @@ class ActionOutcome:
 
 @dataclass(frozen=True)
 class RecoveryScan:
-    """RA §29's scan answer for this cut's four families: gates
+    """RA §29's scan answer for this cut's five families: gates
     ``ANSWERED`` / ``RESOLVING`` (not ``COMMITTED``), actions
-    ``RESOLVING`` (not ``COMMITTED``), scenes ``ACTIVE`` and chapters
-    ``ACTIVE`` / ``SETTLING``. Each tuple is deterministically ordered
-    (``gate_id`` / ``user_action_id`` / ``(chapter_id, scene_index)`` /
-    ``(world_id, chapter_index)``), so a recovery walk replays the same
-    survey byte for byte.
+    ``RESOLVING`` (not ``COMMITTED``), scenes ``ACTIVE``, chapters
+    ``ACTIVE`` / ``SETTLING`` and — since V3-6R — replan obligations
+    ``PENDING`` (the durable anchor between a ruling and its plan face:
+    the claim's ``target_ref`` is written before the work, so a retry
+    converges on the same revision). Each tuple is deterministically
+    ordered (``gate_id`` / ``user_action_id`` / ``(chapter_id,
+    scene_index)`` / ``(world_id, chapter_index)`` / ``gate_id`` for the
+    obligations), so a recovery walk replays the same survey byte for
+    byte.
     """
 
     gates: tuple[UserGateRecord, ...]
     actions: tuple[UserActionRecord, ...]
     scenes: tuple[WorldSceneRecord, ...]
     chapters: tuple[WorldChapterRecord, ...]
+    replans: tuple[ActionReplanRecord, ...]
 
 
 def open_gate(
@@ -381,10 +482,12 @@ def open_gate(
       ``VALIDATION_FAILED``;
     - the scene does not exist — ``NOT_FOUND``;
     - the scene is not ``ACTIVE`` — ``VALIDATION_FAILED``;
-    - the scene already holds a non-terminal gate (``OPEN`` /
-      ``ANSWERED`` / ``RESOLVING``) — ``VALIDATION_FAILED`` naming the
-      standing gate (one stop at a time; the check runs inside this
-      short transaction);
+    - the scene already holds a gate short of ``CLOSED`` (``OPEN`` /
+      ``ANSWERED`` / ``RESOLVING`` / a ``COMMITTED`` gate nobody resumed
+      past) — ``VALIDATION_FAILED`` naming the standing gate and the
+      close it owes (commit a continuing segment that carries its
+      ``outcome_ref``; the V3-6R one-gate law, STATE §23's tightening
+      ② — the check runs inside this short transaction);
     - the same ``gate_id`` with a different shape (the scene or the
       options differ) — ``CONFLICT``.
 
@@ -538,8 +641,8 @@ def _open_gate_tx(
             )
         )
     standing = conn.execute(
-        "SELECT gate_id FROM user_gate WHERE scene_id = ?"
-        " AND status IN ('OPEN','ANSWERED','RESOLVING')"
+        "SELECT gate_id, status FROM user_gate WHERE scene_id = ?"
+        " AND status != 'CLOSED'"
         " ORDER BY gate_id ASC",
         (scene_id,),
     ).fetchone()
@@ -550,8 +653,11 @@ def _open_gate_tx(
                 message=(
                     f"gate {gate_id!r} not opened: scene {scene_id!r}"
                     " already holds the standing gate"
-                    f" {str(standing[0])!r} — a scene stops at one gate"
-                    " at a time (STATE §23)"
+                    f" {str(standing[0])!r} (its status is"
+                    f" {str(standing[1])!r}) — a scene stops at one gate"
+                    " at a time (STATE §23); close the previous gate"
+                    " first by committing a continuing segment that"
+                    " carries its outcome_ref (the V3-6R one-gate law)"
                 ),
             )
         )
@@ -952,12 +1058,17 @@ def commit_action(
     - the same ``action_commit_key = (gate_id, submission_id)`` with a
       different shape — ``CONFLICT`` (the ruling landed once and does
       not rewrite; the compared shape is the semantic payload, the
-      bookkeeping stamps excluded, the SEGMENT COMMIT law).
+      bookkeeping stamps excluded, the SEGMENT COMMIT law);
+    - the action (or its gate) not ``RESOLVING`` — ``VALIDATION_FAILED``
+      naming ``begin_resolving`` (the V3-6R tightening ①: the ruling
+      enters ``COMMITTED`` only through the resolver's own durable
+      stop; an ``ANSWERED`` row has not passed it).
 
     A gate already ``COMMITTED`` (this key's ruling landed, a replay)
     answers the stored outcome: shape-equal rides back as a whole-group
-    no-op (no second event, no tick re-advance, no lineage row, no
-    re-flip), shape-different is the ``CONFLICT`` above.
+    no-op (no second event, no tick re-advance, no span re-write, no
+    lineage row, no re-flip, no second obligation), shape-different is
+    the ``CONFLICT`` above.
     """
 
     if not isinstance(adjudication, Adjudication):
@@ -1035,7 +1146,9 @@ def _commit_action_tx(
     now: str,
 ) -> Result[ActionOutcome]:
     """NCP-2's body, inside the caller's transaction (the arm list of
-    STATE §25's "V3-6 落法", spelled there once)."""
+    STATE §25's "V3-6 落法" plus the V3-6R block's own moves — the ④b
+    span arm, the ⑧ obligation and the RESOLVING-only door, spelled
+    there once)."""
 
     gate = _gate_row(conn, gate_id)
     if gate is None:
@@ -1150,6 +1263,36 @@ def _commit_action_tx(
             action=action,
             adjudication=adjudication,
             duration_ticks=duration_ticks,
+        )
+
+    # The RESOLVING-only door (V3-6R tightening ①, STATE §23): since this
+    # correction the ruling enters COMMITTED only from the resolver's own
+    # durable stop — the replay arm above answered first, so a stored
+    # ruling still rides back whatever moved since.
+    if action.status is not ActionStatus.RESOLVING:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=(
+                    f"action of gate {gate_id!r} not committed: the action"
+                    f" row is {action.status.value!r} — since V3-6R the"
+                    " ruling enters COMMITTED only from RESOLVING; call"
+                    " begin_resolving after the submission (STATE §23's"
+                    " V3-6R tightening ① — one main path, no byway)"
+                ),
+            )
+        )
+    if gate.status is not GateStatus.RESOLVING:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=(
+                    f"action of gate {gate_id!r} not committed: the gate is"
+                    f" {gate.status.value!r} — since V3-6R the ruling enters"
+                    " COMMITTED only from RESOLVING (call begin_resolving"
+                    " after the submission; STATE §23's V3-6R tightening ①)"
+                ),
+            )
         )
 
     scene = narrative_store.get_scene(gate.scene_id)
@@ -1286,10 +1429,24 @@ def _commit_action_tx(
     advanced = advance_current_tick(conn, world_id, duration_ticks)
     if isinstance(advanced, Err):
         return Err(advanced.error)
+    # ④b the scene's actual span — the V3-6R span law (STATE §26's two
+    # callers of one UPDATE): NCP-2 extends the scene's actual interval
+    # through the narrative store's shared arm and never closes a scene
+    # (close_scene=False) — a gate's action carries no SCENE COMMIT; the
+    # ACTIVE → COMMITTED flip stays the last SEGMENT's.
+    span = narrative_store._advance_scene_actual_span_tx(
+        gate.scene_id,
+        actual_start,
+        actual_end,
+        False,
+        now,
+        expected_state_version=scene.state_version,
+    )
+    if isinstance(span, Err):
+        return Err(span.error)
     # ⑤ the lineage row — ACTION_OUTCOME: the action_id rides, the
-    # passage's columns stay empty, and is_last_segment is 0 (a gate's
-    # action carries no SCENE COMMIT — the scene's span and flip stay
-    # its segments', V3-5R's one span writer).
+    # passage's columns stay empty, and is_last_segment is 0 (the flip
+    # stays the last SEGMENT's; the span it extends is ④b's own move).
     conn.execute(
         "INSERT INTO segment_commit ("
         " commit_id, kind, scene_id, segment_seq, passage_id, action_id,"
@@ -1308,12 +1465,14 @@ def _commit_action_tx(
             now,
         ),
     )
-    # ⑥ the gate's flip.
+    # ⑥ the gate's flip — RESOLVING is the only door in (the tightening
+    # above is the same law one layer up; the CAS guard is its redundancy
+    # at the write).
     cursor = conn.execute(
         "UPDATE user_gate SET status = 'COMMITTED',"
         " state_version = state_version + 1, updated_at = ?"
         " WHERE gate_id = ? AND state_version = ?"
-        " AND status IN ('ANSWERED','RESOLVING')",
+        " AND status = 'RESOLVING'",
         (now, gate_id, gate.state_version),
     )
     if cursor.rowcount != 1:
@@ -1336,6 +1495,25 @@ def _commit_action_tx(
         if isinstance(opened, Err):
             return Err(opened.error)
         chapter_activated = True
+    # ⑧ the replan obligation's birth — the V3-6R HIGH-1: a ruling whose
+    # scope is not NONE leaves a durable PENDING obligation in this same
+    # transaction (NONE leaves zero rows — "no obligation" is zero rows,
+    # not a word); a replayed commit never reaches this arm (the replay
+    # read answered first), so the row is born exactly once.
+    if adjudication.replan_scope is not ReplanScope.NONE:
+        conn.execute(
+            "INSERT INTO action_replan ("
+            " replan_request_id, user_action_id, scope, status,"
+            " target_ref, created_at, updated_at, state_version"
+            ") VALUES (?, ?, ?, 'PENDING', NULL, ?, ?, 1)",
+            (
+                replan_request_id_for(gate_id, submission_id),
+                user_action_id,
+                adjudication.replan_scope.value,
+                now,
+                now,
+            ),
+        )
 
     return Ok(
         ActionOutcome(
@@ -1483,20 +1661,328 @@ def action_of(
     return _action_row(conn, f"{gate_id}-a")
 
 
+# ---------------------------------------------------------------------------
+# the replan obligation — the V3-6R HIGH-1's read faces and the
+# claim → work → complete protocol (self-managed short transactions, the
+# store faces' own posture)
+# ---------------------------------------------------------------------------
+
+
+def replan_request_id_for(gate_id: str, submission_id: str) -> str:
+    """The obligation identity law: ``f"rp:{gate_id}:{submission_id}"`` —
+    the stable function of the action family's ``action_commit_key``
+    (§26.2.4; the ``ac:`` / ``sg:`` families' own sibling, a disjoint
+    namespace). Serves idempotent replay only — narrative time
+    attribution never rides an id's naming."""
+
+    return f"rp:{gate_id}:{submission_id}"
+
+
+def replan_obligation(
+    conn: sqlite3.Connection, replan_request_id: str
+) -> ActionReplanRecord | None:
+    """One replan obligation by id, or ``None`` (the pure column read — a
+    missing id is an answer, not an error). The two consumers enter
+    through this face: the obligation is the ruling's plan verdict's
+    durable anchor."""
+
+    return _replan_row(conn, replan_request_id)
+
+
+def pending_replans(
+    conn: sqlite3.Connection,
+) -> tuple[ActionReplanRecord, ...]:
+    """Every outstanding obligation — ``status = 'PENDING'`` — in
+    ``replan_request_id`` ascending order (the derivation embeds the
+    gate's own order, so the durable order is the ruling order).
+    ``APPLIED`` rows are discharged: history is rows, not errors. This
+    face is the recovery survey's fifth family (RA §29's V3-6R 落法)."""
+
+    rows = conn.execute(
+        "SELECT replan_request_id FROM action_replan"
+        " WHERE status = 'PENDING' ORDER BY replan_request_id ASC"
+    ).fetchall()
+    return tuple(
+        record
+        for record in (_replan_row(conn, str(row[0])) for row in rows)
+        if record is not None
+    )
+
+
+def scene_of_action(
+    conn: sqlite3.Connection, replan_request_id: str
+) -> str | None:
+    """The scene one obligation's action was taken in — the durable chain
+    read ``obligation → user_action → user_gate`` — or ``None`` when a
+    link is missing (answered honestly; the FK makes the action half
+    unreachable, the read stays total all the same).
+
+    The consumption path's chain resolver: ``ScenePlanner.replan_scene``
+    and ``Director.apply_action_replan`` enter by ``replan_request_id``
+    and carry no SQL of their own, so the walk lives here — one truth for
+    both faces."""
+
+    row = conn.execute(
+        "SELECT g.scene_id FROM action_replan r"
+        " JOIN user_action a ON a.user_action_id = r.user_action_id"
+        " JOIN user_gate g ON g.gate_id = a.gate_id"
+        " WHERE r.replan_request_id = ?",
+        (replan_request_id,),
+    ).fetchone()
+    return None if row is None else str(row[0])
+
+
+def claim_replan_target(
+    conn: sqlite3.Connection,
+    *,
+    replan_request_id: str,
+    target_ref: str,
+    now: str,
+) -> Result[ActionReplanRecord]:
+    """Claim the plan work's own target revision — the first step of the
+    ``claim → work → complete`` protocol (the V3-6R HIGH-1; STATE §25's
+    "V3-6R 落法"). ``target_ref`` is the target revision's identity the
+    caller computed (``dossier_id`` for SCENE, ``chapter_plan_id`` for
+    CHAPTER); the claim writes it **before** the plan change executes —
+    the eager claim, which is a crash retry's convergence anchor (a retry
+    recomputes the same target or, when the target is already stored,
+    rides it).
+
+    Refusals and answers, all value semantics, nothing written on a
+    refusal: ``target_ref`` not a non-empty string —
+    ``VALIDATION_FAILED``; the obligation does not exist — ``NOT_FOUND``;
+    ``status = 'PENDING'`` with an empty ``target_ref`` — the CAS write,
+    the claimed row rides back; the **same** value already claimed —
+    idempotent ``Ok`` (zero write); a **different** value claimed —
+    ``CONFLICT`` (a claim does not rewrite); ``APPLIED`` — the stored row
+    rides back (the plan change already landed; the caller answers its
+    ``target_ref``). The read and the CAS write sit inside one
+    ``BEGIN IMMEDIATE``, so no window lets a second writer claim a
+    different target between them."""
+
+    if not isinstance(target_ref, str) or not target_ref.strip():
+        return Err(
+            DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=(
+                    f"replan obligation {replan_request_id!r} not"
+                    " claimed: target_ref must be a non-empty string (the"
+                    f" target revision's identity); got {target_ref!r}"
+                ),
+            )
+        )
+    began = False
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        began = True
+        outcome = _claim_replan_target_tx(
+            conn,
+            replan_request_id=replan_request_id,
+            target_ref=target_ref,
+            now=now,
+        )
+        if isinstance(outcome, Err):
+            conn.execute("ROLLBACK")
+            began = False
+            return Err(outcome.error)
+    except sqlite3.Error as exc:
+        if began:
+            try:
+                conn.execute("ROLLBACK")
+            except sqlite3.Error:
+                pass
+        return Err(
+            DomainError(
+                code=_refusal_code(exc),
+                message=(
+                    f"replan obligation {replan_request_id!r} not"
+                    f" claimed: {exc}"
+                ),
+            )
+        )
+    conn.execute("COMMIT")
+    return Ok(outcome.value)
+
+
+def _claim_replan_target_tx(
+    conn: sqlite3.Connection,
+    *,
+    replan_request_id: str,
+    target_ref: str,
+    now: str,
+) -> Result[ActionReplanRecord]:
+    """The claim's body, inside the caller's transaction (the read and the
+    CAS write — decided on the row this transaction itself sees)."""
+
+    row = _replan_row(conn, replan_request_id)
+    if row is None:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.NOT_FOUND,
+                message=(
+                    f"replan obligation {replan_request_id!r} not"
+                    " claimed: it does not exist"
+                ),
+            )
+        )
+    if row.status is ReplanStatus.APPLIED:
+        return Ok(row)
+    if row.target_ref is not None:
+        if row.target_ref == target_ref:
+            return Ok(row)  # the same claim already stands — zero write
+        return Err(
+            DomainError(
+                code=DomainErrorCode.CONFLICT,
+                message=(
+                    f"replan obligation {replan_request_id!r} already"
+                    f" claimed the target {row.target_ref!r}; the given"
+                    f" one is {target_ref!r} — the claim is the crash"
+                    " retry's convergence anchor and does not rewrite"
+                ),
+            )
+        )
+    cursor = conn.execute(
+        "UPDATE action_replan SET target_ref = ?,"
+        " state_version = state_version + 1, updated_at = ?"
+        " WHERE replan_request_id = ? AND state_version = ?"
+        " AND status = 'PENDING' AND target_ref IS NULL",
+        (target_ref, now, replan_request_id, row.state_version),
+    )
+    if cursor.rowcount != 1:
+        return _cas_miss(
+            conn,
+            version_sql=(
+                "SELECT state_version FROM action_replan"
+                " WHERE replan_request_id = ?"
+            ),
+            row_id=replan_request_id,
+            noun="replan obligation",
+        )
+    claimed = _replan_row(conn, replan_request_id)
+    assert claimed is not None  # the UPDATE above just touched it
+    return Ok(claimed)
+
+
+def mark_replan_applied(
+    conn: sqlite3.Connection,
+    *,
+    replan_request_id: str,
+    now: str,
+) -> Result[ActionReplanRecord]:
+    """Discharge the obligation — the ``complete`` step of the
+    ``claim → work → complete`` protocol: ``PENDING → APPLIED`` over a
+    claimed ``target_ref``, in its own short transaction.
+
+    Refusals and answers, all value semantics: the obligation does not
+    exist — ``NOT_FOUND``; the row is ``PENDING`` with **no claim
+    standing** (``target_ref`` empty) — ``VALIDATION_FAILED`` (the
+    complete step is unwritable without a claim; the storage's composite
+    CHECK is the same law one layer down); ``PENDING`` with a claim — the
+    CAS write, the ``APPLIED`` row rides back; already ``APPLIED`` —
+    idempotent ``Ok`` (zero write)."""
+
+    began = False
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        began = True
+        outcome = _mark_replan_applied_tx(
+            conn, replan_request_id=replan_request_id, now=now
+        )
+        if isinstance(outcome, Err):
+            conn.execute("ROLLBACK")
+            began = False
+            return Err(outcome.error)
+    except sqlite3.Error as exc:
+        if began:
+            try:
+                conn.execute("ROLLBACK")
+            except sqlite3.Error:
+                pass
+        return Err(
+            DomainError(
+                code=_refusal_code(exc),
+                message=(
+                    f"replan obligation {replan_request_id!r} not"
+                    f" applied: {exc}"
+                ),
+            )
+        )
+    conn.execute("COMMIT")
+    return Ok(outcome.value)
+
+
+def _mark_replan_applied_tx(
+    conn: sqlite3.Connection,
+    *,
+    replan_request_id: str,
+    now: str,
+) -> Result[ActionReplanRecord]:
+    """The complete step's body, inside the caller's transaction."""
+
+    row = _replan_row(conn, replan_request_id)
+    if row is None:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.NOT_FOUND,
+                message=(
+                    f"replan obligation {replan_request_id!r} not"
+                    " applied: it does not exist"
+                ),
+            )
+        )
+    if row.status is ReplanStatus.APPLIED:
+        return Ok(row)
+    if row.target_ref is None:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=(
+                    f"replan obligation {replan_request_id!r} not"
+                    " applied: no claim stands (target_ref is empty) —"
+                    " the complete step lands only over a claimed target"
+                    " (the eager claim runs first; the storage's composite"
+                    " CHECK is the same law one layer down)"
+                ),
+            )
+        )
+    cursor = conn.execute(
+        "UPDATE action_replan SET status = 'APPLIED',"
+        " state_version = state_version + 1, updated_at = ?"
+        " WHERE replan_request_id = ? AND state_version = ?"
+        " AND status = 'PENDING' AND target_ref IS NOT NULL",
+        (now, replan_request_id, row.state_version),
+    )
+    if cursor.rowcount != 1:
+        return _cas_miss(
+            conn,
+            version_sql=(
+                "SELECT state_version FROM action_replan"
+                " WHERE replan_request_id = ?"
+            ),
+            row_id=replan_request_id,
+            noun="replan obligation",
+        )
+    applied = _replan_row(conn, replan_request_id)
+    assert applied is not None  # the UPDATE above just touched it
+    return Ok(applied)
+
+
 def recovery_scan(
     conn: sqlite3.Connection,
     *,
     narrative_store: SqliteNarrativeStore,
 ) -> Result[RecoveryScan]:
-    """RA §29's scan face for this cut's four families (a pure read — no
+    """RA §29's scan face for this cut's five families (a pure read — no
     transaction of its own): gates ``ANSWERED`` / ``RESOLVING``, actions
-    ``RESOLVING``, scenes ``ACTIVE`` and chapters ``ACTIVE`` /
-    ``SETTLING``, each deterministically ordered. The story's resume
-    编排 belongs to the pipeline cut; the semantics this face carries
-    are the contract's own: after NCP-1 an interruption re-adjudicates
-    with the same ``submission_id`` (the unique outcome), and the
-    scan's rows are the durable survey of a crashed pipeline, not an
-    error.
+    ``RESOLVING``, scenes ``ACTIVE``, chapters ``ACTIVE`` /
+    ``SETTLING`` and — since V3-6R — replan obligations ``PENDING``
+    (the fifth family; the claim's ``target_ref`` is written before the
+    work, so a retry converges on the same revision), each
+    deterministically ordered. The story's resume 编排 belongs to the
+    pipeline cut; the semantics this face carries are the contract's
+    own: after NCP-1 an interruption re-adjudicates with the same
+    ``submission_id`` (the unique outcome), and the scan's rows are the
+    durable survey of a crashed pipeline, not an error.
     """
 
     gate_rows = conn.execute(
@@ -1538,9 +2024,14 @@ def recovery_scan(
         )
         if chapter is not None
     )
+    replans = pending_replans(conn)
     return Ok(
         RecoveryScan(
-            gates=gates, actions=actions, scenes=scenes, chapters=chapters
+            gates=gates,
+            actions=actions,
+            scenes=scenes,
+            chapters=chapters,
+            replans=replans,
         )
     )
 
@@ -1664,6 +2155,34 @@ def _action_record(row: Any) -> UserActionRecord:
         created_at=str(row[14]),
         updated_at=str(row[15]),
         state_version=int(row[16]),
+    )
+
+
+def _replan_row(
+    conn: sqlite3.Connection, replan_request_id: str
+) -> ActionReplanRecord | None:
+    """One obligation row by id, or ``None`` — the one read every face
+    uses. A stored word this module's own enums cannot decode raises
+    ``ValueError`` (the store family's corrupted-row posture — the enum
+    constructors are the codec)."""
+
+    row = conn.execute(
+        "SELECT replan_request_id, user_action_id, scope, status,"
+        " target_ref, created_at, updated_at, state_version"
+        " FROM action_replan WHERE replan_request_id = ?",
+        (replan_request_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return ActionReplanRecord(
+        replan_request_id=str(row[0]),
+        user_action_id=str(row[1]),
+        scope=ReplanScope(str(row[2])),
+        status=ReplanStatus(str(row[3])),
+        target_ref=None if row[4] is None else str(row[4]),
+        created_at=str(row[5]),
+        updated_at=str(row[6]),
+        state_version=int(row[7]),
     )
 
 

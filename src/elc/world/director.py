@@ -184,6 +184,14 @@ from elc.platform.types import (
     Ok,
     Result,
 )
+from elc.world.action import (
+    ReplanScope,
+    ReplanStatus,
+    claim_replan_target,
+    mark_replan_applied,
+    replan_obligation,
+    scene_of_action,
+)
 from elc.world.bible import BibleRevision, SqliteBibleStore
 from elc.world.cast import (
     ActorProfileRecord,
@@ -423,6 +431,20 @@ def plan_id_for(chapter_id: str, plan_revision: int) -> str:
     spelling."""
 
     return f"{chapter_id}-bp-r{plan_revision}"
+
+
+def _plan_revision_of(chapter_id: str, chapter_plan_id: str) -> int | None:
+    """The ``plan_revision`` a claimed ``chapter_plan_id`` spells, or
+    ``None`` — the read-back inverse of :func:`plan_id_for`
+    (``"{chapter_id}-bp-r{n}"``). The V3-6R claim returns a stored
+    target; the revision it names rides its own id, never a
+    recomputation (the claim is the retry's convergence anchor)."""
+
+    prefix = f"{chapter_id}-bp-r"
+    if not chapter_plan_id.startswith(prefix):
+        return None
+    tail = chapter_plan_id[len(prefix) :]
+    return int(tail) if tail.isdigit() else None
 
 
 def scene_id_for(chapter_id: str, scene_index: int) -> str:
@@ -1589,6 +1611,309 @@ class Director:
             ChapterOpening(
                 chapter=chapter,
                 plan=created_plan.value,
+                scenes=reconciled.value,
+            )
+        )
+
+    def apply_action_replan(
+        self,
+        replan_request_id: str,
+        blueprint_payload: Mapping[str, Any],
+        now: str,
+    ) -> Result[ChapterOpening]:
+        """Land a ruling's ``replan_scope = CHAPTER`` verdict — the
+        obligation's own consumption face (the V3-6R HIGH-1;
+        TASK-OPI-dc1bafdf…33 / DEC-OPI-dc1bafdf…31; STATE §25's
+        "V3-6R 落法").
+
+        The protocol is ``claim → work → complete``, every step
+        idempotent, entered by the obligation's ``replan_request_id``
+        (never by a bare chapter id — the ruling's verdict is consumed
+        **through the obligation**):
+
+        - the obligation is read first
+          (:func:`elc.world.action.replan_obligation`); a missing id and
+          a ``scope ≠ CHAPTER`` obligation are refused before anything
+          else; an ``APPLIED`` obligation answers its claimed plan
+          **zero-write** (read back ``ADOPTED``; anything else is a
+          corrupted obligation and raises ``ValueError``);
+        - ``PENDING`` — the durable chain (obligation → action → gate →
+          scene → chapter) resolves the chapter, and the same doors
+          :meth:`revise_blueprint` keeps are checked (the world's
+          ``CURRENT`` Bible fail-closed, the chapter not
+          ``SETTLING`` / ``CLOSED``), the payload passes
+          :meth:`validate_blueprint` and its scene identities resolve —
+          all before any write;
+        - the **claim decision mirrors :meth:`revise_blueprint`'s own
+          residue law, read-only**: the top revision still ``PROPOSED``
+          whose shape equals this payload's resolved targets is the
+          crashed revise's residue — the **target is that very
+          revision** (the resume-adopt path: the same law
+          :meth:`_adopt_residue_and_reconcile` composes); otherwise the
+          target is the next revision (``top + 1``, the first being 1).
+          The claim (:func:`elc.world.action.claim_replan_target`)
+          writes ``plan_id_for(chapter_id, target revision)`` **before**
+          the plan change executes — a retry whose target is already
+          claimed rides the stored one and converges on the same
+          revision, never a second one;
+        - the work: create the target revision if absent (``create_plan``
+          is idempotent by id), adopt it when still ``PROPOSED`` (an
+          already-``ADOPTED`` row is the crash after adopt — the move
+          skips, the retry tolerates it), then reconcile the ``scenes[]``
+          table (idempotent continuation — :meth:`_reconcile_scenes`
+          mints only what is missing and never touches a happened
+          anchor);
+        - the complete step (:func:`elc.world.action.mark_replan_applied`)
+          moves the obligation ``PENDING → APPLIED``.
+
+        :meth:`revise_blueprint`'s semantics are untouched — this face
+        composes the same law under the obligation's protocol
+        (``revise_blueprint`` stays the Director's bare plan face; the
+        action ruling's consumption rides the obligation). Refusals,
+        all value semantics, nothing written: the obligation does not
+        exist — ``NOT_FOUND``; a ``SCENE`` obligation reached through
+        this face — ``VALIDATION_FAILED``; a dangling chain, a missing
+        chapter, or a world without a ``CURRENT`` Bible — ``NOT_FOUND``
+        (fail-closed, nothing written); a ``SETTLING`` / ``CLOSED``
+        chapter, a payload failing the schema, or identity references
+        that do not resolve — ``VALIDATION_FAILED`` (nothing written);
+        a claimed target whose stored revision is neither ``PROPOSED``
+        nor ``ADOPTED`` — ``CONFLICT``; any store refusal rides out
+        unchanged. ``now`` is the caller's stamp; no tick moves (the
+        Director has no write path to ``world.current_tick``).
+        """
+
+        obligation = replan_obligation(self._conn, replan_request_id)
+        if obligation is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"replan obligation {replan_request_id!r} not"
+                        " consumed: it does not exist — a CHAPTER"
+                        " replanning enters by its own replan_request_id"
+                        " (the ruling that asked for it)"
+                    ),
+                )
+            )
+        if obligation.scope is not ReplanScope.CHAPTER:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"replan obligation {replan_request_id!r} is"
+                        f" {obligation.scope.value!r}; this face consumes"
+                        " CHAPTER obligations only (a SCENE one goes to"
+                        " ScenePlanner.replan_scene)"
+                    ),
+                )
+            )
+        if obligation.status is ReplanStatus.APPLIED:
+            assert obligation.target_ref is not None  # the composite CHECK
+            applied = self._narrative.get_plan(obligation.target_ref)
+            if (
+                applied is None
+                or applied.status is not PlanRevisionStatus.ADOPTED
+            ):
+                raise ValueError(
+                    f"replan obligation {replan_request_id!r} is APPLIED"
+                    f" but its target {obligation.target_ref!r} is not an"
+                    " adopted chapter plan — a corrupted obligation row"
+                )
+            applied_chapter = self._narrative.get_chapter(
+                applied.chapter_id
+            )
+            assert applied_chapter is not None  # the FK makes it unreachable
+            return Ok(
+                ChapterOpening(
+                    chapter=applied_chapter,
+                    plan=applied,
+                    scenes=self._narrative.scenes_of(applied.chapter_id),
+                )
+            )
+
+        scene_id = scene_of_action(self._conn, replan_request_id)
+        if scene_id is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"replan obligation {replan_request_id!r} not"
+                        " consumed: its action chain (action → gate →"
+                        " scene) is dangling — the obligation names no"
+                        " chapter to replan"
+                    ),
+                )
+            )
+        scene = self._narrative.get_scene(scene_id)
+        if scene is None:  # the FK makes this unreachable; answered honestly
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"replan obligation {replan_request_id!r} not"
+                        f" consumed: scene {scene_id!r} does not exist"
+                    ),
+                )
+            )
+        chapter = self._narrative.get_chapter(scene.chapter_id)
+        if chapter is None:  # the FK makes this unreachable; answered honestly
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"replan obligation {replan_request_id!r} not"
+                        f" consumed: chapter {scene.chapter_id!r} does"
+                        " not exist"
+                    ),
+                )
+            )
+        if self._bible.current_bible(chapter.world_id) is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"chapter {chapter.chapter_id!r} not replanned:"
+                        f" world {chapter.world_id!r} holds no CURRENT"
+                        " Bible revision — without world authority the"
+                        " Director does not plan (DATA §26.2.1's"
+                        " fail-closed block)"
+                    ),
+                )
+            )
+        if chapter.status in (ChapterStatus.SETTLING, ChapterStatus.CLOSED):
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"chapter {chapter.chapter_id!r} not replanned: it"
+                        f" is {chapter.status.value!r} — a settled chapter"
+                        " has no remaining part to replan (§21/§24:"
+                        " corrections go through the next chapter)"
+                    ),
+                )
+            )
+        validated = self.validate_blueprint(
+            chapter.world_id, blueprint_payload
+        )
+        if isinstance(validated, Err):
+            return Err(validated.error)
+        blueprint = validated.value
+        resolved = _resolve_scene_targets(
+            chapter.chapter_id,
+            blueprint.scenes,
+            self._narrative.scenes_of(chapter.chapter_id),
+        )
+        if isinstance(resolved, Err):
+            return Err(resolved.error)
+        targets = resolved.value
+
+        # The claim (the eager anchor) — computed only when none stands:
+        # a retry whose target is already written rides the stored one,
+        # so the revision converges. The read-only pre-judgement mirrors
+        # revise_blueprint's residue law (top PROPOSED with this payload's
+        # shape ⇒ the target is that revision — the resume-adopt path).
+        target_plan_id = obligation.target_ref
+        target_revision: int
+        if target_plan_id is None:
+            plans = self._narrative.plans_of(chapter.chapter_id)
+            latest = plans[-1] if plans else None
+            if (
+                latest is not None
+                and latest.status is PlanRevisionStatus.PROPOSED
+                and _plan_shape_matches(latest, blueprint, targets)
+            ):
+                target_revision = latest.plan_revision
+            else:
+                target_revision = (
+                    latest.plan_revision + 1 if latest is not None else 1
+                )
+            target_plan_id = plan_id_for(chapter.chapter_id, target_revision)
+            claimed = claim_replan_target(
+                self._conn,
+                replan_request_id=replan_request_id,
+                target_ref=target_plan_id,
+                now=now,
+            )
+            if isinstance(claimed, Err):
+                return Err(claimed.error)
+        else:
+            spelled = _plan_revision_of(chapter.chapter_id, target_plan_id)
+            if spelled is None:
+                raise ValueError(
+                    f"replan obligation {replan_request_id!r} claims the"
+                    f" target {target_plan_id!r}, which does not spell the"
+                    " Director's own plan naming"
+                    f" ({chapter.chapter_id!r}-bp-r{{n}}) — a corrupted"
+                    " obligation row"
+                )
+            target_revision = spelled
+
+        # The work: create-if-absent (idempotent by id — a retry that
+        # finds its claimed revision already landed reuses the row), then
+        # adopt-when-PROPOSED (an already-adopted revision is the crash
+        # after adopt; revise_blueprint's residue law's continue half),
+        # then the reconciliation (idempotent continuation).
+        plan = self._narrative.get_plan(target_plan_id)
+        if plan is None:
+            created = self._narrative.create_plan(
+                target_plan_id,
+                chapter.chapter_id,
+                target_revision,
+                goal=blueprint.goal,
+                dramatic_question=blueprint.dramatic_question,
+                planned_start_tick=blueprint.planned_start_tick,
+                planned_end_tick=blueprint.planned_end_tick,
+                closing_pressure=blueprint.closing_pressure,
+                desired_development=blueprint.desired_development,
+                soft_outcomes=blueprint.soft_outcomes,
+                chapter_questions_to_advance=(
+                    blueprint.chapter_questions_to_advance
+                ),
+                scenes=tuple(target.element for target in targets),
+                now=now,
+            )
+            if isinstance(created, Err):
+                return Err(created.error)
+            plan = created.value
+        if plan.status is PlanRevisionStatus.PROPOSED:
+            adopted = self._narrative.adopt_plan(
+                target_plan_id,
+                now,
+                expected_state_version=plan.state_version,
+            )
+            if isinstance(adopted, Err):
+                return Err(adopted.error)
+            plan = adopted.value
+        elif plan.status is not PlanRevisionStatus.ADOPTED:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.CONFLICT,
+                    message=(
+                        f"chapter plan {target_plan_id!r} is"
+                        f" {plan.status.value!r} — the claimed target no"
+                        " longer accepts the replanning (another writer"
+                        " moved it); the obligation stands uncompleted"
+                    ),
+                )
+            )
+        reconciled = self._reconcile_scenes(
+            chapter.chapter_id, targets, now
+        )
+        if isinstance(reconciled, Err):
+            return Err(reconciled.error)
+
+        # The complete step: the obligation is discharged only after the
+        # plan change landed.
+        completed = mark_replan_applied(
+            self._conn, replan_request_id=replan_request_id, now=now
+        )
+        if isinstance(completed, Err):
+            return Err(completed.error)
+        return Ok(
+            ChapterOpening(
+                chapter=chapter,
+                plan=plan,
                 scenes=reconciled.value,
             )
         )

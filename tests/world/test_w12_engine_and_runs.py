@@ -240,35 +240,36 @@ def test_0025_is_the_registered_head() -> None:
     C1-a's 0027_chronicle_attribution and C2's 0028_world_storyline
     (the stamp-pin discipline every head move has followed since P8-4;
     the pin read "0025 is the head" while 0025 was the head); the shared
-    constants say so, and the stamp a fresh database carries is 35 (the
+    constants say so, and the stamp a fresh database carries is 36 (the
     head literal moved with each later head, most recently V3-5's
-    0033_segment_commit, V3-5R's 0034_segment_terminality and V3-6's
-    0035_user_gate_action)."""
+    0033_segment_commit, V3-5R's 0034_segment_terminality, V3-6's
+    0035_user_gate_action and V3-6R's 0036_action_replan)."""
 
     # The head literal moves with each head (the P9-1 way); the
     # migration-shape claims in the sibling tests stay 0025's own.
-    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
-    assert MIGRATION_IDS[-2] == "0034_segment_terminality"
-    assert MIGRATION_IDS[-3] == "0033_segment_commit"
-    assert MIGRATION_IDS[-4] == "0032_actor_profile_world_fk"
-    assert MIGRATION_IDS[-5] == "0031_world_cast"
-    assert MIGRATION_IDS[-6] == "0030_world_bible"
-    assert MIGRATION_IDS[-7] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-8] == "0028_world_storyline"
-    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
+    assert MIGRATION_IDS[-1] == "0036_action_replan"
+    assert MIGRATION_IDS[-2] == "0035_user_gate_action"
+    assert MIGRATION_IDS[-3] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-4] == "0033_segment_commit"
+    assert MIGRATION_IDS[-5] == "0032_actor_profile_world_fk"
+    assert MIGRATION_IDS[-6] == "0031_world_cast"
+    assert MIGRATION_IDS[-7] == "0030_world_bible"
+    assert MIGRATION_IDS[-8] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-9] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0036_action_replan.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "35"
+    assert SCHEMA_HEAD_VERSION == "36"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0035_user_gate_action"
-    assert applied[-2] == "0034_segment_terminality"
-    assert applied[-3] == "0033_segment_commit"
-    assert applied[-4] == "0032_actor_profile_world_fk"
-    assert applied[-5] == "0031_world_cast"
-    assert applied[-6] == "0030_world_bible"
-    assert applied[-7] == "0029_narrative_v3_foundations"
-    assert applied[-8] == "0028_world_storyline"
+    assert applied[-1] == "0036_action_replan"
+    assert applied[-2] == "0035_user_gate_action"
+    assert applied[-3] == "0034_segment_terminality"
+    assert applied[-4] == "0033_segment_commit"
+    assert applied[-5] == "0032_actor_profile_world_fk"
+    assert applied[-6] == "0031_world_cast"
+    assert applied[-7] == "0030_world_bible"
+    assert applied[-8] == "0029_narrative_v3_foundations"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 
@@ -911,7 +912,7 @@ def test_the_registry_carries_the_six_world_objects() -> None:
     ]
 
 
-def test_global_content_tables_carry_the_twenty_members() -> None:
+def test_global_content_tables_carry_the_registered_members() -> None:
     """W-1-2's run row joined the keep half (SEC-025's conservative
     reading) and W-1-3's reveal queue joins it the same way, while
     W-1-3's deletion face moves ``world_conversation`` out of this tuple
@@ -927,12 +928,14 @@ def test_global_content_tables_carry_the_twenty_members() -> None:
     narrative profile) the same way, and V3-5 (TASK-OPI-be7b094f…34)
     adds migration 0033's three narrative-commit tables the same way,
     and V3-6 (TASK-OPI-dc1bafdf…23) adds migration 0035's two tables
-    (``user_gate`` / ``user_action``) the same way:
-    twenty
+    (``user_gate`` / ``user_action``), and V3-6R (TASK-OPI-dc1bafdf…33)
+    migration 0036's ``action_replan``, the same way:
+    twenty-one
     members, and the
     classification is registration —
     no sweep walks the run or the reveal item, nothing keeps them as
-    retained either."""
+    retained either (the name is count-neutral since V3-6R: the set
+    grows with each re-touch)."""
 
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
@@ -955,6 +958,7 @@ def test_global_content_tables_carry_the_twenty_members() -> None:
         "segment_commit",
         "user_gate",
         "user_action",
+        "action_replan",
     )
     assert "world_run" not in SWEPT_TABLES
     assert "world_run" not in RETAINED_TABLES

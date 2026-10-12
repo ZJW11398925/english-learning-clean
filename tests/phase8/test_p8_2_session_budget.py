@@ -1260,10 +1260,11 @@ def test_no_migration_carries_the_view() -> None:
     # V3-5 再随迁至 0033（段落提交三表，同样不是本刀的表）；
     # V3-5R 再随迁至 0034（terminality 一列，同样不是本刀的表）；
     # V3-6 再随迁至 0035（User Gate/用户行动两表 + segment_commit 重建，
-    # 同样不是本刀的表）。
-    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
-    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
-    assert SCHEMA_HEAD_VERSION == "35"
+    # 同样不是本刀的表）；V3-6R 再随迁至 0036（replan 义务一表，同样不是
+    # 本刀的表）。
+    assert MIGRATION_IDS[-1] == "0036_action_replan"
+    assert SCHEMA_HEAD_FILE == "0036_action_replan.sql"
+    assert SCHEMA_HEAD_VERSION == "36"
     schema = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted((REPO_ROOT / "migrations").glob("*.sql"))

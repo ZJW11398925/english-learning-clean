@@ -199,6 +199,7 @@ def test_the_retained_set_is_unchanged() -> None:
         "segment_commit",
         "user_gate",
         "user_action",
+        "action_replan",
     )
     for table in LEDGER_TABLES:
         assert table not in RETAINED_TABLES
@@ -517,7 +518,9 @@ def test_the_ledger_tables_are_absent_from_the_content_db_sweep(
     # （叙事基础四表入 keep 半——0029 四表，L5 裁同刀入册）；V3-2 再随迁
     # （World Bible 一表入 keep 半——0030 一表）；V3-3 再随迁（世界 cast
     # 两表入 keep 半——0031 两表）；V3-5 再随迁（段落提交三表入 keep 半
-    # ——0033 三表）。
+    # ——0033 三表）；V3-6 再随迁（User Gate/用户行动两表入 keep 半——
+    # 0035 两表 + segment_commit 重建）；V3-6R 再随迁（replan 义务一表
+    # 入 keep 半——0036 一表）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -539,6 +542,7 @@ def test_the_ledger_tables_are_absent_from_the_content_db_sweep(
         "segment_commit",
         "user_gate",
         "user_action",
+        "action_replan",
     )
     assert _tables(db) == (
         set(SWEPT_TABLES) | set(RETAINED_TABLES) | set(GLOBAL_CONTENT_TABLES)

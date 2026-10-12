@@ -1,6 +1,8 @@
 """The Narrative V3 SEGMENT COMMIT — NCP-3's one short atomic group
 (V3-5, TASK-OPI-be7b094f…34 / the opening ruling DEC-OPI-be7b094f…32;
-the V3-5R corrections TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11) —
+the V3-5R corrections TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11; the
+V3-6R correction TASK-OPI-dc1bafdf…33 / the opening ruling
+DEC-OPI-dc1bafdf…31 — the ``outcome_ref`` arm and the targeted close) —
 plus the two faces the cut's hard doors freeze: the explicit story-time
 lineage read and the decoupled reader-exposure record.
 
@@ -8,7 +10,9 @@ lineage read and the decoupled reader-exposure record.
 ``BEGIN IMMEDIATE`` … ``COMMIT`` lands, all or nothing (N-R-INV-004):
 
 1. ``narrative_passage`` — the segment's prose (the CANON face's
-   immutable row; N-INV-003);
+   immutable row; N-INV-003), carrying the segment's ``outcome_ref``
+   when one rode with it (V3-6R: the reference to the committed user
+   action whose continuation this segment is);
 2. ``world_event`` — the segment's non-user fact row, settled through
    the world store's own one-truth helper
    (:func:`elc.world.store._settle_effects_in_transaction`) so its
@@ -20,16 +24,18 @@ lineage read and the decoupled reader-exposure record.
    review's MEDIUM-HIGH — see the terminality paragraph below);
 4. ``world.current_tick`` advanced by the segment's ``duration_ticks``
    (the only sanctioned mover — N-INV-007 / N-R-INV-005);
-5. ``world_scene``'s actual span — the scene's **only** span writer
-   (V3-5R, TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11's HIGH-2): the
-   store's no-transaction arm
-   (``_advance_scene_actual_span_tx``) writes ``actual_start_tick``
-   (``COALESCE`` — the first committed segment's start stands), advances
-   ``actual_end_tick`` for every segment, and carries the
-   ``ACTIVE → COMMITTED`` flip when the segment is the scene's last —
-   **one UPDATE, one version bump** (the alias law: SCENE COMMIT **is**
-   the scene's last SEGMENT COMMIT, STATE §22 — not a third
-   transaction);
+5. ``world_scene``'s actual span — the shared span arm's NCP-3 caller
+   (V3-5R, TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11's HIGH-2;
+   **generalized to two callers by V3-6R**, STATE §26): the store's
+   no-transaction arm (``_advance_scene_actual_span_tx``) writes
+   ``actual_start_tick`` (``COALESCE`` — the first committed segment's
+   start stands), advances ``actual_end_tick`` for every segment, and
+   carries the ``ACTIVE → COMMITTED`` flip when the segment is the
+   scene's last (``close_scene=True``) — **one UPDATE, one version
+   bump** (the alias law: SCENE COMMIT **is** the scene's last SEGMENT
+   COMMIT, STATE §22 — not a third transaction). NCP-2 calls the same
+   arm with ``close_scene=False``: a gate's action extends the interval
+   and never closes a scene;
 6. the chapter's first segment — ``PLANNED → ACTIVE`` with
    ``opened_at_tick`` = the transaction's own read of
    ``world.current_tick`` (the **#3 lifecycle tick authority**: the
@@ -61,8 +67,10 @@ the stored outcome rides back, no second row, no tick re-advance, and
 no span re-write (the span arm is on the fresh path only); the same key
 with a different shape is a ``CONFLICT`` (committed segments are
 append-only). The shape comparison covers the semantic payload (prose
-body / language / narration / participants / effects / duration) and
-the persisted terminality flag; the bookkeeping stamps (``occurred_at``
+body / language / narration / participants / effects / duration), the
+persisted terminality flag and — since V3-6R — the passage's
+``outcome_ref`` (a different reference answers its own dedicated
+``CONFLICT`` sentence); the bookkeeping stamps (``occurred_at``
 / ``created_at`` / ``updated_at``) are not compared — they are the
 caller's clock stamps, and a replay carries a fresh one.
 
@@ -89,21 +97,45 @@ function's given signature). **Since V3-6** the assembly is the public
 ``commit_action`` calls too), and the player-row read is the public
 :func:`player_character_id_of`.
 
+**The ``outcome_ref`` chain (V3-6R, TASK-OPI-dc1bafdf…33 /
+DEC-OPI-dc1bafdf…31; STATE §25's "V3-6R 落法", DATA §26.2.1)** — the
+traceable chain ``intent → adjudication → committed action →
+outcome_ref → passage``: when ``outcome_ref`` rides with a fresh
+segment it must name a real **``COMMITTED``** ``user_action`` (absent —
+``NOT_FOUND``; not committed — ``VALIDATION_FAILED``) whose gate
+belongs to **this** segment's scene (else ``VALIDATION_FAILED``); the
+passage stores the reference, and the referenced gate moves
+``COMMITTED → CLOSED`` in this same transaction (one targeted UPDATE —
+**replacing the V3-6 blanket close of every committed gate**: the fresh
+segment that carries the gate's action closes *that* gate — §23's
+V3-6R tightening ③; a reference whose gate is already ``CLOSED``
+answers a zero-row UPDATE, a no-op). The **forced law**: while the
+scene holds a ``COMMITTED`` gate nobody has resumed past, a fresh
+segment **must** carry that gate's action as its ``outcome_ref``
+(missing / different — ``VALIDATION_FAILED``: the recovery prose never
+lands with a NULL reference). A replay's shape comparison includes the
+reference (the same key with a different reference — ``CONFLICT``).
+
 **The User Gate interlock (V3-6, TASK-OPI-dc1bafdf…23 /
-DEC-OPI-dc1bafdf…5, re-run …21; STATE §22/§23/§25)** — two arms ride
-this same transaction, both on the **fresh** path only (a stored
-segment's replay is answered first and touches nothing):
+DEC-OPI-dc1bafdf…5, re-run …21; the V3-6R tightening …33; STATE
+§22/§23/§25)** — the arms ride this same transaction, all on the
+**fresh** path only (a stored segment's replay is answered first and
+touches nothing):
 
 - before a fresh segment lands, the scene must hold **no non-terminal
   gate** (``user_gate`` in ``OPEN`` / ``ANSWERED`` / ``RESOLVING``) —
   a story stopped at a User Gate does not write on, refused
   ``VALIDATION_FAILED`` naming the standing gate (the physical form of
   §22's "the story stops");
-- when a fresh segment lands, the scene's every ``COMMITTED`` gate
-  moves to ``CLOSED`` in this same transaction (one UPDATE, one version
-  bump each) — "the writing resumed" (§23; the segment commit is the
-  continuation, and the ``COMMITTED → CLOSED`` step has no face of its
-  own by design).
+- the **forced law** above: a ``COMMITTED`` gate nobody resumed past
+  refuses a fresh segment that does not carry its action as the
+  ``outcome_ref`` — the resuming prose must name what it resumes
+  (V3-6R tightening ②'s closing half);
+- when a fresh segment lands carrying a gate's action as its
+  ``outcome_ref``, that gate moves ``COMMITTED → CLOSED`` in this same
+  transaction (one UPDATE, one version bump) — "the writing resumed"
+  (§23; the segment commit is the continuation, and the
+  ``COMMITTED → CLOSED`` step has no face of its own by design).
 
 Discipline (the house store law): **value semantics** — every refusal
 is a ``Result`` ``Err`` (``VALIDATION_FAILED`` for the caller's own
@@ -214,10 +246,14 @@ def commit_segment(
     duration_ticks: int,
     is_last_segment: bool,
     now: str,
+    outcome_ref: str | None = None,
 ) -> Result[CommitOutcome]:
     """Land one segment: NCP-3's single short transaction (see the module
     docstring for the atomic group's arms, the replay law and the
-    identity freeze).
+    identity freeze). ``outcome_ref`` — the V3-6R arm — names the
+    committed user action this segment is the continuation of; ``None``
+    is the arm not taken (the reference is optional *unless* the scene
+    holds a committed gate, in which case the forced law demands it).
 
     Refusals, all value semantics, the whole group rolling back:
 
@@ -231,10 +267,20 @@ def commit_segment(
       key twice in one event — ``VALIDATION_FAILED`` (the event
       settlement's own one-claim-per-key law, mirroring
       :meth:`SqliteWorldStore.record_event`);
+    - ``outcome_ref`` present but not a non-empty string —
+      ``VALIDATION_FAILED``;
     - a **fresh** segment (no row for the segment_key yet) whose scene
       is not ``ACTIVE`` — ``VALIDATION_FAILED`` (only an active scene
       takes segments; a replay is answered before this check, so a
       committed scene's stored segments still replay as no-ops);
+    - a **fresh** segment whose ``outcome_ref`` names no ``user_action``
+      — ``NOT_FOUND`` (a dangling reference); names one that is not
+      ``COMMITTED``, or whose gate does not belong to this segment's
+      scene — ``VALIDATION_FAILED`` (STATE §25's "V3-6R 落法");
+    - a **fresh** segment whose scene holds a ``COMMITTED`` gate while
+      it does not carry that gate's action as its ``outcome_ref`` —
+      ``VALIDATION_FAILED`` (the forced law: the recovery prose names
+      what it resumes and closes that gate — §23's tightening ③);
     - a **fresh** segment whose scene holds a non-terminal User Gate
       (``OPEN`` / ``ANSWERED`` / ``RESOLVING``) —
       ``VALIDATION_FAILED`` naming the standing gate (the story stops
@@ -248,8 +294,8 @@ def commit_segment(
     - a participant word outside the world's ``participant_namespace``
       (canonical identity — the V3-3R freeze) — ``VALIDATION_FAILED``;
     - the same segment_key with a different shape (its persisted
-      ``is_last_segment`` terminality flag included) — ``CONFLICT``
-      (committed segments do not rewrite).
+      ``is_last_segment`` terminality flag and its ``outcome_ref``
+      included) — ``CONFLICT`` (committed segments do not rewrite).
 
     ``now`` stamps the passage/event/lineage rows (``occurred_at`` =
     ``now``: the legacy ISO column V3 deliberately does not read —
@@ -274,6 +320,7 @@ def commit_segment(
             duration_ticks=duration_ticks,
             is_last_segment=is_last_segment,
             now=now,
+            outcome_ref=outcome_ref,
         )
         if isinstance(outcome, Err):
             conn.execute("ROLLBACK")
@@ -313,6 +360,7 @@ def _commit_segment_tx(
     duration_ticks: int,
     is_last_segment: bool,
     now: str,
+    outcome_ref: str | None = None,
 ) -> Result[CommitOutcome]:
     """The atomic group's body, inside the caller's transaction (the
     public :func:`commit_segment` owns the BEGIN/COMMIT — the same
@@ -383,6 +431,20 @@ def _commit_segment_tx(
                     ),
                 )
             )
+    if outcome_ref is not None and (
+        not isinstance(outcome_ref, str) or not outcome_ref.strip()
+    ):
+        return Err(
+            DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=(
+                    f"segment {segment_seq} of scene {scene_id!r} not"
+                    " committed: outcome_ref must be a non-empty string"
+                    " naming a committed user action when given; got"
+                    f" {outcome_ref!r}"
+                ),
+            )
+        )
 
     # The replay read: an existing row for this segment_key answers the
     # stored outcome (shape-equal) or CONFLICT (shape-different) — the
@@ -402,6 +464,7 @@ def _commit_segment_tx(
             narration=narration,
             duration_ticks=duration_ticks,
             is_last_segment=is_last_segment,
+            outcome_ref=outcome_ref,
         )
 
     # The fresh path's ordering law (V3-5R, the review's MEDIUM-HIGH):
@@ -441,6 +504,86 @@ def _commit_segment_tx(
                 ),
             )
         )
+
+    # The V3-6R reference checks (fresh path; the replay arm above
+    # answered first): a given ``outcome_ref`` must name a real
+    # ``COMMITTED`` action of this scene's own gate — the chain
+    # ``intent → adjudication → committed action → outcome_ref →
+    # passage`` is checkable, not promised (STATE §25's "V3-6R 落法").
+    referenced_gate_id: str | None = None
+    if outcome_ref is not None:
+        referenced = conn.execute(
+            "SELECT a.status, a.gate_id, g.scene_id FROM user_action a"
+            " JOIN user_gate g ON g.gate_id = a.gate_id"
+            " WHERE a.user_action_id = ?",
+            (outcome_ref,),
+        ).fetchone()
+        if referenced is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"segment {segment_seq} of scene {scene_id!r} not"
+                        f" committed: outcome_ref {outcome_ref!r} names no"
+                        " user action — a passage's reference points at a"
+                        " durable ruling, not a guess"
+                    ),
+                )
+            )
+        if str(referenced[0]) != "COMMITTED":
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"segment {segment_seq} of scene {scene_id!r} not"
+                        f" committed: outcome_ref {outcome_ref!r} names an"
+                        f" action whose status is {str(referenced[0])!r};"
+                        " only a COMMITTED ruling is resumed (the"
+                        " adjudication lands first; NCP-2)"
+                    ),
+                )
+            )
+        if str(referenced[2]) != scene_id:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"segment {segment_seq} of scene {scene_id!r} not"
+                        f" committed: outcome_ref {outcome_ref!r} names an"
+                        f" action of scene {str(referenced[2])!r} — a"
+                        " passage resumes the ruling of its own scene"
+                    ),
+                )
+            )
+        referenced_gate_id = str(referenced[1])
+
+    # The forced law (V3-6R): while this scene holds a COMMITTED gate
+    # nobody resumed past, the fresh segment must carry that gate's
+    # action as its outcome_ref — the recovery prose names what it
+    # resumes (§23's V3-6R tightening ③'s other half).
+    committed_gate = conn.execute(
+        "SELECT gate_id FROM user_gate WHERE scene_id = ?"
+        " AND status = 'COMMITTED' ORDER BY gate_id ASC",
+        (scene_id,),
+    ).fetchone()
+    if committed_gate is not None:
+        required_ref = f"{str(committed_gate[0])}-a"
+        if outcome_ref != required_ref:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"segment {segment_seq} of scene {scene_id!r} not"
+                        " committed: the scene holds the COMMITTED gate"
+                        f" {str(committed_gate[0])!r} nobody resumed past —"
+                        " a fresh segment must carry its action as"
+                        f" outcome_ref {required_ref!r}; got"
+                        f" {outcome_ref!r} — the recovery prose never"
+                        " lands with a NULL reference (§23's V3-6R"
+                        " tightening ③)"
+                    ),
+                )
+            )
 
     # The User Gate interlock's stop half (V3-6): a story stopped at a
     # gate does not write on — the scene must hold no non-terminal gate
@@ -512,8 +655,18 @@ def _commit_segment_tx(
         "INSERT INTO narrative_passage ("
         " passage_id, scene_id, segment_seq, body, language, outcome_ref,"
         " created_at_tick, created_at, updated_at, state_version"
-        ") VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, 1)",
-        (passage_id, scene_id, segment_seq, body, language, actual_end, now, now),
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
+        (
+            passage_id,
+            scene_id,
+            segment_seq,
+            body,
+            language,
+            outcome_ref,
+            actual_end,
+            now,
+            now,
+        ),
     )
     conn.execute(
         "INSERT INTO world_event ("
@@ -553,18 +706,19 @@ def _commit_segment_tx(
     if isinstance(advanced, Err):
         return Err(advanced.error)
 
-    # The scene's actual span — NCP-3's one span writer (V3-5R HIGH-2):
-    # start on the first committed segment (COALESCE keeps it), end on
-    # every segment, and the ACTIVE → COMMITTED flip rides the same
-    # single UPDATE when this segment is the scene's last (the SCENE
-    # COMMIT alias; one version bump, no third transaction).
+    # The scene's actual span — the shared span arm's NCP-3 caller
+    # (V3-5R HIGH-2; the V3-6R two-caller law): start on the first
+    # committed segment (COALESCE keeps it), end on every segment, and
+    # the ACTIVE → COMMITTED flip rides the same single UPDATE when this
+    # segment is the scene's last (close_scene=True — the SCENE COMMIT
+    # alias; one version bump, no third transaction).
     scene_committed = False
     span = narrative_store._advance_scene_actual_span_tx(
         scene_id,
         actual_start,
         actual_end,
-        is_last_segment,
-        now,
+        close_scene=is_last_segment,
+        now=now,
         expected_state_version=scene.state_version,
     )
     if isinstance(span, Err):
@@ -572,17 +726,20 @@ def _commit_segment_tx(
     if is_last_segment:
         scene_committed = True
 
-    # The User Gate interlock's resume half (V3-6): this fresh segment
-    # is the continuation, so the scene's every COMMITTED gate turns
-    # CLOSED in this same transaction (one UPDATE, one version bump
-    # each) — the physical form of §23's "the writing resumed"; the
-    # COMMITTED → CLOSED step has no face of its own by design.
-    conn.execute(
-        "UPDATE user_gate SET status = 'CLOSED',"
-        " state_version = state_version + 1, updated_at = ?"
-        " WHERE scene_id = ? AND status = 'COMMITTED'",
-        (now, scene_id),
-    )
+    # The User Gate interlock's resume half (V3-6; the V3-6R targeted
+    # form): the fresh segment that carries a gate's action as its
+    # outcome_ref closes **that** gate in this same transaction (one
+    # UPDATE, one version bump) — the physical form of §23's "the
+    # writing resumed"; a reference whose gate is already CLOSED answers
+    # a zero-row UPDATE (a no-op), and no blanket close of other
+    # committed gates survives.
+    if referenced_gate_id is not None:
+        conn.execute(
+            "UPDATE user_gate SET status = 'CLOSED',"
+            " state_version = state_version + 1, updated_at = ?"
+            " WHERE gate_id = ? AND status = 'COMMITTED'",
+            (now, referenced_gate_id),
+        )
 
     chapter_activated = False
     if chapter.status is ChapterStatus.PLANNED:
@@ -634,24 +791,28 @@ def _replay_outcome(
     narration: str,
     duration_ticks: int,
     is_last_segment: bool,
+    outcome_ref: str | None = None,
 ) -> Result[CommitOutcome]:
     """Answer a replayed segment_key: shape-equal rides back as the
     stored outcome, shape-different is a ``CONFLICT``.
 
     The compared shape is the semantic payload — the passage's ``body``
     / ``language`` / ``created_at_tick`` (the row's own spelling of the
-    segment's end tick), the event's ``kind`` / ``narration`` /
+    segment's end tick) / ``outcome_ref`` (V3-6R; the reference is
+    stored, never derived), the event's ``kind`` / ``narration`` /
     ``effects`` / ``participants`` (through the strict codecs), the
     lineage span's duration, and the persisted terminality flag
-    ``is_last_segment`` (V3-5R; a terminality mismatch answers its own
-    ``CONFLICT`` sentence naming the flag). The ``scene_committed``
-    answer rides that same stored flag — the durable witness the flip
-    landed with this segment (the review's F1) — never a read-time
-    derivation over the scene's status and its max seq. Bookkeeping
-    stamps are not compared (the caller's clock differs on a replay, by
-    design). An undecodable stored payload — this module's own encoder's
-    output, corrupted — raises ``ValueError`` (the store family's
-    corrupted-row posture), never a fabricated comparison.
+    ``is_last_segment`` (V3-5R). A reference mismatch and a terminality
+    mismatch each answer their own ``CONFLICT`` sentence naming the
+    fact (the reference sentence first when both differ). The
+    ``scene_committed`` answer rides that same stored flag — the
+    durable witness the flip landed with this segment (the review's
+    F1) — never a read-time derivation over the scene's status and its
+    max seq. Bookkeeping stamps are not compared (the caller's clock
+    differs on a replay, by design). An undecodable stored payload —
+    this module's own encoder's output, corrupted — raises ``ValueError``
+    (the store family's corrupted-row posture), never a fabricated
+    comparison.
     """
 
     (
@@ -670,8 +831,8 @@ def _replay_outcome(
         bool(row[5]),
     )
     passage = conn.execute(
-        "SELECT body, language, created_at_tick FROM narrative_passage"
-        " WHERE passage_id = ?",
+        "SELECT body, language, created_at_tick, outcome_ref"
+        " FROM narrative_passage WHERE passage_id = ?",
         (passage_id,),
     ).fetchone()
     event = conn.execute(
@@ -681,6 +842,7 @@ def _replay_outcome(
     ).fetchone()
     assert passage is not None  # the FK makes a dangling passage unreachable
     assert event is not None  # the same for the event
+    stored_ref = None if passage[3] is None else str(passage[3])
     decoded_effects = decode_effects(str(event[3]))
     if isinstance(decoded_effects, Err):
         raise ValueError(
@@ -703,6 +865,7 @@ def _replay_outcome(
         decoded_participants.value,
         actual_end - actual_start,
         stored_is_last,
+        stored_ref,
     )
     if stored_shape != (
         body,
@@ -714,7 +877,22 @@ def _replay_outcome(
         participants,
         duration_ticks,
         is_last_segment,
+        outcome_ref,
     ):
+        if stored_ref != outcome_ref:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.CONFLICT,
+                    message=(
+                        f"segment {commit_id!r} already exists with a"
+                        " different outcome_ref: the stored reference is"
+                        f" {stored_ref!r}, the replay carries"
+                        f" {outcome_ref!r} — the reference is a stored"
+                        " fact and committed segments are append-only;"
+                        " they do not rewrite"
+                    ),
+                )
+            )
         if stored_is_last != is_last_segment:
             return Err(
                 DomainError(

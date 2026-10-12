@@ -5,15 +5,24 @@ the scene's own element in its ``scenes`` table, land the Dossier's
 revision 1 and activate the scene.
 
 **V3-6 (TASK-OPI-dc1bafdf…23 / the opening ruling DEC-OPI-dc1bafdf…5,
-re-run …21) adds the SCENE arm of a ruling's ``replan_scope``**:
+re-run …21) adds the SCENE arm of a ruling's ``replan_scope``; the
+V3-6R correction (TASK-OPI-dc1bafdf…33 / the opening ruling
+DEC-OPI-dc1bafdf…31) makes it ride the durable obligation**:
 :meth:`ScenePlanner.replan_scene` re-plans the **remaining part** of an
 ``ACTIVE`` scene — a new Dossier revision (``max + 1``, the local
 ``dossier_id_for`` naming) created and adopted in the store's own short
 transaction (the previous ``ADOPTED`` revision superseded there), with
 the ``planned_start_tick`` riding the same V3-5R ``max(current_tick,
 the element's)`` law ``open_scene`` keeps. The consumption is outside
-NCP-2's transaction (STATE §25): the ruling records ``replan_scope``,
-and this face is what the pipeline calls when it reads ``SCENE``.
+NCP-2's transaction (STATE §25), and since V3-6R its **entry is the
+obligation's own ``replan_request_id``** — never a bare ``scene_id`` —
+under the ``claim → work → complete`` protocol
+(:mod:`elc.world.action`'s helpers, STATE §25's "V3-6R 落法"): the
+claim writes the target revision's identity before the plan change
+executes (the eager claim — a crash retry's convergence anchor), an
+``APPLIED`` retry reads the target back zero-write, and a crash
+anywhere between the steps converges on the same revision, never a
+second one.
 
 **What ships here is the structure, not the prose** (the same
 schema-and-table-side-only scope V3-4 spelled for the Blueprint): the
@@ -99,12 +108,21 @@ from elc.platform.types import (
     Ok,
     Result,
 )
+from elc.world.action import (
+    ReplanScope,
+    ReplanStatus,
+    claim_replan_target,
+    mark_replan_applied,
+    replan_obligation,
+    scene_of_action,
+)
 from elc.world.bible import SqliteBibleStore
 from elc.world.cast import SqliteCastStore
 from elc.world.cognition import V3CognitionView, v3_cognition_view
 from elc.world.director import build_director_context
 from elc.world.narrative.store import SqliteNarrativeStore
 from elc.world.narrative.types import (
+    PlanRevisionStatus,
     SceneStatus,
     WorldSceneDossierRecord,
     WorldSceneRecord,
@@ -136,6 +154,20 @@ def dossier_id_for(scene_id: str, dossier_revision: int) -> str:
     identities; a dossier id serves replays of revision 1)."""
 
     return f"{scene_id}-d{dossier_revision}"
+
+
+def _dossier_revision_of(scene_id: str, dossier_id: str) -> int | None:
+    """The ``dossier_revision`` a claimed ``dossier_id`` spells, or
+    ``None`` — the read-back inverse of :func:`dossier_id_for`
+    (``"{scene_id}-d{n}"``). The V3-6R claim returns a stored target;
+    the revision it names rides its own id, never a recomputation (the
+    claim is the retry's convergence anchor)."""
+
+    prefix = f"{scene_id}-d"
+    if not dossier_id.startswith(prefix):
+        return None
+    tail = dossier_id[len(prefix) :]
+    return int(tail) if tail.isdigit() else None
 
 
 @dataclass(frozen=True)
@@ -196,50 +228,120 @@ class ScenePlanner:
 
     def replan_scene(
         self,
-        scene_id: str,
+        replan_request_id: str,
         element: Mapping[str, Any],
         now: str,
     ) -> Result[WorldSceneDossierRecord]:
         """Re-plan one **ACTIVE** scene's remaining part — the SCENE arm
-        of a ruling's ``replan_scope`` (STATE §25's "V3-6 落法": the
-        plan-face consumption is outside NCP-2's transaction, and this
-        is its SCENE face).
+        of a ruling's ``replan_scope``, entered by the obligation's own
+        ``replan_request_id`` (the V3-6R form; STATE §25's "V3-6R 落法").
 
-        The move is the Dossier's own version chain: the scene's
-        existing maximum ``dossier_revision`` plus one is created
-        (``PROPOSED`` — the element's fields validated in the
-        ``_element_fields`` family, ``planned_start_tick`` riding
+        The protocol is ``claim → work → complete``, every step
+        idempotent:
+
+        - the obligation is read first (:func:`elc.world.action.replan_obligation`);
+          a missing id and a ``scope ≠ SCENE`` obligation are refused
+          before anything else;
+        - ``APPLIED`` — the plan change already landed: the claimed
+          target's dossier is read back **zero-write** (an ``ADOPTED``
+          row; anything else is a corrupted obligation and raises
+          ``ValueError``, the store family's corrupted-row posture);
+        - ``PENDING`` — the action's durable chain (obligation → action
+          → gate) resolves the scene and it must be ``ACTIVE``; the
+          element is validated in the ``_checked_fields`` family; the
+          claim (:func:`elc.world.action.claim_replan_target`) writes the
+          computed ``dossier_id`` (``max(现存 dossier_revision) + 1``
+          under the local naming) **before** the plan change runs — a
+          retry whose target is already claimed rides the stored one,
+          so a crash converges on the same revision; the work creates
+          the dossier (idempotent by id; an already-present row is
+          reused) and adopts it (``PROPOSED → ADOPTED``; an already
+          ``ADOPTED`` row skips the move) with the store's own
+          supersede; the complete step moves the obligation
+          ``PENDING → APPLIED`` (:func:`elc.world.action.mark_replan_applied`).
+
+        **No scene is activated and no other row is touched**: the
+        scene is already ``ACTIVE``, and a replanning has no write power
+        over what the world has touched (N-INV-003 — a settled scene is
+        past this door, refused below). ``planned_start_tick`` rides
         ``max(current_tick, the element's)`` — the same V3-5R time law
-        :meth:`open_scene` spells, so a replanning is never dated
-        before the world it lands in) and adopted at once (the store's
-        own face supersedes the previous ``ADOPTED`` revision in the
-        same short transaction — ``ADOPTED`` is unique per scene, the
-        Plan face is append-only). **No scene is activated and no other
-        row is touched**: the scene is already ``ACTIVE``, and a
-        replanning has no write power over what the world has touched
-        (N-INV-003 — ``COMMITTED`` / ``CLOSED`` scenes are past this
-        door, refused below).
+        ``open_scene`` keeps, so a replanning is never dated before the
+        world it lands in; no tick moves (the commits own
+        ``world.current_tick``).
 
-        Refusals, all value semantics, nothing written: a dangling
-        scene — ``NOT_FOUND``; a scene not ``ACTIVE`` —
-        ``VALIDATION_FAILED`` (「只重规划剩余部分」: only the remaining
-        part of a running scene is re-plannable — a retired, settled or
-        never-opened scene's plan is not this face's to move); an
-        element missing or mistyping a canonical field —
+        Refusals, all value semantics, nothing written: the obligation
+        does not exist — ``NOT_FOUND``; a ``CHAPTER`` obligation reached
+        through this face — ``VALIDATION_FAILED``; a dangling action
+        chain, or a scene the chain names that is gone — ``NOT_FOUND``;
+        a scene not ``ACTIVE`` — ``VALIDATION_FAILED`` (「只重规划剩余
+        部分」); an element missing or mistyping a canonical field —
         ``VALIDATION_FAILED`` (the ``scenes[N]``-family sentence, with
-        the scene's own coordinate); any store refusal rides out
-        unchanged. ``now`` stamps the new revision; no tick moves (the
-        commits own ``world.current_tick``).
+        the scene's own coordinate; judged before the claim, so a bad
+        payload writes nothing); a claimed target whose stored dossier
+        is neither ``PROPOSED`` nor ``ADOPTED`` — ``CONFLICT``; any
+        store refusal rides out unchanged.
         """
 
-        scene = self._narrative.get_scene(scene_id)
-        if scene is None:
+        obligation = replan_obligation(self._conn, replan_request_id)
+        if obligation is None:
             return Err(
                 DomainError(
                     code=DomainErrorCode.NOT_FOUND,
                     message=(
-                        f"scene {scene_id!r} not replanned: it does not"
-                        " exist"
+                        f"replan obligation {replan_request_id!r} not"
+                        " consumed: it does not exist — a SCENE replanning"
+                        " enters by its own replan_request_id (the ruling"
+                        " that asked for it)"
+                    ),
+                )
+            )
+        if obligation.scope is not ReplanScope.SCENE:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"replan obligation {replan_request_id!r} is"
+                        f" {obligation.scope.value!r}; this face consumes"
+                        " SCENE obligations only (a CHAPTER one goes to"
+                        " Director.apply_action_replan)"
+                    ),
+                )
+            )
+        if obligation.status is ReplanStatus.APPLIED:
+            assert obligation.target_ref is not None  # the composite CHECK
+            applied = self._narrative.get_dossier(obligation.target_ref)
+            if (
+                applied is None
+                or applied.status is not PlanRevisionStatus.ADOPTED
+            ):
+                raise ValueError(
+                    f"replan obligation {replan_request_id!r} is APPLIED"
+                    f" but its target {obligation.target_ref!r} is not an"
+                    " adopted scene dossier — a corrupted obligation row"
+                )
+            return Ok(applied)
+
+        scene_id = scene_of_action(self._conn, replan_request_id)
+        if scene_id is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"replan obligation {replan_request_id!r} not"
+                        " consumed: its action chain (action → gate →"
+                        " scene) is dangling — the obligation names no"
+                        " scene to replan"
+                    ),
+                )
+            )
+        scene = self._narrative.get_scene(scene_id)
+        if scene is None:  # the FK makes this unreachable; answered honestly
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"replan obligation {replan_request_id!r} not"
+                        f" consumed: scene {scene_id!r} does not exist"
                     ),
                 )
             )
@@ -282,36 +384,92 @@ class ScenePlanner:
         planned_start_tick = max(
             director_context.current_tick, fields.value["planned_start_tick"]
         )
-        revisions = self._narrative.dossiers_of(scene_id)
-        dossier_revision = (
-            max(dossier.dossier_revision for dossier in revisions) + 1
-            if revisions
-            else 1
+
+        # The claim (the eager anchor): a fresh target is computed and
+        # written before the plan change executes; a retry whose target
+        # is already stored rides it — never recomputed, so the revision
+        # converges.
+        dossier_id = obligation.target_ref
+        revision: int
+        if dossier_id is None:
+            revisions = self._narrative.dossiers_of(scene_id)
+            revision = (
+                max(dossier.dossier_revision for dossier in revisions) + 1
+                if revisions
+                else 1
+            )
+            dossier_id = dossier_id_for(scene_id, revision)
+            claimed = claim_replan_target(
+                self._conn,
+                replan_request_id=replan_request_id,
+                target_ref=dossier_id,
+                now=now,
+            )
+            if isinstance(claimed, Err):
+                return Err(claimed.error)
+        else:
+            spelled = _dossier_revision_of(scene_id, dossier_id)
+            if spelled is None:
+                raise ValueError(
+                    f"replan obligation {replan_request_id!r} claims the"
+                    f" target {dossier_id!r}, which does not spell the"
+                    " planner's own dossier naming"
+                    f" ({scene_id!r}-d{{n}}) — a corrupted obligation row"
+                )
+            revision = spelled
+
+        # The work: create-if-absent (idempotent by id — a retry that
+        # finds its claimed revision already landed reuses the row) and
+        # adopt-when-PROPOSED (an already-adopted revision is the crash
+        # after adopt; the supersede rode the store's own transaction).
+        dossier = self._narrative.get_dossier(dossier_id)
+        if dossier is None:
+            created = self._narrative.create_dossier(
+                dossier_id,
+                scene_id,
+                revision,
+                pov_actor_id=fields.value["pov_actor_id"],
+                participants=fields.value["participants"],
+                place=fields.value["place"],
+                planned_start_tick=planned_start_tick,
+                revealable=fields.value["revealable"],
+                must_hide=fields.value["must_hide"],
+                entry_goals=fields.value["entry_goals"],
+                exit_condition=fields.value["exit_condition"],
+                elasticity=fields.value["elasticity"],
+                now=now,
+            )
+            if isinstance(created, Err):
+                return Err(created.error)
+            dossier = created.value
+        if dossier.status is PlanRevisionStatus.PROPOSED:
+            adopted = self._narrative.adopt_dossier(
+                dossier_id, now, expected_state_version=dossier.state_version
+            )
+            if isinstance(adopted, Err):
+                return Err(adopted.error)
+            dossier = adopted.value
+        elif dossier.status is not PlanRevisionStatus.ADOPTED:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.CONFLICT,
+                    message=(
+                        f"scene dossier {dossier_id!r} is"
+                        f" {dossier.status.value!r} — the claimed target no"
+                        " longer accepts the replanning (another writer"
+                        " moved it); the obligation stands uncompleted"
+                    ),
+                )
+            )
+
+        # The complete step: the obligation is discharged only after the
+        # plan change landed.
+        completed = mark_replan_applied(
+            self._conn, replan_request_id=replan_request_id, now=now
         )
-        dossier_id = dossier_id_for(scene_id, dossier_revision)
-        created = self._narrative.create_dossier(
-            dossier_id,
-            scene_id,
-            dossier_revision,
-            pov_actor_id=fields.value["pov_actor_id"],
-            participants=fields.value["participants"],
-            place=fields.value["place"],
-            planned_start_tick=planned_start_tick,
-            revealable=fields.value["revealable"],
-            must_hide=fields.value["must_hide"],
-            entry_goals=fields.value["entry_goals"],
-            exit_condition=fields.value["exit_condition"],
-            elasticity=fields.value["elasticity"],
-            now=now,
-        )
-        if isinstance(created, Err):
-            return Err(created.error)
-        adopted = self._narrative.adopt_dossier(
-            dossier_id, now, expected_state_version=created.value.state_version
-        )
-        if isinstance(adopted, Err):
-            return Err(adopted.error)
-        return Ok(adopted.value)
+        if isinstance(completed, Err):
+            return Err(completed.error)
+        return Ok(dossier)
 
     def open_scene(self, scene_id: str, now: str) -> Result[SceneOpening]:
         """Open one planned scene — the deterministic chain the module

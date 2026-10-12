@@ -1,13 +1,18 @@
 """V3-6 — User Gate + ``user_action`` + Action Resolver + OUTCOME COMMIT
 (TASK-OPI-dc1bafdf…23 / the opening ruling DEC-OPI-dc1bafdf…5, re-run
-revision …21; VAL-OPI-dc1bafdf…25).
+revision …21; VAL-OPI-dc1bafdf…25; the V3-6R correction
+TASK-OPI-dc1bafdf…33 / the opening ruling …31).
 
 The Narrative V3 program's sixth cut: migration 0035's two tables
 (``user_gate`` / ``user_action``) plus ``segment_commit``'s rebuild (the
 ``'ACTION_OUTCOME'`` kind and its ``action_id``), the NCP-1 and NCP-2
 transactions (:mod:`elc.world.action`), the SEGMENT COMMIT's two
 interlock arms (:mod:`elc.world.settlement`) and the SCENE replan arm
-(:meth:`elc.world.scene.ScenePlanner.replan_scene`). The groups:
+(:meth:`elc.world.scene.ScenePlanner.replan_scene`). The V3-6R
+correction re-keys the replan arm through the durable obligation
+(``action_replan``) and tightens the commit doors — this suite carries
+the migrated pins, and ``test_v3_6r_replan_outcome.py`` carries the
+correction's own new pins. The groups:
 
 1. **migration 0035's shape** — the two tables' columns, the CHECK
    vocabularies, the terminal-integrity composite CHECK, the
@@ -18,27 +23,29 @@ interlock arms (:mod:`elc.world.settlement`) and the SCENE replan arm
    action row's birth, the replay rides back, a claimed gate refuses a
    second submission, the option and the scene's status are judged;
 3. **NCP-2** — one short transaction lands the eight terminal columns,
-   the behaviour event, the state settlement, the tick, the
-   ACTION_OUTCOME lineage row, the gate's flip and the chapter arm; the
-   participants discipline refuses; a deep injection rolls the whole
-   group back; the replay is a whole-group no-op or a CONFLICT;
+   the behaviour event, the state settlement, the tick, the scene's
+   extended span, the ACTION_OUTCOME lineage row, the gate's flip and
+   the chapter arm; the participants discipline refuses; a deep
+   injection rolls the whole group back; the replay is a whole-group
+   no-op or a CONFLICT;
 4. **``begin_resolving``** — both rows in one transaction, idempotent
    from ``RESOLVING``, the terminal words refused;
 5. **the adjudication's sole writership (intent ≠ world fact)** — the
    submission's own words never reach ``world_event`` /
    ``world_state_fact``;
-6. **the replan verdicts** — ``NONE`` moves no plan row, ``SCENE``
-   mints the scene's next adopted dossier revision (and the Writer
-   reads it), ``CHAPTER`` lands a new adopted Blueprint revision whose
-   content the next scene's open reads;
+6. **the replan verdicts** — ``NONE`` moves no plan row (and births no
+   obligation), ``SCENE`` mints the scene's next adopted dossier
+   revision through the obligation (and the Writer reads it),
+   ``CHAPTER`` lands a new adopted Blueprint revision through
+   ``apply_action_replan`` whose content the next scene's open reads;
 7. **the interlock** — a non-terminal gate refuses a fresh segment
-   (the replay is still answered), and the ``COMMITTED → CLOSED`` flip
-   is atomic with the segment that resumed the story;
+   (the replay is still answered), and the resuming segment carrying
+   the gate's action as its ``outcome_ref`` closes that gate atomically;
 8. **the recovery scan, the module discipline and the chain head** —
-   RA §29's four families, the post-NCP-1 re-adjudication's unique
+   RA §29's five families, the post-NCP-1 re-adjudication's unique
    outcome, no Package face / no interpolated SQL / one transaction per
    face / the cold start, and the shared constants ending at
-   ``0035_user_gate_action`` / ``35``.
+   ``0036_action_replan`` / ``36``.
 """
 
 from __future__ import annotations
@@ -62,6 +69,7 @@ from elc.world.action import (
     Adjudication,
     GateStatus,
     ReplanScope,
+    ReplanStatus,
     UserActionRecord,
     UserGateRecord,
     action_of,
@@ -70,7 +78,10 @@ from elc.world.action import (
     gates_of,
     get_gate,
     open_gate,
+    pending_replans,
     recovery_scan,
+    replan_obligation,
+    replan_request_id_for,
     submit_gate,
 )
 from elc.world.bible import BibleContent, SqliteBibleStore
@@ -355,6 +366,7 @@ def _commit(
     duration_ticks: int = 3,
     is_last_segment: bool = False,
     now: str = NOW,
+    outcome_ref: str | None = None,
 ):
     return commit_segment(
         conn,
@@ -370,6 +382,7 @@ def _commit(
         duration_ticks=duration_ticks,
         is_last_segment=is_last_segment,
         now=now,
+        outcome_ref=outcome_ref,
     )
 
 
@@ -443,6 +456,14 @@ def _committed_action(
     duration_ticks: int = 7,
     now: str = LATER,
 ):
+    # The V3-6R door: the ruling enters COMMITTED only from RESOLVING —
+    # the helper steps an ANSWERED pair into the durable stop first (a
+    # gate already RESOLVING rides; a dangling gate or a stored replay is
+    # left to the face's own refusals and answers).
+    gate = get_gate(conn, gate_id)
+    if gate is not None and gate.status is GateStatus.ANSWERED:
+        moved = begin_resolving(conn, gate_id=gate_id, now=now)
+        assert isinstance(moved, Ok)
     return commit_action(
         conn,
         world_store=world_store,
@@ -463,6 +484,8 @@ def _chain(
     narrative: SqliteNarrativeStore,
     director: Director,
     planner: ScenePlanner,
+    *,
+    adjudication: Adjudication | None = None,
 ) -> None:
     """A gate through its ruling: scene active, gate open, submission in,
     ruling landed (tick 0 → 7)."""
@@ -473,7 +496,10 @@ def _chain(
     assert isinstance(_gate(conn), Ok)
     assert isinstance(_submitted(conn), Ok)
     assert isinstance(
-        _committed_action(conn, world_store, narrative), Ok
+        _committed_action(
+            conn, world_store, narrative, adjudication=adjudication
+        ),
+        Ok,
     )
 
 
@@ -785,19 +811,21 @@ def test_the_rebuilt_segment_commit_carries_both_kinds(
 
 def test_the_chain_head_and_the_stamps_agree() -> None:
     """The migration self-pin: the shared constants and a fresh database
-    end at V3-6's ``0035_user_gate_action`` / ``35`` — behind it V3-5R's
-    ``0034_segment_terminality``, and the chain's own V3 tables behind
-    those."""
+    end at V3-6R's ``0036_action_replan`` / ``36`` — behind it V3-6's
+    ``0035_user_gate_action``, V3-5R's ``0034_segment_terminality`` and
+    the chain's own V3 tables behind those."""
 
-    assert MIGRATION_IDS[-1] == "0035_user_gate_action"
-    assert SCHEMA_HEAD_FILE == "0035_user_gate_action.sql"
-    assert SCHEMA_HEAD_VERSION == "35"
-    assert MIGRATION_IDS[-2] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-1] == "0036_action_replan"
+    assert SCHEMA_HEAD_FILE == "0036_action_replan.sql"
+    assert SCHEMA_HEAD_VERSION == "36"
+    assert MIGRATION_IDS[-2] == "0035_user_gate_action"
+    assert MIGRATION_IDS[-3] == "0034_segment_terminality"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0035_user_gate_action"
-    assert applied[-2] == "0034_segment_terminality"
-    assert applied[-3] == "0033_segment_commit"
+    assert applied[-1] == "0036_action_replan"
+    assert applied[-2] == "0035_user_gate_action"
+    assert applied[-3] == "0034_segment_terminality"
+    assert applied[-4] == "0033_segment_commit"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -805,8 +833,8 @@ def test_the_chain_head_and_the_stamps_agree() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "35",
-        "runtime_schema_version": "35",
+        "schema_version": "36",
+        "runtime_schema_version": "36",
     }
     tables = {
         str(row[0])
@@ -814,7 +842,7 @@ def test_the_chain_head_and_the_stamps_agree() -> None:
             "SELECT name FROM sqlite_master WHERE type = 'table'"
         ).fetchall()
     }
-    for table in ("user_gate", "user_action", "segment_commit"):
+    for table in ("user_gate", "user_action", "segment_commit", "action_replan"):
         assert table in tables, table
 
 
@@ -1158,12 +1186,14 @@ def test_ncp2_lands_the_whole_group(
     assert chapter.status is ChapterStatus.ACTIVE
     assert chapter.opened_at_tick == 0
 
-    # The scene's own span and flip are NOT the action's (V3-5R's one
-    # span writer): the scene stays ACTIVE with no span at all.
+    # The scene's span IS the action's V3-6R move (the two-caller span
+    # arm with close_scene=False): the interval extends 0 → 7 and the
+    # scene stays ACTIVE (the flip stays the last SEGMENT's).
     scene = narrative.get_scene(SCENE)
     assert scene is not None
     assert scene.status is SceneStatus.ACTIVE
-    assert (scene.actual_start_tick, scene.actual_end_tick) == (None, None)
+    assert (scene.actual_start_tick, scene.actual_end_tick) == (0, 7)
+    assert scene.state_version == 3  # mint 1 → activation 2 → span 3
 
 
 def test_ncp2_refuses_a_ruling_without_the_user_role(
@@ -1274,7 +1304,10 @@ def test_ncp2_refuses_a_ruling_without_the_user_role(
     }
     assert _rows(conn, "SELECT current_tick FROM world")[0][0] == 0
     action = action_of(conn, GATE)
-    assert action is not None and action.status is ActionStatus.ANSWERED
+    # The V3-6R door: the pair sits at the resolver's durable stop — the
+    # refusals prove the payload checks, never a COMMITTED write.
+    assert action is not None and action.status is ActionStatus.RESOLVING
+    assert get_gate(conn, GATE).status is GateStatus.RESOLVING  # type: ignore[union-attr]
 
 
 def test_ncp2_refuses_a_world_without_a_user_role(
@@ -1293,7 +1326,18 @@ def test_ncp2_refuses_a_world_without_a_user_role(
     _chain(
         conn, world_store, cast_store, bible_store, narrative, director, planner
     )
-    # Re-open a gate and submit, then remove the world's user role.
+    # Re-open a gate and submit, then remove the world's user role. The
+    # V3-6R one-gate law: the first gate closes by a continuing segment
+    # carrying its action before the next gate opens.
+    unclosed = _gate(conn, gate_seq=2, now=LATER)
+    assert isinstance(unclosed, Err)
+    assert unclosed.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "close the previous gate" in unclosed.error.message
+    resumed = _commit(
+        conn, narrative, world_store, now=LATER, outcome_ref=f"{GATE}-a"
+    )
+    assert isinstance(resumed, Ok)
+    assert get_gate(conn, GATE).status is GateStatus.CLOSED  # type: ignore[union-attr]
     assert isinstance(_gate(conn, gate_seq=2, now=LATER), Ok)
     assert isinstance(
         _submitted(conn, gate_id=f"{SCENE}-g02", submission_id="sub-2", now=LATER),
@@ -1393,13 +1437,19 @@ def test_ncp2_rolls_the_whole_group_back_on_a_deep_failure(
 
     action = action_of(conn, GATE)
     assert action is not None
-    assert action.status is ActionStatus.ANSWERED
+    assert action.status is ActionStatus.RESOLVING
     assert action.outcome is None
-    assert get_gate(conn, GATE).status is GateStatus.ANSWERED  # type: ignore[union-attr]
+    assert get_gate(conn, GATE).status is GateStatus.RESOLVING  # type: ignore[union-attr]
     assert _row_counts(
         conn, ("world_event", "world_state_fact", "segment_commit")
     ) == {"world_event": 0, "world_state_fact": 0, "segment_commit": 0}
     assert _rows(conn, "SELECT current_tick FROM world")[0][0] == 0
+    # The span arm ④b is inside the group too: the injected failure
+    # leaves the scene's actual interval untouched.
+    scene = narrative.get_scene(SCENE)
+    assert scene is not None
+    assert (scene.actual_start_tick, scene.actual_end_tick) == (None, None)
+    assert scene.state_version == 2  # mint 1 → activation 2; the arm rolled back
 
     monkeypatch.undo()
     retried = _committed_action(conn, world_store, narrative)
@@ -1654,13 +1704,16 @@ def test_a_none_ruling_moves_no_plan_row(
     planner: ScenePlanner,
 ) -> None:
     """``replan_scope = NONE``: the ruling lands and the plan face keeps
-    its revision count — one dossier, one adopted plan, untouched."""
+    its revision count — one dossier, one adopted plan, untouched, and
+    **zero obligations** (V3-6R: "no obligation" is zero rows)."""
 
     _chain(
         conn, world_store, cast_store, bible_store, narrative, director, planner
     )
     assert [d.dossier_revision for d in narrative.dossiers_of(SCENE)] == [1]
     assert len(narrative.plans_of("world-town-ch01")) == 1
+    assert _row_counts(conn, ("action_replan",)) == {"action_replan": 0}
+    assert pending_replans(conn) == ()
 
 
 def test_a_scene_ruling_replans_the_dossier_and_the_writer_reads_it(
@@ -1673,17 +1726,35 @@ def test_a_scene_ruling_replans_the_dossier_and_the_writer_reads_it(
     planner: ScenePlanner,
     writer: PovWriter,
 ) -> None:
-    """``replan_scope = SCENE``: ``replan_scene`` mints ``max + 1``,
-    creates and adopts it (the old revision superseded), keeps the
-    scene's status, reads the ``max(current_tick, element)`` time law —
-    and the next segment's Writer reads the new dossier (the new
-    ``must_hide`` is the one that leaks)."""
+    """``replan_scope = SCENE``: NCP-2 births the obligation ``PENDING``,
+    and ``replan_scene(replan_request_id, …)`` consumes it through
+    ``claim → work → complete`` — ``max + 1`` minted, created and adopted
+    (the old revision superseded), the scene's status kept, the
+    ``max(current_tick, element)`` time law read — and the next segment's
+    Writer reads the new dossier (the new ``must_hide`` is the one that
+    leaks; the resuming segment carries the ruling's ``outcome_ref`` and
+    closes the gate)."""
 
     _chain(
-        conn, world_store, cast_store, bible_store, narrative, director, planner
+        conn,
+        world_store,
+        cast_store,
+        bible_store,
+        narrative,
+        director,
+        planner,
+        adjudication=_ruling(replan_scope=ReplanScope.SCENE),
     )
+    request_id = replan_request_id_for(GATE, "sub-1")
+    born = replan_obligation(conn, request_id)
+    assert born is not None
+    assert born.user_action_id == f"{GATE}-a"
+    assert born.scope is ReplanScope.SCENE
+    assert born.status is ReplanStatus.PENDING
+    assert born.target_ref is None
+
     element = _scene_draft(purpose="the ledger turns", must_hide="the iron key")
-    replanned = planner.replan_scene(SCENE, element, LATER)
+    replanned = planner.replan_scene(request_id, element, LATER)
     assert isinstance(replanned, Ok)
     assert replanned.value.dossier_id == f"{SCENE}-d2"
     assert replanned.value.dossier_revision == 2
@@ -1697,6 +1768,10 @@ def test_a_scene_ruling_replans_the_dossier_and_the_writer_reads_it(
     ]
     scene = narrative.get_scene(SCENE)
     assert scene is not None and scene.status is SceneStatus.ACTIVE
+    applied = replan_obligation(conn, request_id)
+    assert applied is not None
+    assert applied.status is ReplanStatus.APPLIED
+    assert applied.target_ref == f"{SCENE}-d2"
 
     leaked = writer.write_segment(
         SCENE,
@@ -1706,6 +1781,7 @@ def test_a_scene_ruling_replans_the_dossier_and_the_writer_reads_it(
         duration_ticks=1,
         is_last_segment=False,
         now=LATER,
+        outcome_ref=f"{GATE}-a",
     )
     assert isinstance(leaked, Err)
     assert leaked.error.code is DomainErrorCode.VALIDATION_FAILED
@@ -1718,11 +1794,13 @@ def test_a_scene_ruling_replans_the_dossier_and_the_writer_reads_it(
         duration_ticks=1,
         is_last_segment=False,
         now=LATER,
+        outcome_ref=f"{GATE}-a",
     )
     assert isinstance(allowed, Ok)
+    assert get_gate(conn, GATE).status is GateStatus.CLOSED  # type: ignore[union-attr]
 
 
-def test_replan_scene_refuses_a_non_active_scene(
+def test_the_scene_replan_face_refuses_by_its_own_obligation(
     conn: sqlite3.Connection,
     world_store: SqliteWorldStore,
     cast_store: SqliteCastStore,
@@ -1731,47 +1809,63 @@ def test_replan_scene_refuses_a_non_active_scene(
     director: Director,
     planner: ScenePlanner,
 ) -> None:
-    """「只重规划剩余部分」: a ``PLANNED`` scene refuses (and a dangling
-    id is ``NOT_FOUND``); a corrupted element refuses in the family's own
-    coordinate language."""
+    """The V3-6R entry: a missing obligation is ``NOT_FOUND``; a
+    corrupted element refuses in the family's own coordinate language
+    **before the claim** (no dossier, no target written); 「只重规划剩余
+    部分」 refuses a settled scene the obligation names."""
 
     _opened_chapter(
         conn, world_store, cast_store, bible_store, narrative, director
     )
-    refused = planner.replan_scene(SCENE, _scene_draft(), LATER)
-    assert isinstance(refused, Err)
-    assert refused.error.code is DomainErrorCode.VALIDATION_FAILED
-    assert "remaining part" in refused.error.message
+    missing = planner.replan_scene(f"rp:{SCENE}-g99:sub-0", _scene_draft(), LATER)
+    assert isinstance(missing, Err)
+    assert missing.error.code is DomainErrorCode.NOT_FOUND
     assert narrative.dossiers_of(SCENE) == ()
 
-    dangling = planner.replan_scene("no-such-scene", _scene_draft(), LATER)
-    assert isinstance(dangling, Err)
-    assert dangling.error.code is DomainErrorCode.NOT_FOUND
-
     assert isinstance(planner.open_scene(SCENE, NOW), Ok)
+    assert isinstance(_gate(conn), Ok)
+    assert isinstance(_submitted(conn), Ok)
+    landed = _committed_action(
+        conn,
+        world_store,
+        narrative,
+        adjudication=_ruling(replan_scope=ReplanScope.SCENE),
+    )
+    assert isinstance(landed, Ok)
+    request_id = replan_request_id_for(GATE, "sub-1")
+
     broken = _scene_draft()
     broken["planned_start_tick"] = "soon"
-    corrupted = planner.replan_scene(SCENE, broken, LATER)
+    corrupted = planner.replan_scene(request_id, broken, LATER)
     assert isinstance(corrupted, Err)
     assert corrupted.error.code is DomainErrorCode.VALIDATION_FAILED
     assert f"scene {SCENE!r}.planned_start_tick" in corrupted.error.message
     assert [d.dossier_revision for d in narrative.dossiers_of(SCENE)] == [1]
+    unclaimed = replan_obligation(conn, request_id)
+    assert unclaimed is not None
+    assert unclaimed.status is ReplanStatus.PENDING
+    assert unclaimed.target_ref is None
 
     # A settled scene is past this door too (the last segment flipped
-    # it): the same refusal, zero writes.
-    landed = _commit(
-        conn, narrative, world_store, is_last_segment=True, now=LATER
+    # it): the obligation stands PENDING, the replanning refuses.
+    landed_segment = _commit(
+        conn,
+        narrative,
+        world_store,
+        is_last_segment=True,
+        now=LATER,
+        outcome_ref=f"{GATE}-a",
     )
-    assert isinstance(landed, Ok)
-    assert landed.value.scene_committed is True
-    settled = planner.replan_scene(SCENE, _scene_draft(), LATER)
+    assert isinstance(landed_segment, Ok)
+    assert landed_segment.value.scene_committed is True
+    settled = planner.replan_scene(request_id, _scene_draft(), LATER)
     assert isinstance(settled, Err)
     assert settled.error.code is DomainErrorCode.VALIDATION_FAILED
     assert "remaining part" in settled.error.message
     assert [d.dossier_revision for d in narrative.dossiers_of(SCENE)] == [1]
 
 
-def test_a_chapter_ruling_revises_the_blueprint_and_the_next_open_reads_it(
+def test_a_chapter_ruling_lands_through_apply_action_replan(
     conn: sqlite3.Connection,
     world_store: SqliteWorldStore,
     cast_store: SqliteCastStore,
@@ -1780,10 +1874,12 @@ def test_a_chapter_ruling_revises_the_blueprint_and_the_next_open_reads_it(
     director: Director,
     planner: ScenePlanner,
 ) -> None:
-    """``replan_scope = CHAPTER``: the consumption is the existing
-    ``Director.revise_blueprint`` face — a new revision adopted, and the
-    next scene's open reads the newest adopted revision's element (no
-    rounding back to the invalidated plan)."""
+    """``replan_scope = CHAPTER``: the obligation is consumed by
+    ``Director.apply_action_replan`` (the V3-6R entry — a bare chapter id
+    no longer serves) — a new revision adopted, the obligation discharged
+    ``APPLIED`` with its claimed target, and the next scene's open reads
+    the newest adopted revision's element (no rounding back to the
+    invalidated plan)."""
 
     scenes = [
         _scene_draft(purpose="first sight"),
@@ -1818,10 +1914,15 @@ def test_a_chapter_ruling_revises_the_blueprint_and_the_next_open_reads_it(
     assert isinstance(landed, Ok)
     assert landed.value.replan_scope is ReplanScope.CHAPTER
 
-    revised = director.revise_blueprint("world-town-ch01", revised_payload, LATER)
+    request_id = replan_request_id_for(GATE, "sub-1")
+    revised = director.apply_action_replan(request_id, revised_payload, LATER)
     assert isinstance(revised, Ok)
     assert revised.value.plan.plan_revision == 2
     assert revised.value.plan.status is PlanRevisionStatus.ADOPTED
+    applied = replan_obligation(conn, request_id)
+    assert applied is not None
+    assert applied.status is ReplanStatus.APPLIED
+    assert applied.target_ref == "world-town-ch01-bp-r2"
 
     opened = planner.open_scene(SCENE2, LATER)
     assert isinstance(opened, Ok)
@@ -1859,6 +1960,9 @@ def test_the_ruling_scope_is_persisted_and_its_replay_is_a_no_op(
     assert action is not None
     assert action.status is ActionStatus.COMMITTED
     assert action.replan_scope is ReplanScope.CHAPTER
+    request_id = replan_request_id_for(GATE, "sub-1")
+    born = replan_obligation(conn, request_id)
+    assert born is not None and born.status is ReplanStatus.PENDING
     events_before = _rows(conn, "SELECT COUNT(*) FROM world_event")[0][0]
     tick_before = _rows(conn, "SELECT current_tick FROM world")[0][0]
     replayed = _committed_action(
@@ -1873,6 +1977,11 @@ def test_the_ruling_scope_is_persisted_and_its_replay_is_a_no_op(
     assert _rows(conn, "SELECT current_tick FROM world")[0][0] == tick_before
     still = action_of(conn, GATE)
     assert still is not None and still.replan_scope is ReplanScope.CHAPTER
+    # The replay touches the obligation never (the replay arm answers
+    # first): exactly one PENDING row, no second birth.
+    assert _row_counts(conn, ("action_replan",)) == {"action_replan": 1}
+    after_replay = replan_obligation(conn, request_id)
+    assert after_replay == born
 
 
 # ---------------------------------------------------------------------------
@@ -1923,28 +2032,57 @@ def test_the_resume_closes_committed_gates_atomically(
     director: Director,
     planner: ScenePlanner,
 ) -> None:
-    """The ``COMMITTED → CLOSED`` flip is the resuming segment's own
-    transaction: it lands with the segment (``CLOSED``, version bumped)
-    and a segment that fails afterwards leaves the gate ``COMMITTED`` —
-    never half-moved."""
+    """The V3-6R ``COMMITTED → CLOSED`` move is the resuming segment's
+    own transaction, **targeted by the ``outcome_ref``**: the forced law
+    refuses a fresh segment that does not carry the standing gate's
+    action, and the segment that does carry it closes that gate (version
+    bumped) — a segment that fails along the way leaves the gate
+    ``COMMITTED``, never half-moved."""
 
     _chain(
         conn, world_store, cast_store, bible_store, narrative, director, planner
     )
     assert get_gate(conn, GATE).status is GateStatus.COMMITTED  # type: ignore[union-attr]
 
+    # The forced law: no reference, no fresh segment.
+    missing_ref = _commit(conn, narrative, world_store, now=LATER)
+    assert isinstance(missing_ref, Err)
+    assert missing_ref.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "outcome_ref" in missing_ref.error.message
+    assert get_gate(conn, GATE).status is GateStatus.COMMITTED  # type: ignore[union-attr]
+
     # A failing fresh segment (a skipped sequence) leaves the gate alone.
-    failed = _commit(conn, narrative, world_store, segment_seq=5, now=LATER)
+    failed = _commit(
+        conn,
+        narrative,
+        world_store,
+        segment_seq=5,
+        now=LATER,
+        outcome_ref=f"{GATE}-a",
+    )
     assert isinstance(failed, Err)
     assert get_gate(conn, GATE).status is GateStatus.COMMITTED  # type: ignore[union-attr]
 
-    landed = _commit(conn, narrative, world_store, segment_seq=1, now=LATER)
+    landed = _commit(
+        conn,
+        narrative,
+        world_store,
+        segment_seq=1,
+        now=LATER,
+        outcome_ref=f"{GATE}-a",
+    )
     assert isinstance(landed, Ok)
     closed = get_gate(conn, GATE)
     assert closed is not None
     assert closed.status is GateStatus.CLOSED
-    assert closed.state_version == 4
+    assert closed.state_version == 5
     assert [g.status for g in gates_of(conn, SCENE)] == [GateStatus.CLOSED]
+    passage = _rows(
+        conn,
+        "SELECT outcome_ref FROM narrative_passage WHERE scene_id = ?",
+        (SCENE,),
+    )
+    assert passage == [(f"{GATE}-a",)]
 
 
 def test_the_writer_respects_the_gate_interlock(
@@ -2005,6 +2143,9 @@ def test_the_write_faces_do_not_bypass_a_held_lock(
     )
     assert isinstance(_gate(conn), Ok)
     assert isinstance(_submitted(conn), Ok)
+    # The V3-6R door: step into the durable stop first — the lock probe
+    # is about the one BEGIN IMMEDIATE, not about the door.
+    assert isinstance(begin_resolving(conn, gate_id=GATE, now=LATER), Ok)
     conn_b = sqlite3.connect(tmp_path / "app.db")
     try:
         conn_b.execute("PRAGMA foreign_keys=ON")
@@ -2051,7 +2192,7 @@ def test_the_write_faces_do_not_bypass_a_held_lock(
 # ---------------------------------------------------------------------------
 
 
-def test_recovery_scan_reads_the_four_families(
+def test_recovery_scan_reads_the_five_families(
     conn: sqlite3.Connection,
     world_store: SqliteWorldStore,
     cast_store: SqliteCastStore,
@@ -2062,9 +2203,12 @@ def test_recovery_scan_reads_the_four_families(
 ) -> None:
     """RA §29: gates ``ANSWERED`` / ``RESOLVING``, actions
     ``RESOLVING``, scenes ``ACTIVE``, chapters ``ACTIVE`` / ``SETTLING``
-    — each deterministically ordered; and the NCP-1 aftermath's unique
+    and — since V3-6R — replan obligations ``PENDING`` — each
+    deterministically ordered; and the NCP-1 aftermath's unique
     outcome: re-adjudicating the same submission lands exactly one
-    COMMITTED word."""
+    COMMITTED word. (This walk's rulings are all ``NONE`` — zero
+    obligations; the PENDING family's own pin lives in the V3-6R
+    suite.)"""
 
     scenes = [
         _scene_draft(purpose="first sight"),
@@ -2110,6 +2254,8 @@ def test_recovery_scan_reads_the_four_families(
         (TOWN, 1)
     ]
     assert [c.status for c in scan.value.chapters] == [ChapterStatus.ACTIVE]
+    assert scan.value.replans == ()
+    assert pending_replans(conn) == ()
 
     # the crash window: NCP-1 landed, the adjudication did not — the
     # retry adjudicates the same submission and the outcome is unique.

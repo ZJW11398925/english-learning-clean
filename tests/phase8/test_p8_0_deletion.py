@@ -134,7 +134,8 @@ def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_four() -> None:
     # ——正文 CANON 行 / 解耦曝光记录 / story-time lineage 行）；V3-6
     # 再随迁：User Gate/用户行动两表入 keep 半（0035 两表 + segment_commit
     # 重建——门与裁定行的 FK 链全 keep 侧：gate → scene → chapter → world、
-    # action → gate）。
+    # action → gate）；V3-6R 再随迁：replan 义务一表入 keep 半（0036 一表
+    # ——FK 链 obligation → action → gate 全 keep 侧）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -156,6 +157,7 @@ def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_four() -> None:
         "segment_commit",
         "user_gate",
         "user_action",
+        "action_replan",
     )
     for table in PLANNER_TABLES:
         assert table in SWEPT_TABLES

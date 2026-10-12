@@ -889,6 +889,8 @@ replan 记录（NONE | SCENE | CHAPTER）
 
 **V3-6 落法（开工裁决 `DEC-OPI-dc1bafdf-…5`；重放行修订 `…21`）**：`commit_action`（`elc/world/action.py`）——八列终态一次写齐（`actual_tick` = 推进后 `actual_end`）；行为事实行 id 派生 `f"ac:{gate_id}:{submission_id}:event"`（`kind='action'`，canonical participants ⊇ 用户角色）；lineage 行 `kind='ACTION_OUTCOME'`（`commit_id=f"ac:{gate_id}:{submission_id}"`、`action_id` 载、`passage_id`/`segment_seq` 空、`is_last_segment`=0）；章 `PLANNED→ACTIVE` 臂与 NCP-3 同律（#3）；重放形状同 = 全组 no-op、形状异 `CONFLICT`。完整臂序见 `STATE_MACHINES §25`「V3-6 落法」段。
 
+**V3-6R 落法（开工裁决 `DEC-OPI-dc1bafdf-…31`）**：⑧ `action_replan` `PENDING` 出生（`replan_request_id` 派生；`NONE` 零行）；场 span 臂 `close_scene=False`（扩展场 actual 区间、不关场）；入终态仅自 `RESOLVING`。
+
 ### NCP-3 — Segment Commit
 
 原子组（一个短事务）：
@@ -904,6 +906,8 @@ story_tick actual 推进
 **reader_exposure 不在本提交内（评审 #2 解耦）**：passage commit ≠ 用户已看见——exposure 在交付/渲染侧独立记录或保守 estimate（RA §14 家族），绝不与提交同事务充当 reader knowledge。
 
 **V3-5R 落法（开工裁决 `DEC-OPI-dc1bafdf-…11`）**：① 同事务增写 `world_scene` 的 actual 区间（首段 start / 每段 end / 末段随 `ACTIVE→COMMITTED` 翻转——一个 UPDATE 一次版本推进；`commit_scene` 显式面不写 span；replay 零重改）；② fresh 段顺序律 `segment_seq == max(committed_seq) + 1`（首段 1；0/负数/跳号/倒序 ⇒ `VALIDATION_FAILED`；replay arm 先行）；③ `segment_commit.is_last_segment`（migration `0034_segment_terminality.sql`）持久化 SCENE COMMIT 身份并入 replay 形状比对（同 segment_key 不同 `is_last_segment` ⇒ `CONFLICT`）。完整臂序见 `STATE_MACHINES §25`「V3-5R 落法」段。
+
+**V3-6R 落法（开工裁决 `DEC-OPI-dc1bafdf-…31`）**：`outcome_ref` 臂——`narrative_passage.outcome_ref` 引用真实 **COMMITTED** `user_action`（缺失 `NOT_FOUND`/非 COMMITTED `VALIDATION_FAILED`；其 gate 须属本场）；**同一事务**将该 gate `COMMITTED → CLOSED`；场有未 `CLOSED` committed gate 时 fresh 段**必须**携带该 ref（恢复正文不得以 NULL 落地）；replay 形状含 `outcome_ref`。span 臂由 NCP-2 与 NCP-3 共同调用（两臂律见 STATE §26）。
 
 ### NCP-4 — Chapter Settlement
 
@@ -945,6 +949,8 @@ world_chapter（ACTIVE / SETTLING）
 - 旧链 recovery（§22/§23）不受影响；两套恢复面互不写对方的行。
 
 **V3-6 落法（开工裁决 `DEC-OPI-dc1bafdf-…5`；重放行修订 `…21`）**：扫描面落于 `elc/world/action.py` 的 `recovery_scan`（纯读；四族逐字：gates `ANSWERED`/`RESOLVING` 未 `COMMITTED`、actions `RESOLVING` 未 `COMMITTED`、scenes `ACTIVE`、chapters `ACTIVE`/`SETTLING`）；resume 的自动编排归管线刀（V3-8 前置），本阶段交扫描面与「submission 幂等键是恢复锚」的语义（NCP-1 后中断 ⇒ 扫描见 gate ⇒ 同一 `submission_id` 重裁定 ⇒ 唯一 outcome）。
+
+**V3-6R 落法（开工裁决 `DEC-OPI-dc1bafdf-…31`）**：**第五族**——`action_replan` `status='PENDING'` 的义务（durable 恢复锚：claim 先行写入 `target_ref`，重试收敛同一 revision；`APPLIED` 零写返回）。
 
 ## 30. Narrative V3 Runtime Invariants
 

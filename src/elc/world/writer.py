@@ -115,12 +115,17 @@ class PovWriter:
         duration_ticks: int,
         is_last_segment: bool,
         now: str,
+        outcome_ref: str | None = None,
     ) -> Result[CommitOutcome]:
         """Write one segment of one scene: the guards above, then the
         segment commit (whose own docstring spells the atomic group,
         the replay law and the remaining refusals). ``is_last_segment``
         marks the scene's final segment — the SCENE COMMIT alias's own
-        trigger."""
+        trigger. ``outcome_ref`` rides straight through to the
+        settlement (the V3-6R chain ``intent → adjudication → committed
+        action → outcome_ref → passage`` — a continuing segment names
+        the ruling it resumes; the settlement checks the reference, the
+        forced law and the targeted close)."""
 
         if not body.strip():
             return Err(
@@ -207,6 +212,7 @@ class PovWriter:
             duration_ticks=duration_ticks,
             is_last_segment=is_last_segment,
             now=now,
+            outcome_ref=outcome_ref,
         )
 
 
