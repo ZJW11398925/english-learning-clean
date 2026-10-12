@@ -273,6 +273,25 @@ def pov_context_of(
             f" dossier's POV is {dossier.pov_actor_id!r} — another"
             " viewer's read is not this dossier's input"
         )
+    # The last-hop address check (the review's F2): the signature being
+    # the door closes only when the two read faces inside the context are
+    # addressed to the SAME viewer the context names — a mis-addressed
+    # SceneContext (its cognition/memory read for another viewer) must
+    # not compile into this POV's provider input.
+    if context.cognition.viewer_id != context.pov_actor_id:
+        raise ValueError(
+            f"POV context of scene {dossier.scene_id!r} not compiled:"
+            f" the cognition view is addressed to"
+            f" {context.cognition.viewer_id!r}, not the POV"
+            f" {context.pov_actor_id!r} — the read is another viewer's"
+        )
+    if context.memory.viewer_id != context.pov_actor_id:
+        raise ValueError(
+            f"POV context of scene {dossier.scene_id!r} not compiled:"
+            f" the memory view is addressed to"
+            f" {context.memory.viewer_id!r}, not the POV"
+            f" {context.pov_actor_id!r} — the read is another viewer's"
+        )
     return PovContext(
         scene_id=dossier.scene_id,
         segment_seq=segment_seq,

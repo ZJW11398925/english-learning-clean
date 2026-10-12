@@ -366,3 +366,16 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 7. **门**：pytest（自 6156 起）/ruff/mypy（199 起）/compileall 亲跑全绿；新钉族 tests/world/test_v3_8a_*.py。
 
 授权：V3-7 收口「下一动 = V3-8」+ 窗口回归册前置族；DMCP 开工裁决 `DEC-OPI-06b954e0-5f60-4252-b1de-177cfbee396f.2`（rev 810）；范围裁决 = 先拆前置刀（自治——用户未答范围问询，按推荐路径与全程「确定性基线先行」先例）。
+
+### v1.7.1 — 2026-10-13 V3-8a 独立评审处置（ACCEPT-WITH-FINDINGS 无 HIGH/MEDIUM；授权：评审结论转呈）
+
+**结论**：V3-8a **维持推进**（不重开）；三面逐项在码在册；**点名变异组全红**（原子性/重放/异形/事务纪律/tick 纪律/POV-safe/义务路由/异 submission_id/`_tx` 行为保持——后者经机械证据〔五对 INSERT 表达式逐字节全同〕额外证实）；禁改面全空；吸收完整性确认；副本全量 6181/0/0 + 静态三门（mypy 202）绿。F1/F2 LOW 修（总控亲写），F3/F4 INFO 留痕登记。
+
+1. **执行者中断与吸收（如实留痕，防坑㊲ 第二型，本程序第三次）**：执行者派单后 600s 静默中断（长命令），遗留**未提交半成品**（8 文件：4 新〔bootstrap/pipeline/providers/test_v3_8a〕+ 4 改〔aoci/bible/cast/store 新增 `_tx` 臂〕）。总控取证（新钉 25/25 绿、全量 6181/0/0、ruff/mypy(202)/compileall 全绿、零迁移、禁改面空、无残标、三面逐面在码）→ 裁**「吸收+复核」**→ 代提交 **`04c5d8f`**（8 文件 +4180/−82；提交信息载明中断与吸收裁定）。
+2. **F1（LOW，修）**：管线纪律钉 AST 缺口——`test_the_pipeline_holds_no_transaction_and_spells_no_sql` 的属性扫描只拦 `execute`，`commit`/`rollback`/`with conn:` 形态存活（变异 M4b/M4c 绿）。修：属性集扩为 `{"execute","executemany","executescript","commit","rollback"}`（Gate-2 词表；同仓三先例钉〔test_v3_6/test_v3_6r/test_v3_7〕同款的补齐）。**现码零此类调用，钉是纪律加固**。
+3. **F2（LOW，修）**：POV 硬门的「最后一跳地址」未校验——`pov_context_of` 只校 `context.pov_actor_id == dossier.pov_actor_id`，未校两内层读面（cognition/memory）的 `viewer_id` 同址；仓外误构造（pov 匹配但内层读面异址）会静默编译。修：门内补两条校验（cognition.viewer_id 与 memory.viewer_id 均须 == pov_actor_id，违则 ValueError）+ 新钉 `test_the_pov_context_refuses_a_mis_addressed_inner_view`（两种异址各拒）。
+4. **F3（INFO，登记）**：resume 不重建站立 `outcome_ref`——NCP-2 后/续段前崩溃窗口，resume 只报告 ACTIVE 场景（不路由）；调用方只驱新段则吃 writer 强制律拒绝（fail-closed，安全）。设计用法 = 重放同一 beats；**V3-8 Gold Scenario 驱动接线时在 resume/驱动器调用约定里显式成文**（消费刀须知）。
+5. **F4（INFO，登记）**：bootstrap 两边缘语义留档（与家族姿态一致，非本刀缺陷）——①重放读在 `BEGIN IMMEDIATE` 前（TOCTOU；并发同形创建以 UNIQUE→CONFLICT 收场而非 no-op，fail-closed 零部分写，单连接 MVP 不可达，多连接部署刀需知）；②组内非 `sqlite3.Error` 异常与失败的 COMMIT 不映射为 Result（异常外逸、连接暂留——与 store 家族既有姿态一致）。另：「重放写第二 bible 行」在存储层被 `UNIQUE(world_id, revision)` + CURRENT 部分唯一索引挡住（与 M2 world 行变体双保险）。
+6. **遗留（评审明示）**：真实 LLM 接线/最小阅读面/用户「好玩」亲验按合同归 V3-8 本体，本刀未越位；`action_duration_ticks` 单实例校准语义文档化在案，V3-8 换真实 resolver 时须保持崩溃重试同值。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v38a_review\` / `D:\v38a_mut\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交随本条目同刀。

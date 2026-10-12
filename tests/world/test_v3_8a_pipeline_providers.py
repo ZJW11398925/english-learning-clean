@@ -816,6 +816,52 @@ def test_pov_context_of_refuses_another_viewers_read(
         )
 
 
+def test_the_pov_context_refuses_a_mis_addressed_inner_view(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    bible_store: SqliteBibleStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+    planner: ScenePlanner,
+) -> None:
+    """The last-hop address check (the review's F2): a SceneContext whose
+    ``pov_actor_id`` matches the dossier but whose cognition or memory
+    view is addressed to ANOTHER viewer must not compile — the signature
+    is the door only when the inner reads share the POV's address."""
+
+    assert isinstance(
+        _create_town(conn, world_store, cast_store, bible_store), Ok
+    )
+    assert isinstance(
+        director.open_next_chapter(TOWN, _blueprint(), NOW), Ok
+    )
+    opened = planner.open_scene(SCENE, NOW)
+    assert isinstance(opened, Ok)
+    opening = opened.value
+    # the context's own address matches the dossier's POV, but the
+    # cognition read inside it was taken for someone else.
+    bad_cognition = dataclasses.replace(
+        opening.context,
+        cognition=dataclasses.replace(
+            opening.context.cognition, viewer_id=PARTNER
+        ),
+    )
+    with pytest.raises(ValueError):
+        pov_context_of(
+            dossier=opening.dossier, context=bad_cognition, segment_seq=1
+        )
+    # the memory read addressed to someone else.
+    bad_memory = dataclasses.replace(
+        opening.context,
+        memory=dataclasses.replace(opening.context.memory, viewer_id=PARTNER),
+    )
+    with pytest.raises(ValueError):
+        pov_context_of(
+            dossier=opening.dossier, context=bad_memory, segment_seq=1
+        )
+
+
 def test_the_pov_context_field_set_is_frozen() -> None:
     """The shape pin: the compiled context carries exactly the POV's own
     faces — no field for a profile, a private context or another
@@ -1680,9 +1726,19 @@ def test_the_pipeline_holds_no_transaction_and_spells_no_sql() -> None:
     for text in _all_constants(PIPELINE_TREE):
         assert text not in {"BEGIN IMMEDIATE", "COMMIT", "ROLLBACK"}, text
     assert _sql_constants(PIPELINE_TREE) == []
+    # the Gate-2 vocabulary, closed over the orchestrator: no DB-machinery
+    # attribute call of any kind — not even a commit/rollback (the review's
+    # F1: an "execute"-only scan let a self._conn.commit() / with-conn
+    # mutation survive; the discipline word set now names them).
     for node in ast.walk(PIPELINE_TREE):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-            assert node.func.attr != "execute", ast.dump(node)
+            assert node.func.attr not in {
+                "execute",
+                "executemany",
+                "executescript",
+                "commit",
+                "rollback",
+            }, ast.dump(node)
 
 
 def test_the_creation_service_composes_the_arms_and_spells_no_dml() -> None:
