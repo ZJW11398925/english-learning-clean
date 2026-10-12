@@ -953,6 +953,9 @@ Narrative (World) Domain
 | 每个 actor 知道 / 相信 / 误解什么 | Actor Memory / Belief（有视角；V3-7 物化） |
 | 读者看过什么 | Reader Exposure（记录面；**不写 actor cognition**） |
 | 世界当前时刻（actual） | commit 事务（唯一推进者）；Director/Scene 只写 planned |
+| 管线驱动顺序（谁在何时调用谁） | **编排器**（`elc/world/pipeline.py`；**零写权**——一切写入由被编排的库面在自己的短事务内落；RA §27 编排面，V3-8a 落法） |
+| Writer 正文 / Planner dossier 内容 / Resolver 裁定的**生产面** | provider 协议面（`elc/world/providers.py` 的 Protocol + deterministic fake；**Resolver 唯一裁定权不松**——协议只是裁定结果的来源；真实 LLM 接线是「好玩」亲验前的显式一步，V3-8a 落法） |
+| 世界 + 初始 Bible 的原子创建 | 原子创建服务（`create_world_with_bible`；一个短事务全或无；V3-8a 落法） |
 
 ### 20.3 七条硬边界（V3-1 冻结）
 

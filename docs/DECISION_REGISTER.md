@@ -352,3 +352,17 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 8. **F7（INFO，变异台账留痕）**：两处等效变异（M03 仅删外层 SETTLING 守卫——第二守卫+事务回滚行为全同；M20 删 CLOSED 过滤——公开面下结算行只与 CLOSED 共存）——防御纵深，成对变异（M03b）已红。
 
 授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v37_review\` / `D:\v37_mut\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交随本条目同刀。
+
+### v1.7.0 — 2026-10-13 V3-8a 开工裁决（原子创建服务 + V3 管线编排器 + provider 协议面；授权：V3-7 收口 `DEC-OPI-d274a7fb-…14` rev 809「下一动 = V3-8」+ 窗口回归册前置族登记）
+
+**结论**：V3-7 已 COMPLETE（rev 809，6156/0/0，迁移 0037/37）。**V3-8（Gold Scenario 端到端 + 结构验收 12 条 + 用户「好玩」亲验）有前置缺口**：原子创建服务（world+初始 Bible，窗口回归册登记的「后刀」）未建；V3 管线编排器（把 Director→ScenePlanner→Writer→commit→settle→Director 串成可驱动循环）未建——现役面全是库面（host.py 无 V3 装配，测试直接驱动）；provider 协议面（Writer/Planner/Resolver 生产面）未接线。故先拆前置刀 **V3-8a**（全确定性、零迁移、无真实 LLM 调用），V3-8 本体留给「用可驱动管线跑通 Gold Scenario + 12 条 + 阅读面」。
+
+1. **开工依据（四查①）**：范式篇 §10.2 验收链（编排器的设计依据）+ §9.1「persona 生成基础（provider/validator/streaming）直接复用」+ 窗口回归册登记（原子创建服务后刀 / LLM Writer/Planner 生产面 V3-8 前置 / LLM·规则 Resolver 生产面 V3-8 前置族）。**不另起炉灶**——合同增量（RA §27 编排面+provider 协议面+原子创建服务端、DOMAIN §20.2 authority 表三行）与代码同刀提交。
+2. **范围裁（四查②，三项，全确定性基线）**：(a) **原子创建服务** `create_world_with_bible`（world 行 + 首版 `world_bible_revision` CURRENT + durable player character 种子 + AI cast 种子——**一个短事务全或无**，幂等键 world_id，重放同形 no-op/异形 CONFLICT；清偿「真原子创建服务」后刀义务）；(b) **provider 协议面** `elc/world/providers.py`（Writer→正文 / Planner→dossier 内容 / Resolver→`Adjudication` 三 Protocol + **一个可控 deterministic fake 实现**——端到端可重复、可测、CI 可跑；真实 LLM 接线复用 persona provider/validator/streaming 基础，是「好玩」亲验前的显式一步，**不在本刀**；Resolver 唯一裁定权不松；**POV-safe context compilation 硬门**在 fake 面上以显式上下文装配立形——provider 只收该 POV 可见面）；(c) **V3 管线编排器** `elc/world/pipeline.py`（确定性编排循环：按 RA §27 图调用既有库面——open_next_chapter/open_scene/write_segment/open_gate/submit_gate/begin_resolving/commit_action/replan_scene/apply_action_replan/settle_chapter；**自身零写权、不新开事务**——一切写入由被编排库面在自家短事务落，N-R-INV-004 不变；**崩溃续跑**从 `recovery_scan` 六族读数续跑——清偿「replan 消费的自动路由归管线刀」登记）。
+3. **零迁移（四查④）**：本刀不新增表——provider 协议/编排器/原子创建服务全是代码面（V3-1 先例：地基在前刀、首个生产消费者纯代码）。搬迁面 = 仅 aoci.code.txt 新模块条目 + 散文扫尾（若有）；无 conftest/GLOBAL_CONTENT_TABLES 变动。
+4. **计划时效（四查③）**：V3-7 收口 DEC…14「下一动 = V3-8」+ 窗口回归册前置族——现行有效；范式篇 §10.2/§10.3 未推翻。
+5. **范围收紧与登记**：**真实 LLM 调用不在本刀**（fake provider 接线）；**最小阅读面 / 用户「好玩」亲验不在本刀**（归 V3-8 本体）；**多世界 UI / 多主角**不动（MVP 规模纪律）；**legacy V2 链**不动；**P1 传闻失真**维持后置（触发未到）。**窗口回归册核对**：reader 渲染 ack 面、record_exposure race-free 形态、chapter_activated 读时推导、散文扫尾候选（time.py 现在时句等）——本刀触 pipeline/providers 新模块即登记，其余维持。
+6. **禁改面**：behavioral_baselines 一字节不动；sealed 0029–0037 不改；v3_cognition_view / v3_memory_view 行为不破（钉族全绿）；reader_exposure 写面不动；host.py legacy C1 不动。
+7. **门**：pytest（自 6156 起）/ruff/mypy（199 起）/compileall 亲跑全绿；新钉族 tests/world/test_v3_8a_*.py。
+
+授权：V3-7 收口「下一动 = V3-8」+ 窗口回归册前置族；DMCP 开工裁决 `DEC-OPI-d274a7fb-…16`；范围裁决 = 先拆前置刀（自治——用户未答范围问询，按推荐路径与全程「确定性基线先行」先例）。
