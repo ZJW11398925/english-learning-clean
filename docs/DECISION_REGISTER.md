@@ -365,4 +365,4 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 6. **禁改面**：behavioral_baselines 一字节不动；sealed 0029–0037 不改；v3_cognition_view / v3_memory_view 行为不破（钉族全绿）；reader_exposure 写面不动；host.py legacy C1 不动。
 7. **门**：pytest（自 6156 起）/ruff/mypy（199 起）/compileall 亲跑全绿；新钉族 tests/world/test_v3_8a_*.py。
 
-授权：V3-7 收口「下一动 = V3-8」+ 窗口回归册前置族；DMCP 开工裁决 `DEC-OPI-d274a7fb-…16`；范围裁决 = 先拆前置刀（自治——用户未答范围问询，按推荐路径与全程「确定性基线先行」先例）。
+授权：V3-7 收口「下一动 = V3-8」+ 窗口回归册前置族；DMCP 开工裁决 `DEC-OPI-06b954e0-5f60-4252-b1de-177cfbee396f.2`（rev 810）；范围裁决 = 先拆前置刀（自治——用户未答范围问询，按推荐路径与全程「确定性基线先行」先例）。
