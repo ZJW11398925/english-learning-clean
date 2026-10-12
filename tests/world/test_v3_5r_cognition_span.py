@@ -454,6 +454,60 @@ def test_the_cognition_read_orders_by_the_lineage_interval(
     ] == [(0, 3), (3, 8)]
 
 
+def test_the_cognition_read_orders_by_the_lineage_ticks_not_the_ids(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    bible_store: SqliteBibleStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+    planner: ScenePlanner,
+) -> None:
+    """The ordering key, not just its direction (the review's F2): the
+    read orders by the lineage actual interval. Scene two commits first
+    — the planner's opening order is its own — so the tick order and the
+    id spelling disagree, and only the interval order answers the
+    canonical chronology."""
+
+    _opened_chapter(
+        conn,
+        world_store,
+        cast_store,
+        bible_store,
+        narrative,
+        director,
+        scenes=[_scene(purpose="first"), _scene(purpose="second")],
+    )
+    opened_two = planner.open_scene(SCENE_TWO, NOW)
+    assert isinstance(opened_two, Ok)
+    early = _commit(
+        conn, narrative, world_store, scene_id=SCENE_TWO, duration_ticks=3
+    )
+    assert isinstance(early, Ok)
+    opened_one = planner.open_scene(SCENE, NOW)
+    assert isinstance(opened_one, Ok)
+    late = _commit(
+        conn, narrative, world_store, scene_id=SCENE, duration_ticks=5
+    )
+    assert isinstance(late, Ok)
+    assert (
+        early.value.actual_start_tick,
+        early.value.actual_end_tick,
+    ) == (0, 3)
+    assert (
+        late.value.actual_start_tick,
+        late.value.actual_end_tick,
+    ) == (3, 8)
+    view = v3_cognition_view(conn, world_id=TOWN, viewer_id="actor-lia")
+    assert isinstance(view, Ok)
+    # The ids sort the other way (``…-s01-…`` < ``…-s02-…``): the
+    # interval order is the only answer that matches the chronology.
+    assert [event.event_id for event in view.value.witnessed] == [
+        early.value.event_id,
+        late.value.event_id,
+    ]
+
+
 def test_the_cognition_read_layers_public_and_witnessed(
     conn: sqlite3.Connection,
     world_store: SqliteWorldStore,
@@ -585,6 +639,34 @@ def test_the_viewer_id_is_validated(
         assert isinstance(refused, Err), bad
         assert refused.error.code is DomainErrorCode.VALIDATION_FAILED
         assert "viewer_id" in refused.error.message
+
+
+def test_the_cognition_read_refuses_a_corrupted_participants_column(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    bible_store: SqliteBibleStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+    planner: ScenePlanner,
+) -> None:
+    """The corrupted-row posture (the review's F4): the column is this
+    suite's own encoder's output, so a payload the strict codec cannot
+    decode is surfaced honestly (``ValueError``) rather than silently
+    dropped from the view."""
+
+    _active_scene(
+        conn, world_store, cast_store, bible_store, narrative, director, planner
+    )
+    committed = _commit(conn, narrative, world_store)
+    assert isinstance(committed, Ok)
+    conn.execute(
+        "UPDATE world_event SET participants = ? WHERE event_id = ?",
+        ('{"who": "lia"}', committed.value.event_id),
+    )
+    conn.commit()
+    with pytest.raises(ValueError, match="undecodable participants"):
+        v3_cognition_view(conn, world_id=TOWN, viewer_id="actor-lia")
 
 
 def test_open_scene_feeds_the_pov_cognition_view(
@@ -725,6 +807,10 @@ def test_the_last_segment_commits_and_closes_the_span(
     assert scene.status is SceneStatus.COMMITTED
     assert scene.actual_start_tick == 0
     assert scene.actual_end_tick == last.value.actual_end_tick == 8
+    # One version advance per segment — the last one's carries the flip
+    # too (the review's F5: the single-UPDATE shape pin is not the only
+    # witness of the one-bump law).
+    assert scene.state_version == 4
 
 
 def test_a_replay_leaves_the_span_untouched(
@@ -764,6 +850,48 @@ def test_a_replay_leaves_the_span_untouched(
     tick = read_current_tick(conn, TOWN)
     assert isinstance(tick, Ok)
     assert tick.value == 8
+
+
+def test_the_replay_answers_scene_committed_from_the_stored_flag(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    bible_store: SqliteBibleStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+    planner: ScenePlanner,
+) -> None:
+    """The V3-5R review's F1: the replay's ``scene_committed`` is the
+    stored terminality flag — the durable witness the flip landed with
+    this segment — never a read-time derivation over the scene's status
+    and its max seq. A scene committed through the explicit
+    ``commit_scene`` face (no terminality flag on its segments) answers
+    ``False`` for each of its stored segments, and the flag itself stays
+    the append-only zero it was."""
+
+    _active_scene(
+        conn, world_store, cast_store, bible_store, narrative, director, planner
+    )
+    first = _commit(conn, narrative, world_store, duration_ticks=3)
+    assert isinstance(first, Ok)
+    scene = narrative.get_scene(SCENE)
+    assert scene is not None
+    flipped = narrative.commit_scene(
+        SCENE, LATER, expected_state_version=scene.state_version
+    )
+    assert isinstance(flipped, Ok)
+    assert flipped.value.status is SceneStatus.COMMITTED
+    replayed = _commit(
+        conn, narrative, world_store, duration_ticks=3, now=LATER
+    )
+    assert isinstance(replayed, Ok)
+    assert replayed.value.scene_committed is False
+    row = conn.execute(
+        "SELECT is_last_segment FROM segment_commit"
+        " WHERE scene_id = ? AND segment_seq = 1",
+        (SCENE,),
+    ).fetchone()
+    assert row is not None and int(row[0]) == 0
 
 
 # ---------------------------------------------------------------------------

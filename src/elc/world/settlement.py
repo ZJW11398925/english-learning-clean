@@ -370,7 +370,6 @@ def _commit_segment_tx(
             narrative_store=narrative_store,
             scene=scene,
             row=existing,
-            segment_seq=segment_seq,
             body=body,
             language=language,
             participants=participants,
@@ -564,7 +563,6 @@ def _replay_outcome(
     narrative_store: SqliteNarrativeStore,
     scene: WorldSceneRecord,
     row: tuple[Any, ...],
-    segment_seq: int,
     body: str,
     language: str,
     participants: tuple[str, ...],
@@ -582,11 +580,14 @@ def _replay_outcome(
     ``effects`` / ``participants`` (through the strict codecs), the
     lineage span's duration, and the persisted terminality flag
     ``is_last_segment`` (V3-5R; a terminality mismatch answers its own
-    ``CONFLICT`` sentence naming the flag). Bookkeeping stamps are not
-    compared (the caller's clock differs on a replay, by design). An
-    undecodable stored payload — this module's own encoder's output,
-    corrupted — raises ``ValueError`` (the store family's corrupted-row
-    posture), never a fabricated comparison.
+    ``CONFLICT`` sentence naming the flag). The ``scene_committed``
+    answer rides that same stored flag — the durable witness the flip
+    landed with this segment (the review's F1) — never a read-time
+    derivation over the scene's status and its max seq. Bookkeeping
+    stamps are not compared (the caller's clock differs on a replay, by
+    design). An undecodable stored payload — this module's own encoder's
+    output, corrupted — raises ``ValueError`` (the store family's
+    corrupted-row posture), never a fabricated comparison.
     """
 
     (
@@ -675,14 +676,12 @@ def _replay_outcome(
             )
         )
     chapter = narrative_store.get_chapter(scene.chapter_id)
-    last_row = conn.execute(
-        "SELECT MAX(segment_seq) FROM segment_commit WHERE scene_id = ?",
-        (scene.scene_id,),
-    ).fetchone()
-    last_seq = None if last_row is None else last_row[0]
-    scene_committed = (
-        scene.status is SceneStatus.COMMITTED and last_seq == segment_seq
-    )
+    # The stored flag is the answer (the V3-5R review's F1): it is the
+    # durable witness that the flip landed with this very segment — a
+    # read-time derivation over the scene's status and its max seq could
+    # answer True for a segment whose flip never landed (a scene
+    # committed through the explicit ``commit_scene`` face).
+    scene_committed = stored_is_last
     return Ok(
         CommitOutcome(
             passage_id=passage_id,

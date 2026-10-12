@@ -253,3 +253,19 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 7. **合同增量（总控亲写、随刀提交）**：`DATA §26.2.1` 增补（segment_commit `is_last_segment` 列 + 回填律）+ `§26.2.3` 重写（V3-5R 最小读路：V3 cognition read face + C1 legacy 兼容）；`STATE §25`（NCP-3 增补：span 臂 / 顺序律 / 终态列）+ `§26`（scene actual span 唯一写者）；`RA §28` NCP-3 落法句。
 
 授权：外审（用户转呈，2026-10-12）；DMCP 开工裁决 `DEC-OPI-dc1bafdf-…11`（rev 794）。
+
+### v1.4.3 — 2026-10-12 V3-5R 独立评审处置（ACCEPT-WITH-FINDINGS 无 HIGH/MEDIUM；授权：评审结论转呈）
+
+**结论**：V3-5R **维持推进**（不重开）；五项外审基准逐项在码在册（读面三律 / span 唯一写者 / 顺序律与 terminality 持久化 / max 时间律 / Writer 硬门登记）；14 项承重变异 12 红；禁改面全空；四门绿（评审副本全量 6061/0/0，仓内零写入）。LOW×3 + INFO×5 全处置——**F1/F2/F3/F4/F5/F7 修，F6/F8 留痕**。
+
+1. **F1（LOW，修）**：replay 的 `scene_committed` 由「读时推导」（scene.status ∧ max seq）改为**持久标志本身**（`stored_is_last`——翻转与插入同事务的 durable 见证；经 `commit_scene` 显式面造的「无终态段 COMMITTED 场」不再误报 True）；`_replay_outcome` 的 `segment_seq` 死参随删；新钉 `test_the_replay_answers_scene_committed_from_the_stored_flag`（旧推导下必红）。
+2. **F2（LOW，修）**：排序键列补行为钉 `test_the_cognition_read_orders_by_the_lineage_ticks_not_the_ids`——两场乱序提交（s02 先、s01 后）使 tick 序与 id 字典序相反；`ORDER BY e.event_id` 变异自此必红（评审盲区关闭）。未采用「源文本钉」路径。
+3. **F3（LOW，修）**：`writer.py` 所称「窗口回归册」句于本刀收口入册时补进 `AGENTS.md` 窗口册（LLM Writer 行增 POV-safe context compilation 硬门）。
+4. **F4（INFO，修）**：腐坏 `participants` 列的 `ValueError` 臂补钉 `test_the_cognition_read_refuses_a_corrupted_participants_column`。
+5. **F5（INFO，修）**：末段提交后的 `scene.state_version` 补行为断言（「一 UPDATE 一次版本推进」的第二个见证）。
+6. **F7（INFO，修）**：时间律（`max(current_tick, element)`）补入 `DATA §26.2.1` V3-5R 块（原只在 DEC / code / 测试）。
+7. **F6（INFO，留痕）**：cognition 的 no-Package 钉为 import-路径级（散文含否定式 persona/Package 词）——判定路径零命中已证；不动。
+8. **F8（INFO，留痕）**：交付提交信息「SCHEMA_HEAD 字面族 15 文件」与其自列 17 名 / 实测 22+1 有名数出入——纯文字精度；搬迁面实测完整（无残钉）。不 amend，随本条目留痕。
+9. **评审外同族观察（总控，留痕）**：`chapter_activated` 的重放答仍为读时推导（`chapter.opened_at_tick == actual_start`）——零时长段（`duration_ticks=0`）可造同 tick 误报（F1 同类；持久见证需另一列 ⇒ 归后续刀显式重开）。V3-5 既有行为，本刀不扩。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v35r_review\copy` 变异，2026-10-12）+ 总控处置（V3-1/V3-3/V3-4/V3-4R/V3-5 处置先例：总控亲写）；处置提交随本条目同刀。
