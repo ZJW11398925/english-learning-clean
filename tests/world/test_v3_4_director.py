@@ -1090,11 +1090,12 @@ def test_a_cardless_member_still_assembles_with_empty_faces(
     whose card the join cannot reach still stands — the name falls back
     to the actor id and the six person fields ride the empty string,
     never a guessed value (the FK-on profile normally guarantees a card;
-    the deletion programme sweeps user-authored cards and the read face
-    must not explode when the binding outlives its card — the LEFT
-    JOIN's own promise). Constructed FK-off: the state is unreachable
-    under foreign-key enforcement, which is exactly why the reader
-    carries the arm."""
+    this defensive arm covers **corruption / a future cascade risk** —
+    a binding outliving its card is refused today by the deletion
+    programme's RESTRICT posture and unreachable under foreign-key
+    enforcement, which is exactly why the reader carries the arm; the
+    C1-c corrupted-state precedent's honest framing). Constructed
+    FK-off: the state is unreachable under foreign-key enforcement."""
 
     db = sqlite3.connect(tmp_path / "cardless.db")  # FK off by default
     apply_migrations(db)
@@ -1538,6 +1539,55 @@ def test_open_next_chapter_refuses_a_dangling_world_and_a_bad_payload(
     assert refused_payload.error.code is DomainErrorCode.VALIDATION_FAILED
     assert "closing_pressure" in refused_payload.error.message
     assert narrative.chapters_of(TOWN) == ()
+
+
+def test_open_next_chapter_refuses_a_reference_before_anything_is_written(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+) -> None:
+    """The V3-4R review's F6: the open face's own declaration — a
+    ``scene_ref`` / burned ``scene_id`` that names no anchor of the
+    (brand-new) chapter is refused **before a single write**: the error
+    names the reference and the chapter, and the world holds zero
+    chapter rows afterwards."""
+
+    _seed_town(conn, world_store, cast_store)
+    refused = director.open_next_chapter(
+        TOWN,
+        _blueprint(
+            scenes=[_scene("actor-lia", ("actor-lia", "pc-you"), scene_ref=1)]
+        ),
+        NOW,
+    )
+    assert isinstance(refused, Err)
+    assert refused.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "scene_ref" in refused.error.message
+    assert "world-town-ch01" in refused.error.message
+    assert narrative.chapters_of(TOWN) == ()
+
+
+def test_the_context_read_fails_fast_for_a_dangling_world(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    bible_store: SqliteBibleStore,
+) -> None:
+    """The V3-4R review's F3: the context read's declared precondition —
+    ``build_director_context`` reads ``world.current_tick`` and a world
+    the table does not know raises ``ValueError`` naming it (the store
+    family's bad-row posture, declared in the docstring)."""
+
+    with pytest.raises(ValueError, match="world-nowhere"):
+        build_director_context(
+            conn,
+            "world-nowhere",
+            world_store=world_store,
+            cast_store=cast_store,
+            bible_store=bible_store,
+        )
 
 
 def test_revise_blueprint_diffs_by_position(

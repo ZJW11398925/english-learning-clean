@@ -195,3 +195,17 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 5. **最小语义收紧（同刀）**：`scenes` 非空（推翻 V3-4 钉「空 scenes 合法」——该钉随迁反转）；chapter `planned_start_tick <= planned_end_tick`；scene `planned_start_tick >= 0` 且 ≤ 本章 `planned_end_tick`；POV ∈ participants（同 #3）。不扩成剧情合理性检测器。
 
 授权：外审（用户转呈，2026-10-12）；DMCP 开工裁决 `DEC-OPI-be7b094f-…21`（rev 783）。
+
+### v1.3.7 — 2026-10-12 V3-4R 独立评审处置（ACCEPT-WITH-FINDINGS 无 HIGH；授权：评审结论转呈）
+
+**结论**：V3-4R **维持推进**（不重开）；9/9 承重变异全 RED；MEDIUM×1 + LOW×5 全处置——**F2/F3/F4/F5/F6 修，F1 登记成文**；INFO×8 留痕（spine 钉射程注记两分／「有序」收窄为界内已成文／章面 tick 无非负检查合同未要求／仅 fresh 元素带 burned id 自洽／「31 钉」口径澄清=V3-4 全割聚合 29+2／重复节区头 V3-4 遗留／_card_faces 直读 character_card 合同指定／AGENTS 收口入册惯例）。
+
+1. **F1（MEDIUM，登记成文）**：`scene_ref` 通道在现役同位冲突律下与数组序位行为重合——**换序与中段 PLANNED 锚退休不可表达**（评审实证四形全拒、带/不带 ref 结果全等）。裁定：**与合同逐字一致、非代码缺陷**；成文入 `DATA §26.2.1`——「`scene_ref` 是与序位一致的**对偶声明**通道，不承担重排/中段跳过；稀疏 identity 由 DISCARDED-skip + unused-monotonic 表达」+ **放宽路径登记 V3-5/V3-6**（需要换序/中段退休时显式重开，冲突律改为「该序位自有锚须被他人认领或被 discard」）。
+2. **F2（LOW，修）**：AOCI `director.py[WD4M]` 的 revise_blueprint 段补「**已定章拒重规划**」（SETTLING/CLOSED 章——V3-4 处置 F3 的守卫臂，两次重写均未随迁，本次补齐）。
+3. **F3（LOW，修）**：`build_director_context` 悬空 world 抛 `ValueError`（docstring 已声明的 fail-fast 前置）补钉 `test_the_context_read_fails_fast_for_a_dangling_world`（`pytest.raises(ValueError, match="world-nowhere")`）。
+4. **F4（LOW，修）**：缺卡成员钉的 docstring 措辞更正——「deletion 程序清卡」与 `deletion/types.py` 的 RESTRICT/不可达登记相左；改为「防御臂；FK 下不可达；如实登记为腐坏/未来级联风险」（C1-c 先例的诚实框架）。
+5. **F5（LOW，修）**：V3-4 处置 F2 的消费刀禁令句（「消费刀不得把 DISCARDED 锚当作可激活的计划场，也不得重编位次」）回迁 `DATA §26.2.1` 活合同（V3-4R 重写时丢失；与 F1 放宽路径同句落地）。
+6. **F6（LOW，修）**：`open_next_chapter` 的 ref 拒案（有声明无钉）补钉 `test_open_next_chapter_refuses_a_reference_before_anything_is_written`（`scene_ref=1` 于新章 ⇒ VALIDATION_FAILED 点名 ref 与章 id，零章行）。
+7. **执行者六项自报边界裁定**（评审专项裁定全采）：①revise 面 Bible fail-closed **追认**（外审 MH-1 是「禁止规划」，revise 是规划行为）；②context 悬空 world ValueError **追认+补钉**（F3）；③同位冲突律 **追认+登记**（F1）；④spine 钉强形 **追认可留+注记两分**（钉只防已知拼写，行为律由 e2e 承重——变异③实证）；⑤缺卡钉 FK-off 构造 **追认+措辞更正**（F4）；⑥「31 钉 vs 30」**口径澄清：无人记错**（V3-4 交付 29 + 处置 +2 = 全割聚合 31 = 5972−5941；本文件现役 30）。
+
+授权：独立评审（executor-pro 新上下文只读，2026-10-12）+ 总控处置（V3-1/V3-3/V3-4 处置先例：总控亲写，注释/钉级零行为为主）；处置提交随本条目同刀。
