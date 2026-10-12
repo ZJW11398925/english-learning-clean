@@ -6,11 +6,13 @@ VAL-OPI-bab4da9f…54): migration 0031's two tables —
 world; ``UNIQUE (world_id)`` is the one-player-per-world structural
 law) and ``world_actor_profile`` (the AI actor's narrative profile:
 story role, POV eligibility and weight, long-term drive, current arc
-seed, private context — DATA §26.2.1's note: CharacterCard ≠ 本表) —
+seed, private context — DATA §26.2.1's note: CharacterCard ≠ 本表;
+its storage shape since rebuilt by 0032's composite FK) —
 plus the store (:mod:`elc.world.cast`), the seed wired into the
 world's birth (``ensure_builtin_worlds`` / ``open_host``) and the one
 derivation (:func:`elc.world.cast.participant_namespace`) that unifies
-the participant vocabulary (cast ids ∪ {player_character_id} ∪ 居民名).
+the participant vocabulary (the durable actor ids ∪
+{player_character_id} — the V3-3R identity freeze).
 The contract was already canonical — DATA §26.2.1's two entity
 entries, DOMAIN §20.1's Cast row and §20.2's authority table, the
 design supplement §7.1 (the user character durable, ``world_actor``
@@ -24,9 +26,14 @@ the card), IMPLEMENTATION_PLAN §20's V3-3 row. The groups:
    refusing 2 (0/1/NULL legal — SQLite has no boolean),
    ``pov_weight`` refusing a negative, the ``UNIQUE (world_id)``
    structural law (two player rows under one world refuse), both FKs
-   refusing dangling references, the ``state_version > 0`` CHECK, and
-   the chain self-pin (the shared constants say ``0031_world_cast`` /
-   ``31``, a fresh database stamps exactly that);
+   refusing dangling references, the ``state_version > 0`` CHECK, the
+   composite-FK storage invariant 0032 rebuilt onto
+   ``world_actor_profile`` (a profile filed under a world its actor
+   is not bound to refuses at the database's own surface; the rebuilt
+   DDL carries ``FOREIGN KEY (actor_id, world_id)`` — the store's
+   precheck stays the human-words layer), and the chain self-pin (the
+   shared constants say ``0032_actor_profile_world_fk`` / ``32``, a
+   fresh database stamps exactly that);
 2. **the open-time seed from the package** — a builtin package's
    birth carries its cast's durable half: Nell's profile with the six
    fields verbatim (``PROTAGONIST`` / ``True`` / ``1`` / the three arc
@@ -53,9 +60,11 @@ the card), IMPLEMENTATION_PLAN §20's V3-3 row. The groups:
 6. **the participant namespace** — :func:`participant_namespace`'s
    pure-function law (``None`` and empty strings drop out; order
    free) and the end-to-end assembly pin: berrymoor seeded, the
-   persona ids from ``actors_of`` ∪ the player id from the cast store
-   ∪ the package's resident names assemble exactly the seven-word
-   set;
+   ``actor_id`` halves from ``actors_of`` ∪ the player id from the
+   cast store assemble exactly the two durable identities — with the
+   freeze's negative controls (the persona id, the CharacterCard /
+   template identity, and the package's resident names, no durable
+   V3 participant identity yet, both stay out);
 7. **the package v8 wall** — v8 accepted; v7 refused (the message
    carries "version must be 8"); v9 refused; the shipped berrymoor
    loads at version 8 with the six keys decoded verbatim; the bad
@@ -128,17 +137,16 @@ NELL_PRIVATE = (
     " ledger, and has told no one."
 )
 
-# The seven-word namespace the end-to-end assembly pin expects: the
-# cast's persona ids ∪ the player's durable id ∪ the residents' names.
+# The two-identity namespace the end-to-end assembly pin expects: the
+# AI-controlled durable characters' actor ids ∪ the player's durable
+# id — the V3-3R canonical identity. The persona id (the
+# CharacterCard / template identity) and the residents' names (no
+# durable V3 participant identity yet) stay out; the negative
+# controls ride the assembly pin itself.
 BERRYMOOR_NAMESPACE = frozenset(
     {
-        "persona-nell-alder",
+        "actor-berrymoor-nell",
         "actor-berrymoor-you",
-        "Old Tam",
-        "Mrs. Fenwick",
-        "Silas Croft",
-        "Edie Marsh",
-        "Hester Cowley",
     }
 )
 
@@ -289,14 +297,14 @@ def _rerun_seed(
 # ---------------------------------------------------------------------------
 
 
-def test_the_shared_constants_and_a_fresh_db_say_31() -> None:
-    assert MIGRATION_IDS[-1] == "0031_world_cast"
-    assert SCHEMA_HEAD_FILE == "0031_world_cast.sql"
-    assert SCHEMA_HEAD_VERSION == "31"
+def test_the_shared_constants_and_a_fresh_db_say_32() -> None:
+    assert MIGRATION_IDS[-1] == "0032_actor_profile_world_fk"
+    assert SCHEMA_HEAD_FILE == "0032_actor_profile_world_fk.sql"
+    assert SCHEMA_HEAD_VERSION == "32"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0031_world_cast"
-    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "31"
+    assert applied[-1] == "0032_actor_profile_world_fk"
+    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "32"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -304,8 +312,8 @@ def test_the_shared_constants_and_a_fresh_db_say_31() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "31",
-        "runtime_schema_version": "31",
+        "schema_version": "32",
+        "runtime_schema_version": "32",
     }
 
 
@@ -558,6 +566,38 @@ def test_the_state_version_check_holds(
             (NOW, NOW),
         )
     conn.rollback()
+
+
+def test_a_profile_filed_under_another_world_refuses_at_the_storage_level(
+    conn: sqlite3.Connection,
+) -> None:
+    """The V3-3R storage invariant (the external review's item 4,
+    migration 0032): a profile filed under a world its actor is not
+    bound to refuses at the database's own surface — the composite
+    ``(actor_id, world_id) → world_actor(actor_id, world_id)`` FK,
+    whose target key is 0023's own ``UNIQUE (actor_id, world_id)`` —
+    and the rebuilt table's DDL carries the composite clause (the
+    store's precheck is the human-words layer above this backstop)."""
+
+    _insert_world(conn, "w")
+    _insert_world(conn, "w2")
+    _insert_actor(conn, "a1", "w")
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            "INSERT INTO world_actor_profile ("
+            " actor_id, world_id, story_role, pov_eligible, pov_weight,"
+            " long_term_drive, current_arc_seed, private_context,"
+            " created_at, updated_at, state_version"
+            ") VALUES ('a1', 'w2', NULL, NULL, NULL, '', '', '',"
+            " ?, ?, 1)",
+            (NOW, NOW),
+        )
+    conn.rollback()
+    ddl = conn.execute(
+        "SELECT sql FROM sqlite_master"
+        " WHERE type = 'table' AND name = 'world_actor_profile'"
+    ).fetchone()[0]
+    assert "FOREIGN KEY (actor_id, world_id)" in ddl
 
 
 # ---------------------------------------------------------------------------
@@ -919,50 +959,56 @@ def test_a_second_seed_under_one_world_answers_the_existing_row(
 
 
 def test_participant_namespace_is_a_pure_union() -> None:
-    """The pure-function law: the namespace is exactly the union of
-    the three sources, ``None`` and empty strings drop out (an empty
-    word names nobody), and the result is order-free — two
-    assemblies of the same town answer equal sets."""
+    """The pure-function law (the V3-3R signature): the namespace is
+    exactly the union of the two durable identity sources, ``None``
+    and empty strings drop out (an empty word names nobody), and the
+    result is order-free — two assemblies of the same town answer
+    equal sets."""
 
     assert participant_namespace(
-        persona_ids=["p-a", "p-b"],
+        actor_ids=["actor-a", "actor-b"],
         player_character_id="pc-1",
-        resident_names=["Old Tam", "Edie Marsh"],
-    ) == frozenset({"p-a", "p-b", "pc-1", "Old Tam", "Edie Marsh"})
+    ) == frozenset({"actor-a", "actor-b", "pc-1"})
     assert participant_namespace(
-        persona_ids=["p-a", "", "p-a"],
+        actor_ids=["actor-a", "", "actor-a"],
         player_character_id=None,
-        resident_names=["", "Old Tam"],
-    ) == frozenset({"p-a", "Old Tam"})
-    assert participant_namespace(persona_ids=[]) == frozenset()
+    ) == frozenset({"actor-a"})
+    assert participant_namespace(actor_ids=[]) == frozenset()
     assert participant_namespace(
-        persona_ids=["p-a"], player_character_id="p-a"
-    ) == frozenset({"p-a"})
+        actor_ids=["actor-a"], player_character_id="actor-a"
+    ) == frozenset({"actor-a"})
 
 
-def test_the_end_to_end_assembly_answers_the_seven_word_set(
+def test_the_end_to_end_assembly_answers_the_two_durable_identities(
     tmp_path: Path,
 ) -> None:
-    """The THE ONE derivation over the real town: berrymoor seeded,
-    the persona ids from ``actors_of`` ∪ the player id from the cast
-    store ∪ the package's resident names assemble exactly the
-    seven-word set — the durable half and the package side meeting in
-    one vocabulary."""
+    """The THE ONE derivation over the real town (the V3-3R freeze's
+    executable face): berrymoor seeded, the ``actor_id`` halves from
+    ``actors_of`` ∪ the player id from the cast store assemble exactly
+    the two durable identities — and the negative controls hold: the
+    persona id (the CharacterCard / template identity, not a V3
+    canonical world participant identity) and the package's resident
+    names (no durable V3 participant identity yet) both stay out of
+    the vocabulary."""
 
     _directory, store, cast_store, _db = _seed_berrymoor(tmp_path)
-    package = load_world_package(BUILTIN_WORLDS_DIR / "berrymoor.json").value
     player = cast_store.player_character(BERRYMOOR)
     namespace = participant_namespace(
-        persona_ids=[
-            str(record.persona_id)
+        actor_ids=[
+            str(record.actor_id)
             for record in store.actors_of(BERRYMOOR)
         ],
         player_character_id=(
             player.player_character_id if player is not None else None
         ),
-        resident_names=[resident.name for resident in package.residents],
     )
     assert namespace == BERRYMOOR_NAMESPACE
+    # The freeze's negative controls: the persona id is the
+    # CharacterCard / template identity, and the residents' names are
+    # prose / scene material — neither is a V3 canonical world
+    # participant identity.
+    assert "persona-nell-alder" not in namespace
+    assert "Old Tam" not in namespace
 
 
 # ---------------------------------------------------------------------------

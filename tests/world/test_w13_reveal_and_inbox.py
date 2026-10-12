@@ -163,28 +163,30 @@ def _fresh_db(tmp_path: Path, name: str) -> sqlite3.Connection:
 def test_0027_is_the_registered_head() -> None:
     """C1-a's migration sits behind the head, immediately behind W-1-3's
     0026_world_reveal; C2's 0028_world_storyline, V3-1's
-    0029_narrative_v3_foundations and V3-2's 0030_world_bible sit
-    behind V3-3's 0031_world_cast,
+    0029_narrative_v3_foundations, V3-2's 0030_world_bible and V3-3's
+    0031_world_cast sit
+    behind V3-3R's 0032_actor_profile_world_fk,
     the head now; the
     shared constants say so, and the stamp a fresh
-    database carries is 31 (the stamp-pin discipline every head move
+    database carries is 32 (the stamp-pin discipline every head move
     has followed since P8-4; this pin read "0026 is the head" while 0026
     was the head, and the head literal has moved with each head since)."""
 
-    assert MIGRATION_IDS[-1] == "0031_world_cast"
-    assert MIGRATION_IDS[-2] == "0030_world_bible"
-    assert MIGRATION_IDS[-3] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-4] == "0028_world_storyline"
-    assert MIGRATION_IDS[-5] == "0027_chronicle_attribution"
-    assert SCHEMA_HEAD_FILE == "0031_world_cast.sql"
+    assert MIGRATION_IDS[-1] == "0032_actor_profile_world_fk"
+    assert MIGRATION_IDS[-2] == "0031_world_cast"
+    assert MIGRATION_IDS[-3] == "0030_world_bible"
+    assert MIGRATION_IDS[-4] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-5] == "0028_world_storyline"
+    assert MIGRATION_IDS[-6] == "0027_chronicle_attribution"
+    assert SCHEMA_HEAD_FILE == "0032_actor_profile_world_fk.sql"
     assert (REPO_ROOT / "migrations" / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "31"
+    assert SCHEMA_HEAD_VERSION == "32"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0031_world_cast"
-    assert applied[-2] == "0030_world_bible"
-    assert applied[-3] == "0029_narrative_v3_foundations"
+    assert applied[-1] == "0032_actor_profile_world_fk"
+    assert applied[-2] == "0031_world_cast"
+    assert applied[-3] == "0030_world_bible"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 

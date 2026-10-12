@@ -158,33 +158,37 @@ def test_0020_is_the_registered_head() -> None:
     0024_world_events and W-1-2's 0025_world_runs behind W-1-3's
     0026_world_reveal, with C1-a's 0027_chronicle_attribution and C2's
     0028_world_storyline behind V3-1's 0029_narrative_v3_foundations,
-    with V3-2's 0030_world_bible behind V3-3's 0031_world_cast as the
+    with V3-2's 0030_world_bible and V3-3's 0031_world_cast behind
+    V3-3R's 0032_actor_profile_world_fk as the
     head;
     the shared constants say so, and the
-    stamp a fresh database carries is 31."""
+    stamp a fresh database carries is 32."""
 
     # The head literal moves with each head (the P9-1 way): this pin
     # read 0028, then each later head in turn, then V3-1's
-    # 0029_narrative_v3_foundations, then V3-2's 0030_world_bible, and
-    # now V3-3's 0031_world_cast;
+    # 0029_narrative_v3_foundations, then V3-2's 0030_world_bible, then
+    # V3-3's 0031_world_cast, and now V3-3R's
+    # 0032_actor_profile_world_fk;
     # the lineage claims behind it (0020 in place, 0019 in the chain)
     # stand.
-    assert MIGRATION_IDS[-1] == "0031_world_cast"
-    assert MIGRATION_IDS[-2] == "0030_world_bible"
-    assert MIGRATION_IDS[-3] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-4] == "0028_world_storyline"
-    assert SCHEMA_HEAD_FILE == "0031_world_cast.sql"
+    assert MIGRATION_IDS[-1] == "0032_actor_profile_world_fk"
+    assert MIGRATION_IDS[-2] == "0031_world_cast"
+    assert MIGRATION_IDS[-3] == "0030_world_bible"
+    assert MIGRATION_IDS[-4] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-5] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0032_actor_profile_world_fk.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
     assert (MIGRATIONS / "0020_world_lore_facts.sql").is_file()
-    assert SCHEMA_HEAD_VERSION == "31"
+    assert SCHEMA_HEAD_VERSION == "32"
     assert "0019_character_cards" in MIGRATION_IDS
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0031_world_cast"
-    assert applied[-2] == "0030_world_bible"
-    assert applied[-3] == "0029_narrative_v3_foundations"
-    assert applied[-4] == "0028_world_storyline"
+    assert applied[-1] == "0032_actor_profile_world_fk"
+    assert applied[-2] == "0031_world_cast"
+    assert applied[-3] == "0030_world_bible"
+    assert applied[-4] == "0029_narrative_v3_foundations"
+    assert applied[-5] == "0028_world_storyline"
     assert schema_version(conn) == SCHEMA_HEAD_VERSION
 
 

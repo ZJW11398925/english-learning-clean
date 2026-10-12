@@ -140,3 +140,17 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 
 授权：外审（用户转呈，2026-10-12）；DMCP 决策 `DEC-OPI-bab4da9f-…27`。
 
+### v1.3.3 — 2026-10-12 V3-3R identity correction（外审；授权：外审结论转呈）
+
+**结论**：V3-3 **维持 COMPLETE**（不重开）；五项 identity/authority 收口落定——items 1/2/3 落 `DATA_MODEL §26.2.1`（identity 冻结 + seed 语义）；item 4 落 migration `0032`（composite FK storage invariant）；item 5 落 `elc/world/cast.py` 装配配方（Director cast input 仅从 durable instance data 构建）。
+
+1. **Narrative V3 canonical participant identity 冻结**——AI-controlled durable character → `world_actor.actor_id`；user-controlled character → `world_player_character.player_character_id`。**persona_id 是 CharacterCard/template identity，不作为 V3 canonical world participant identity**（V3 链不做 actor↔persona 转换）。已入合同：`DATA_MODEL §26.2.1`。
+2. **package-only residents 暂不具 durable V3 participant identity**——仍为 prose/scene 素材；未来需长期被事件引用、拥有 memory 或升级 POV 时，另定显式 durable identity 方案（不在本轮扩表）。
+3. **seed 语义冻结**——`world_player_character` 的 `location/state/knowledge_refs` 仅表示 **creation-time seed**；当前 location/state → `world_state_fact`；当前 knowledge/belief → **V3-7 actor memory/belief**；V3-4 Director 不得把 seed 字段当运行态当前事实。
+4. **actor-profile 归属 storage invariant**——`world_actor_profile` 经 migration `0032` 重建为 composite FK `(actor_id, world_id) → world_actor(actor_id, world_id)`（0023 已有该 UNIQUE）；store precheck 保留为人话层。
+5. **V3-4 Cast Input 约束**——必须可仅从 durable instance data 构建（`world_actor` + `character_card.name` + `world_actor_profile` + `world_player_character`）；Package 是 seed source，不重新成为用户自建世界的运行时 authority。
+
+**Legacy 不回写**：`world_event.participants`（Legacy V2：cast persona ids ∪ user id）语义不动、零回填——V3-5 的 lineage/cognition read path 负责区分。
+
+**边界重申**：不扩 StoryRole 词表、不建居民系统、不多玩家角色、不动 UI。
+

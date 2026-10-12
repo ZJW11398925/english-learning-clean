@@ -1,7 +1,9 @@
-"""The World Cast & the player's identity (V3-3, TASK-OPI-bab4da9f…52)
+"""The World Cast & the player's identity (V3-3, TASK-OPI-bab4da9f…52;
+V3-3R identity correction, TASK-OPI-bab4da9f…61)
 — :class:`SqliteCastStore`, the SQL face of migration 0031's two
-tables, and :func:`participant_namespace`, the one derivation that
-unifies the cast's names.
+tables (``world_actor_profile``'s storage shape since carried forward
+by 0032's composite-FK rebuild), and :func:`participant_namespace`,
+the one derivation that unifies the cast's names.
 
 Two durable faces Director's first planning must read (DOMAIN §20.1's
 Cast row: ``world_actor`` — reused and untouched — plus these two):
@@ -10,12 +12,16 @@ Cast row: ``world_actor`` — reused and untouched — plus these two):
   one world (the design supplement §7.1's promotion of the package's
   ``user_character`` declaration from prompt material to a stored
   person): background, appearance, abilities, limits, location, state
-  and what she knows. **One per world** — the table's ``UNIQUE
-  (world_id)`` is the structural law, so a second row under the same
-  world refuses at the storage level. The old ``world_actor`` is not
-  reshaped (§7.1's boundary: it keeps representing AI-controlled
-  actors); the player joins the participant namespace through this
-  table's id instead.
+  and what she knows — the last three (``location`` / ``state`` /
+  ``knowledge_refs``) being the **creation-time seed only** (the
+  V3-3R freeze: the current location and state live in
+  ``world_state_fact``, the current knowledge / belief will live in
+  V3-7's actor memory / belief). **One per world** — the table's
+  ``UNIQUE (world_id)`` is the structural law, so a second row under
+  the same world refuses at the storage level. The old ``world_actor``
+  is not reshaped (§7.1's boundary: it keeps representing
+  AI-controlled actors); the player joins the participant namespace
+  through this table's id instead.
 - ``world_actor_profile`` — the AI actor's narrative profile
   (DATA §26.2.1's note: CharacterCard ≠ 本表): the story role
   (``PROTAGONIST`` / ``MAJOR`` / ``SUPPORTING``), whether the actor may
@@ -35,24 +41,48 @@ NULL columns the store writes as the empty string when the caller
 declares nothing — the same honest-undeclared spelling the Bible's
 content fields keep (0030's posture).
 
-**THE ONE derivation** (:func:`participant_namespace`, DATA §26.2.1's
-own note — 与 participants namespace 统一): the participant vocabulary
-is ``cast ids ∪ {player_character_id} ∪ 居民名``, assembled — never
-stored. The assembly recipe, one place:
+**THE ONE derivation** (:func:`participant_namespace`; the V3-3R
+identity freeze — DATA §26.2.1's freeze block): the Narrative V3
+chain's canonical participant vocabulary is ``actor ids ∪
+{player_character_id}`` — the two durable identities, assembled —
+never stored:
 
-- the **cast ids** are the persona ids
-  :meth:`elc.world.store.SqliteWorldStore.actors_of` answers for the
-  world (its records' ``persona_id`` half — the same ids the
-  chronicle's ``participants`` column has always carried; the narrator
-  computes the vocabulary live from the package today, and this
-  function is the durable half's same shape — the narrator itself is
-  *not* rewired by this cut, its consumers move in V3-4+);
+- the **actor ids** are the AI-controlled durable characters'
+  :meth:`elc.world.store.SqliteWorldStore.actors_of` records'
+  **``actor_id`` half** (⚠ V3-3R change — the recipe took the
+  ``persona_id`` half before; the reason: ``persona_id`` is the
+  CharacterCard / template identity, and keeping it in the vocabulary
+  would make every V3 consumer convert actor↔persona forever — the
+  canonical world participant is the durable ``world_actor`` row);
 - the **player id** is :meth:`SqliteCastStore.player_character`'s row
   id for the world (``None`` when the world declares no player — an
   honest world without a declared player contributes nothing, the
-  conditional law);
-- the **resident names** are the package's ``WorldPackage.residents``
-  (包侧素材，按合同不进表 — prompt material, never store rows).
+  conditional law).
+
+What the vocabulary deliberately no longer carries (the freeze's
+other half):
+
+- a **``persona_id``** is the CharacterCard / template identity — it
+  is *not* a V3 canonical world participant identity (the V3 chain
+  performs no actor↔persona conversion);
+- package-only **residents** hold no durable V3 participant identity
+  yet (names are not stable identities; they stay prose / scene
+  material — a future durable-identity scheme is its own explicit
+  cut, not a widening here);
+- the legacy ``world_event.participants`` vocabulary (cast persona
+  ids ∪ user id) is **not written back** — V3-5's lineage / cognition
+  read path distinguishes legacy from V3.
+
+**The V3-4 cast-input assembly recipe** (the external review's item
+5): Director's cast input must be constructible from durable instance
+data alone — ``world_actor`` (the ``actor_id``), ``character_card``
+(the display ``name``; the live precedent is the web face's
+``_world_actor_names`` join, ``world_actor → character_card.name``),
+``world_actor_profile`` (the narrative profile) and
+``world_player_character`` (the reader's own durable character), the
+five faces unified through :func:`participant_namespace`. The Package
+is a seed source, not the V3 chain's runtime authority: a
+user-created world without a package still assembles its cast input.
 
 Discipline (the house store law, :mod:`elc.world.bible`'s posture):
 
@@ -156,12 +186,23 @@ class ActorProfileRecord:
 @dataclass(frozen=True)
 class PlayerCharacterRecord:
     """One ``world_player_character`` row — the reader's own durable
-    character in one world (DATA §26.2.1's entity contract).
+    character in one world (DATA §26.2.1's entity contract; the
+    V3-3R identity/seed freeze).
 
     The eight content fields ride as they were written: a field the
     writer did not declare is the empty string, an honest undeclared —
     never inherited, never guessed. One row per world (the table's own
-    ``UNIQUE (world_id)``)."""
+    ``UNIQUE (world_id)``).
+
+    **V3-3R seed semantics** (DATA §26.2.1's freeze block, verbatim):
+    ``name`` / ``background`` / ``appearance`` / ``abilities`` /
+    ``limits`` belong to the character's profile (角色档案);
+    ``location`` / ``state`` / ``knowledge_refs`` represent the
+    **creation-time seed only** — the current location and state's
+    authority is ``world_state_fact``, the current knowledge / belief's
+    authority is V3-7's actor memory / belief. A consumer (V3-4 and
+    later) must not treat the seed fields as the running world's
+    current facts."""
 
     player_character_id: str
     world_id: str
@@ -223,7 +264,10 @@ class SqliteCastStore:
         ``VALIDATION_FAILED`` naming both ids (the profile's
         ``world_id`` must be the actor's own world — a profile filed
         under the wrong world would be a lie about where the actor
-        lives). Otherwise one short transaction lands the row: the
+        lives; this pre-check is the human-words layer — migration
+        0032's composite FK ``(actor_id, world_id)`` is the storage
+        backstop for the same law). Otherwise one short transaction
+        lands the row: the
         declared ``story_role`` rides its canonical word (or NULL —
         the honest undeclared), ``pov_eligible`` rides 1/0 (or NULL;
         SQLite has no boolean), ``pov_weight`` the non-negative int as
@@ -345,6 +389,16 @@ class SqliteCastStore:
         as given (an undeclared field the empty string — honest
         undeclared, never inherited, never guessed), both stamps the
         caller's ``now`` and ``state_version = 1``.
+
+        **V3-3R seed semantics** (the record's freeze, stated at the
+        write face too): ``name`` / ``background`` / ``appearance`` /
+        ``abilities`` / ``limits`` belong to the character's profile
+        (角色档案); ``location`` / ``state`` / ``knowledge_refs`` are
+        written as the **creation-time seed only** — the current
+        location and state's authority is ``world_state_fact``, the
+        current knowledge / belief's authority is V3-7's actor memory
+        / belief. Consumers (V3-4 and later) must not treat these
+        seed fields as the running world's current facts.
         """
 
         if not name.strip():
@@ -538,41 +592,49 @@ class SqliteCastStore:
 
 def participant_namespace(
     *,
-    persona_ids: Iterable[str],
+    actor_ids: Iterable[str],
     player_character_id: str | None = None,
-    resident_names: Iterable[str] = (),
 ) -> frozenset[str]:
-    """The one derivation DATA §26.2.1's note names — 与 participants
-    namespace 统一: the vocabulary a chronicle event's ``participants``
-    column may carry, assembled from the world's three person sources
-    and never stored:
+    """The one derivation of the Narrative V3 chain's canonical
+    participant vocabulary (the V3-3R identity freeze — DATA §26.2.1's
+    freeze block), assembled from the world's two durable identity
+    sources and never stored:
 
-    - ``persona_ids`` — the cast's persona ids
-      (:meth:`elc.world.store.SqliteWorldStore.actors_of`'s records'
-      ``persona_id`` half for the world; the ids the chronicle has
-      always carried);
-    - ``player_character_id`` — the durable player character's id
-      (:meth:`SqliteCastStore.player_character`'s row id; ``None``
-      contributes nothing — an honest world without a declared player
-      has exactly the pre-player vocabulary);
-    - ``resident_names`` — the town's purely narrative residents
-      (``WorldPackage.residents`` — 包侧素材，按合同不进表: prompt
-      material, never store rows).
+    - ``actor_ids`` — the AI-controlled durable characters' ids:
+      :meth:`elc.world.store.SqliteWorldStore.actors_of`'s records'
+      **``actor_id`` half** (⚠ V3-3R change — the recipe took the
+      ``persona_id`` half before; the reason: ``persona_id`` is the
+      CharacterCard / template identity and is *not* a V3 canonical
+      world participant identity, because a persona-id vocabulary
+      would make every V3 consumer convert actor↔persona forever —
+      the canonical world participant is the durable ``world_actor``
+      row);
+    - ``player_character_id`` — the user-controlled durable
+      character's id (:meth:`SqliteCastStore.player_character`'s row
+      id; ``None`` contributes nothing — an honest world without a
+      declared player has exactly the pre-player vocabulary).
+
+    What the vocabulary deliberately no longer carries (the freeze's
+    other half): a ``persona_id`` is the CharacterCard / template
+    identity and never enters; package-only residents hold no durable
+    V3 participant identity yet (names are not stable identities —
+    they stay prose / scene material, and a future durable-identity
+    scheme is its own explicit cut); the legacy
+    ``world_event.participants`` vocabulary (cast persona ids ∪ user
+    id) is **not written back** — V3-5's lineage / cognition read path
+    distinguishes legacy from V3.
 
     A ``None`` player id and empty strings drop out (an empty word
     names nobody); the result is a ``frozenset`` — order-free, so two
     assemblies of the same town answer equal sets. Pure function: no
-    store, no clock, no I/O — the caller gathers the three sources
-    (the recipe above is the whole contract).
+    store, no clock, no I/O — the caller gathers the two durable
+    sources (the recipe above is the whole contract).
     """
 
     words: set[str] = set()
-    for word in persona_ids:
+    for word in actor_ids:
         if word:
             words.add(word)
     if player_character_id:
         words.add(player_character_id)
-    for word in resident_names:
-        if word:
-            words.add(word)
     return frozenset(words)

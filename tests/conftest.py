@@ -116,12 +116,19 @@ MIGRATION_IDS: tuple[str, ...] = (
     # role, POV eligibility/weight, drive, arc seed, private context;
     # elc.world.cast is their store; world_actor untouched).
     "0031_world_cast",
+    # V3-3R (TASK-OPI-bab4da9f…61): the identity correction — the
+    # external review's item 4: world_actor_profile rebuilt with the
+    # composite FK (actor_id, world_id) → world_actor(actor_id,
+    # world_id) (the storage invariant; 0023 carries the target
+    # UNIQUE; the data face and the CHECK vocabulary unchanged; the
+    # store's precheck stays the human-words layer).
+    "0032_actor_profile_world_fk",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0031_world_cast.sql"
-SCHEMA_HEAD_VERSION = "31"
+SCHEMA_HEAD_FILE = "0032_actor_profile_world_fk.sql"
+SCHEMA_HEAD_VERSION = "32"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

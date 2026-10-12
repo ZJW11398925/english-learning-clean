@@ -1671,7 +1671,7 @@ world_bible_revision          # 实例级 World Bible（权威）
 world_player_character        # durable 用户角色（不改 world_actor）
   player_character_id, world_id, name, background, appearance,
   abilities, limits, location, state, knowledge_refs?
-  与 participants namespace 统一（cast ids ∪ {player_character_id} ∪ 居民名）
+  # identity/seed 冻结见本节末（V3-3R）
 
 world_actor_profile           # AI actor 的叙事档案（CharacterCard ≠ 本表）
   actor_id, world_id, story_role（PROTAGONIST|MAJOR|SUPPORTING）,
@@ -1731,6 +1731,13 @@ reader_exposure               # 读者暴露面（记录语义；本轮无 metag
   estimate），绝不与提交同事务充当 reader knowledge
 ```
 
+**V3-3R identity/seed 冻结（外审，2026-10-12）**：
+
+- **canonical participant identity**：AI-controlled durable character = `world_actor.actor_id`；user-controlled character = `world_player_character.player_character_id`。**`persona_id` 是 CharacterCard / template identity，不作为 Narrative V3 canonical world participant identity**（V3 链不做 actor↔persona 转换）。
+- **residents**：package-only，**暂不具 durable V3 participant identity**（仍为 prose/scene 素材）；未来需长期被事件引用、拥有 memory 或升级 POV 时，另定显式 durable identity 方案。
+- **seed 语义**：`world_player_character` 的 `name/background/appearance/abilities/limits` 属角色档案；**`location` / `state` / `knowledge_refs` 仅表示 creation-time seed**——当前 location/state 的权威在 `world_state_fact`，当前 knowledge/belief 的权威归 V3-7 actor memory/belief；**V3-4 Director 不得把 seed 字段当运行态当前事实**。
+- **Legacy 不回写**：`world_event.participants`（Legacy V2：cast persona ids ∪ user id）语义不动、零回填——**V3-5 的 lineage / cognition read path 负责区分 Legacy 与 V3**。
+
 ### 26.2.2 时间字段（story_tick）
 
 ```text
@@ -1750,7 +1757,7 @@ V3 事件行的叙事时间 = 其提交事务的 actual tick，经**显式 linea
 「下一场立即知道上一场」的保证不依赖 actor memory：
 
 ```text
-1) 事实读：world_event（含 participants/effects）+ world_state_fact(CURRENT)
+1) 事实读：world_event（含 participants/effects）+ world_state_fact(CURRENT)（V3-3R 注：该列的 legacy 词汇 = persona ids ∪ user id；V3 canonical identity 见 §26.2.1 冻结——区分归 V3-5 lineage）
 2) 认知读：现役 C1 cognition view（host.py 世界端口：公共 ∪ 亲历 ∪ 用户层）
    —— scene planner 以 POV 角色的 C1 视图（章内事件过滤）作为 dossier 输入
 V3-7 物化 actor memory/belief 后：commit 增加该臂；dossier 改读 actor memory；
