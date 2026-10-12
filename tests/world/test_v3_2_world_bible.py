@@ -270,7 +270,7 @@ def _seed_one_world(
 # ---------------------------------------------------------------------------
 
 
-def test_the_shared_constants_and_a_fresh_db_say_33() -> None:
+def test_the_shared_constants_and_a_fresh_db_say_the_chain_head() -> None:
     assert MIGRATION_IDS[-1] == "0033_segment_commit"
     assert SCHEMA_HEAD_FILE == "0033_segment_commit.sql"
     assert SCHEMA_HEAD_VERSION == "33"

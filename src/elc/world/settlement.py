@@ -645,6 +645,14 @@ def record_exposure(
     surfaces as ``NOT_FOUND``. ``exposed_at`` is **ISO bookkeeping, not
     story time** (DATA §26.2.1).
 
+    The existence read runs *outside* the ``BEGIN IMMEDIATE`` (the same
+    posture the V3-1 review's MEDIUM registered and the V3-2 lock pin's
+    family keeps): under Local V1's single-connection discipline the
+    window is unreachable, and a concurrent first-write race would
+    surface as the table's own UNIQUE refusal (``CONFLICT``) — never a
+    silent second row; the race-free form is this face's own later
+    obligation if a multi-connection deployment ever opens it.
+
     N-INV-005: this face writes no actor memory / belief — V3-5 ships
     neither table, and the module's SQL scan pin keeps the exposure
     statements clear of their vocabulary.

@@ -1391,6 +1391,37 @@ class Director:
             if isinstance(created_chapter, Err):
                 return Err(created_chapter.error)
             chapter = created_chapter.value
+        # The residue's plan continuation (the V3-5 review's F1): a
+        # residue carrying no revision mints revision 1 as usual; one
+        # whose latest revision is still ``PROPOSED`` (a crashed open
+        # between create_plan and adopt_plan) continues **through the
+        # revise face's residue law** — the shapes match: adopt it and
+        # reconcile on; the shapes differ: reject the residue and mint
+        # the next revision. One whose adopted revision's anchors are
+        # partially landed mints no new revision at all — the
+        # reconciliation resumes against the adopted plan's own
+        # content. Either way a retry never silently lands a new chapter
+        # or a second revision next to the residue.
+        if residue is not None:
+            plans = self._narrative.plans_of(chapter_id)
+            if plans and plans[-1].status is PlanRevisionStatus.ADOPTED:
+                reconciled = self._reconcile_scenes(chapter_id, targets, now)
+                if isinstance(reconciled, Err):
+                    return Err(reconciled.error)
+                return Ok(
+                    ChapterOpening(
+                        chapter=chapter,
+                        plan=plans[-1],
+                        scenes=reconciled.value,
+                    )
+                )
+            if plans and plans[-1].status is PlanRevisionStatus.PROPOSED:
+                continued = self._continue_proposed_residue(
+                    chapter, plans[-1], blueprint, targets, now
+                )
+                if isinstance(continued, Err):
+                    return Err(continued.error)
+                return Ok(continued.value)
         created_plan = self._create_and_adopt_plan(
             chapter_id, 1, blueprint, targets, now
         )
@@ -1533,22 +1564,8 @@ class Director:
             # revision; a payload that differs rejects the residue and
             # mints the next revision below.
             if _plan_shape_matches(latest, blueprint, targets):
-                adopted = self._narrative.adopt_plan(
-                    latest.chapter_plan_id,
-                    now,
-                    expected_state_version=latest.state_version,
-                )
-                if isinstance(adopted, Err):
-                    return Err(adopted.error)
-                reconciled = self._reconcile_scenes(chapter_id, targets, now)
-                if isinstance(reconciled, Err):
-                    return Err(reconciled.error)
-                return Ok(
-                    ChapterOpening(
-                        chapter=chapter,
-                        plan=adopted.value,
-                        scenes=reconciled.value,
-                    )
+                return self._adopt_residue_and_reconcile(
+                    chapter, latest, targets, now
                 )
             rejected = self._narrative.reject_plan(
                 latest.chapter_plan_id,
@@ -1578,24 +1595,124 @@ class Director:
 
     # -- shared write machinery ------------------------------------------------
 
+    def _adopt_residue_and_reconcile(
+        self,
+        chapter: WorldChapterRecord,
+        residue: WorldChapterPlanRecord,
+        targets: tuple[_SceneTarget, ...],
+        now: str,
+    ) -> Result[ChapterOpening]:
+        """Adopt the chapter's dangling ``PROPOSED`` revision and resume
+        the reconciliation against the caller's resolved targets — the
+        residue law's same-shape branch, shared by
+        :meth:`revise_blueprint` and :meth:`open_next_chapter` (the
+        V3-5 review's F1: an open crashing between ``create_plan`` and
+        ``adopt_plan`` leaves the same shape a crashed revise does, and
+        both faces resume it identically)."""
+
+        adopted = self._narrative.adopt_plan(
+            residue.chapter_plan_id,
+            now,
+            expected_state_version=residue.state_version,
+        )
+        if isinstance(adopted, Err):
+            return Err(adopted.error)
+        reconciled = self._reconcile_scenes(chapter.chapter_id, targets, now)
+        if isinstance(reconciled, Err):
+            return Err(reconciled.error)
+        return Ok(
+            ChapterOpening(
+                chapter=chapter,
+                plan=adopted.value,
+                scenes=reconciled.value,
+            )
+        )
+
+    def _continue_proposed_residue(
+        self,
+        chapter: WorldChapterRecord,
+        residue: WorldChapterPlanRecord,
+        blueprint: ChapterBlueprint,
+        targets: tuple[_SceneTarget, ...],
+        now: str,
+    ) -> Result[ChapterOpening]:
+        """The open face's continuation of a ``PROPOSED`` residue (the
+        V3-5 review's F1 window): the payload's shape matches the
+        residue — adopt it and reconcile on (no new revision); the
+        payload differs — reject the residue and mint the next revision
+        (the revise face's own two-branch law, spelled once)."""
+
+        if _plan_shape_matches(residue, blueprint, targets):
+            return self._adopt_residue_and_reconcile(
+                chapter, residue, targets, now
+            )
+        rejected = self._narrative.reject_plan(
+            residue.chapter_plan_id,
+            now,
+            expected_state_version=residue.state_version,
+        )
+        if isinstance(rejected, Err):
+            return Err(rejected.error)
+        created_plan = self._create_and_adopt_plan(
+            chapter.chapter_id,
+            residue.plan_revision + 1,
+            blueprint,
+            targets,
+            now,
+        )
+        if isinstance(created_plan, Err):
+            return Err(created_plan.error)
+        reconciled = self._reconcile_scenes(chapter.chapter_id, targets, now)
+        if isinstance(reconciled, Err):
+            return Err(reconciled.error)
+        return Ok(
+            ChapterOpening(
+                chapter=chapter,
+                plan=created_plan.value,
+                scenes=reconciled.value,
+            )
+        )
+
     def _residue_chapter(self, world_id: str) -> WorldChapterRecord | None:
         """The replay residue :meth:`open_next_chapter` reuses: the
-        world's ``PLANNED`` chapter holding **no plan revision at all**
-        (the V3-4 review's F1 shape — a crashed open between
-        ``create_chapter`` and ``create_plan``). ``chapters_of`` reads in
-        ``chapter_index`` order, so the first match is the smallest
-        index when several residues exist; ``None`` when the world holds
-        none. A chapter that already carries any plan revision (even a
-        ``PROPOSED`` one) is not this residue — the dangling-revision
-        shape is :meth:`revise_blueprint`'s and the ADOPTED shape is a
-        chapter waiting for its lifecycle face."""
+        world's ``PLANNED`` chapter whose planning is **incomplete** —
+        any of the three crash windows the V3-5 review's F1 proves (the
+        ruling DEC-OPI-be7b094f…32's 「重试不跳新章」 covers all three):
+
+        - **no plan revision at all** (a crashed open between
+          ``create_chapter`` and ``create_plan`` — the V3-4 review's F1
+          shape);
+        - the latest revision still ``PROPOSED`` (a crashed open between
+          ``create_plan`` and ``adopt_plan``);
+        - the latest revision ``ADOPTED`` but its anchors not fully
+          landed (a crashed open between ``adopt_plan`` and the
+          reconciliation's end — detected by the adopted revision's
+          ``scenes`` table naming more identities than the chapter's
+          ``world_scene`` rows carry).
+
+        ``chapters_of`` reads in ``chapter_index`` order, so the first
+        match is the smallest index when several residues exist; ``None``
+        when the world holds none. A chapter whose planning is complete
+        (an adopted revision whose anchors are all landed) is not this
+        residue — it is a chapter waiting for its lifecycle face. A
+        ``SUPERSEDED`` / ``REJECTED`` latest revision marks a chapter
+        whose planning history closed without a current plan — also not
+        this residue (replanning it is :meth:`revise_blueprint`'s face).
+        """
 
         for chapter in self._narrative.chapters_of(world_id):
             if chapter.status is not ChapterStatus.PLANNED:
                 continue
-            if self._narrative.plans_of(chapter.chapter_id):
-                continue
-            return chapter
+            plans = self._narrative.plans_of(chapter.chapter_id)
+            if not plans:
+                return chapter
+            latest = plans[-1]
+            if latest.status is PlanRevisionStatus.PROPOSED:
+                return chapter
+            if latest.status is PlanRevisionStatus.ADOPTED:
+                anchors = self._narrative.scenes_of(chapter.chapter_id)
+                if len(latest.scenes) > len(anchors):
+                    return chapter
         return None
 
     def _create_and_adopt_plan(

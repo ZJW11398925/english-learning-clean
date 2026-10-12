@@ -1005,42 +1005,49 @@ def test_the_commit_body_never_touches_the_exposure_table() -> None:
     assert any("reader_exposure" in text for text in exposure_sql)
 
 
+def _all_constants(tree: ast.AST) -> list[str]:
+    """Every string constant in one node — the transaction-boundary
+    scans' own collector (the V3-5 review's F2/F3: the DML-shaped
+    filter of :func:`_sql_constants` cannot see a stray ``"COMMIT"`` /
+    ``"BEGIN IMMEDIATE"`` constant, so the one-transaction pins below
+    read the *unfiltered* constant set)."""
+
+    found: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            found.append(node.value)
+    return found
+
+
 def test_the_group_transaction_has_one_begin_and_one_commit() -> None:
     """NCP-3 is ONE short transaction (N-R-INV-004): the public
-    ``commit_segment`` opens exactly one ``BEGIN IMMEDIATE``; its body
-    (``_commit_segment_tx``) opens none — the arms and every write ride
-    inside the caller's transaction (the same owner/arm split the
-    narrative store's flips spell)."""
+    ``commit_segment`` opens exactly one ``BEGIN IMMEDIATE`` and lands
+    exactly one ``COMMIT``; its body (``_commit_segment_tx``) carries
+    **no transaction-control constant at all** — the arms and every
+    write ride inside the caller's transaction (the same owner/arm
+    split the narrative store's flips spell). The body half reads the
+    unfiltered constant set (the V3-5 review's F2: a DML-shaped scan
+    cannot see a stray ``"COMMIT"``)."""
 
     public = _function(_SETTLEMENT_TREE, "commit_segment")
-    begins = [
-        node.value
-        for node in ast.walk(public)
-        if isinstance(node, ast.Constant)
-        and isinstance(node.value, str)
-        and node.value == "BEGIN IMMEDIATE"
-    ]
-    assert begins == ["BEGIN IMMEDIATE"]
-    commits = [
-        node.value
-        for node in ast.walk(public)
-        if isinstance(node, ast.Constant)
-        and isinstance(node.value, str)
-        and node.value == "COMMIT"
-    ]
-    assert commits == ["COMMIT"]
+    constants = _all_constants(public)
+    assert constants.count("BEGIN IMMEDIATE") == 1
+    assert constants.count("COMMIT") == 1
     body = _function(_SETTLEMENT_TREE, "_commit_segment_tx")
     assert _sql_constants(body), "the body carries no SQL — wrong source?"
-    for text in _sql_constants(body):
-        assert "BEGIN" not in text, text
-        assert not text.strip().upper().startswith("COMMIT"), text
+    for text in _all_constants(body):
+        assert text != "BEGIN IMMEDIATE", text
+        assert text != "COMMIT", text
+        assert text != "ROLLBACK", text
 
 
 def test_the_scene_flip_and_the_chapter_opening_are_the_commits_own_arms() -> None:
     """The SCENE COMMIT alias, machine-checked: within the commit body,
     the scene's ``ACTIVE → COMMITTED`` flip and the chapter's opening
     are the narrative store's no-transaction arms — called inside the
-    same one transaction, never as separate faces."""
+    same one transaction, never as separate faces. The arms themselves
+    carry no transaction-control constant (the unfiltered set — the
+    V3-5 review's F3)."""
 
     body = _function(_SETTLEMENT_TREE, "_commit_segment_tx")
     called = {
@@ -1053,9 +1060,10 @@ def test_the_scene_flip_and_the_chapter_opening_are_the_commits_own_arms() -> No
     for name in ("_flip_scene_committed_tx", "_flip_chapter_activated_tx"):
         arm = _function(_NARRATIVE_STORE_TREE, name)
         assert _sql_constants(arm), (name, "the arm carries no SQL")
-        for text in _sql_constants(arm):
-            assert "BEGIN" not in text, (name, text)
-            assert not text.strip().upper().startswith("COMMIT"), (name, text)
+        for text in _all_constants(arm):
+            assert text != "BEGIN IMMEDIATE", (name, text)
+            assert text != "COMMIT", (name, text)
+            assert text != "ROLLBACK", (name, text)
 
 
 def test_activate_chapter_judges_inside_its_transaction() -> None:
@@ -1675,6 +1683,115 @@ def test_revise_blueprint_rejects_a_different_proposed_revision(
         PlanRevisionStatus.SUPERSEDED,
         PlanRevisionStatus.REJECTED,
         PlanRevisionStatus.ADOPTED,
+    ]
+
+
+def test_open_reuses_a_proposed_residue_chapter_without_a_new_chapter(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    bible_store: SqliteBibleStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+) -> None:
+    """The V3-5 review's F1, window 1: a crashed open between
+    ``create_plan`` and ``adopt_plan`` leaves a ``PLANNED`` chapter whose
+    revision 1 is still ``PROPOSED`` — the retried ``open_next_chapter``
+    **reuses the chapter** (no ``ch02`` beside it), adopts the matching
+    residue, and reconciles on."""
+
+    _seed_town(conn, world_store, cast_store, bible_store)
+    created = narrative.create_chapter("world-town-ch01", TOWN, 1, NOW)
+    assert isinstance(created, Ok)
+    payload = _blueprint()
+    stamped = [dict(payload["scenes"][0], scene_id=SCENE)]
+    residue = narrative.create_plan(
+        "world-town-ch01-bp-r1",
+        "world-town-ch01",
+        1,
+        **_chapter_fields(),
+        scenes=tuple(stamped),
+        now=NOW,
+    )
+    assert isinstance(residue, Ok)
+
+    opened = director.open_next_chapter(TOWN, payload, LATER)
+    assert isinstance(opened, Ok)
+    assert opened.value.chapter.chapter_id == "world-town-ch01"
+    assert opened.value.plan.chapter_plan_id == "world-town-ch01-bp-r1"
+    assert opened.value.plan.status is PlanRevisionStatus.ADOPTED
+    assert [row.scene_id for row in opened.value.scenes] == [SCENE]
+    assert [row.chapter_id for row in narrative.chapters_of(TOWN)] == [
+        "world-town-ch01"
+    ]
+    assert [plan.plan_revision for plan in narrative.plans_of("world-town-ch01")] == [1]
+
+
+def test_open_resumes_an_adopted_residue_with_missing_anchors(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    bible_store: SqliteBibleStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+) -> None:
+    """The V3-5 review's F1, windows 2+3: a crashed open between
+    ``adopt_plan`` and the reconciliation's end leaves an ``ADOPTED``
+    revision whose anchors are partially (or never) landed — the retried
+    ``open_next_chapter`` mints **no new revision and no new chapter**:
+    the reconciliation resumes against the adopted plan's own content
+    and lands the missing anchors."""
+
+    _seed_town(conn, world_store, cast_store, bible_store)
+    created = narrative.create_chapter("world-town-ch01", TOWN, 1, NOW)
+    assert isinstance(created, Ok)
+    scenes = [
+        _scene(purpose="first sight"),
+        _scene(purpose="the ledger"),
+        _scene(purpose="the door"),
+    ]
+    payload = _blueprint(scenes=scenes)
+    stamped = [
+        dict(element, scene_id=f"world-town-ch01-s{index:02d}")
+        for index, element in enumerate(scenes, start=1)
+    ]
+    created_plan = narrative.create_plan(
+        "world-town-ch01-bp-r1",
+        "world-town-ch01",
+        1,
+        **_chapter_fields(),
+        scenes=tuple(stamped),
+        now=NOW,
+    )
+    assert isinstance(created_plan, Ok)
+    adopted = narrative.adopt_plan("world-town-ch01-bp-r1", NOW, 1)
+    assert isinstance(adopted, Ok)
+    # The crash landed one anchor of three (window 3; zero anchors is
+    # window 2 — the same resume path).
+    anchored = narrative.create_scene(
+        "world-town-ch01-s01", "world-town-ch01", 1, NOW
+    )
+    assert isinstance(anchored, Ok)
+
+    opened = director.open_next_chapter(TOWN, payload, LATER)
+    assert isinstance(opened, Ok)
+    assert opened.value.chapter.chapter_id == "world-town-ch01"
+    assert opened.value.plan.chapter_plan_id == "world-town-ch01-bp-r1"
+    assert [row.scene_id for row in opened.value.scenes] == [
+        "world-town-ch01-s01",
+        "world-town-ch01-s02",
+        "world-town-ch01-s03",
+    ]
+    assert [row.chapter_id for row in narrative.chapters_of(TOWN)] == [
+        "world-town-ch01"
+    ]
+    assert [plan.plan_revision for plan in narrative.plans_of("world-town-ch01")] == [1]
+    assert [
+        row.status for row in narrative.scenes_of("world-town-ch01")
+    ] == [
+        SceneStatus.PLANNED,
+        SceneStatus.PLANNED,
+        SceneStatus.PLANNED,
     ]
 
 
