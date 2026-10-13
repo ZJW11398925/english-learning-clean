@@ -1245,23 +1245,40 @@ Narrative V3 故事线（Gold Scenario）的最小试读面——「好玩」亲
   `/api/teaching/current` 同一例外姿态）；`POST
   /api/v3/start|continue|submit|settle|next_chapter|ack`（handler 只做
   fail-closed 语法 400，服务面全在 `elc/narrative_web.py`；一次驱动 =
-  一段/一步，位置全自 durable 行推导——重开页面从故事当下续跑）。
+  一段/一步，位置全自 durable 行推导——重开页面从故事当下续跑）；
+  V3-8g 增 `POST /api/v3/language`（正文语言 en|zh——语法 fail-closed
+  400、写面走 host 队列写 `app_setting`、幂等重放零写；state 增
+  `language` 字段随行）。
 - 组件：**零新增组件**——复用 #1 link-btn（开始/继续/结束本场/结束本章/
-  下一章/提交/选项）、#2 pen（自由输入）、#3 note-paper（门的卡）、
+  下一章/提交/选项/语言两钮——现语言钮用 ink 变体、另一姿用 faint
+  变体 + `aria-pressed`）、#2 pen（自由输入）、#3 note-paper（门的卡）、
   #4 letter 的 `.say`（段落正文排印）、#9 meter-row（计划/结算读数）、
   #12 system-line（一行状态句）。库表 ③ 不加行（无新组件 ⇒ 无登记
-  义务；`test_fg1_architecture.py` 的 COMPONENTS 不动）。
+  义务；`test_fg1_architecture.py` 的 COMPONENTS 不动）。V3-8g 的
+  忙碌行/spinner/语言行皆 `.reader-*` 页级骨架（reader.css 唯一定义
+  处），非组件类。
 - 页级骨架 = `.reader-*`（reader.css 唯一定义处；不定义/不覆写组件类、
-  不造第二套滚动条语汇、只用文档流滚动）。
+  不造第二套滚动条语汇、只用文档流滚动）。V3-8g：`.reader-busyline`
+  （spinner + 已用时/阶段注记；`[hidden]` 显式 display:none）、
+  `.reader-spinner`（纯 CSS `@keyframes reader-spin` 动效、零资产）、
+  `.reader-lang` 行。
 - 状态完备性：五个驱动钮各自的 `[disabled]` 态（#1 的既有态面）由
   `state.controls` 驱动；提交钮绑定当前忙碌态（`busy`）；空态/未配置/
   失败一律一行人话（`.sysline`），不造骨架屏、不伪进度（驱动中一行
-  「写作中…」+ 轮询刷新）。
+  「写作中…」+ 轮询刷新）。V3-8g **等待可见**：驱动期间 busy 行在场
+  ——spinner 动效 + 每秒 tick 的已用时 + 轮询差异推进的阶段句
+  （passages 增长→「已写下第 N 段」；门 OPEN→其他→「裁定中」；无变化
+  →「模型思考中…已 N 秒」），结束 finally 清理；**忙碌期间任何点击必
+  有反馈**（drive/submit 的忙碌臂答「上一步还在进行中（已用 N 秒）——
+  等它跑完再点」，绝不静默）。**正文语言选择器**：标「正文语言」，
+  en/中文 两钮，切换即 POST 后重读 state 渲染；已写下的段落永不改写
+  （只影响此后新写段落，确认句在页面上说明）。
 - 文案：中文界面；段落正文即模型原文（不译、不裁）；门卡选项 = 世界的
-  自然举动原文。
+  自然举动原文；正文语言随设置（默认 en；Gold 作者脚本的门卡选项恒
+  英文——已登记）。
 - 诚实边界：页面只读这个世界自己的账（无诊断/无运营面）；story 只
-  属试读，产物与主 UI 的会话/教学设计面互不打扰（exposure 记录独立
-  落 `reader_exposure`）。
+  属试读，产物与主 UI 的会话/教学设计面互不打扰（exposure 记录独立落
+  `reader_exposure`）。
 
 ---
 

@@ -96,6 +96,36 @@ schema, the ``_checked_fields`` family, ``commit_action``) keep every
 deeper judgment — the parser blesses a payload's *shape*, never its
 content.
 
+**The prose-language face (V3-8g, the paradigm shift §10.4 item 5).**
+Every prompt carries one language line over the two-word vocabulary
+(:data:`PROSE_LANGUAGE_WORDS`: ``en`` — the default,
+:data:`PROSE_LANGUAGE_DEFAULT` — and ``zh``). At ``en`` the writer's
+line is the existing sentence verbatim and the three JSON arms state
+the same English default explicitly; at ``zh`` every line names Chinese
+— the JSON answers' natural-language fields and the segment's prose
+follow it, while JSON keys, identity strings and the three-word enum
+are untouched (the contract's own boundary). The providers default to
+``en``, so every caller that passes no word keeps today's prompts byte
+for byte; the reading face reads the live ``v3_prose_language``
+setting per drive and hands the word to these constructors. A language
+switch never rewrites canon: passages already committed stay as they
+are, and only segments written after the switch carry the new
+language.
+
+**The continuity law (V3-8g, the paradigm shift §10.4 item 6).** The
+writer's event lists (cognition / memory) are **what has already
+happened and has already been narrated** — the field failure this cut
+fixes was a real model copying the previous segment's narration
+straight back out as the next segment (byte-near-identical
+continuations). The writer prompt therefore carries
+:data:`_CONTINUITY_SENTENCE`: the segment must advance the story (new
+beats, actions and perceptions), never repeat, restate or transcribe a
+narration already on those lists, and a continuation resuming a
+committed ruling does the same — the ruling is already narrated, so
+the segment carries the story past it. The line's voice is the
+instruction frame's (English at every language word: it governs the
+prose, not the prose itself).
+
 **Failure semantics** — the V3 Protocol face (``providers.py``, sealed)
 has no Result channel, so a real provider's runtime failure escapes as
 :class:`LlmProviderError` (a module-owned ``Exception`` carrying a
@@ -155,6 +185,8 @@ if TYPE_CHECKING:  # the annotation-only edges (same-package contexts)
     from elc.world.types import WorldStateFact
 
 __all__ = [
+    "PROSE_LANGUAGE_DEFAULT",
+    "PROSE_LANGUAGE_WORDS",
     "CompletionOutcome",
     "LlmDirectorProvider",
     "LlmPlannerProvider",
@@ -732,14 +764,77 @@ _IDENTITY_SENTENCE = (
 )
 
 
-def _writer_prompt(context: PovContext) -> str:
+#: The prose-language vocabulary (V3-8g, §10.4 item 5): the two words a
+#: prompt's language line renders — ``en`` (the learning product's own
+#: default) and ``zh`` (the switcher's second face). The reading face
+#: stores exactly one of these under its ``v3_prose_language`` setting
+#: and hands it to every provider it builds; a direct caller that
+#: passes no word gets :data:`PROSE_LANGUAGE_DEFAULT`.
+PROSE_LANGUAGE_DEFAULT = "en"
+PROSE_LANGUAGE_WORDS = ("en", "zh")
+
+#: The writer arm's prose-language sentence per word: at ``en`` — the
+#: default face — exactly the sentence this cut found in place (byte
+#: for byte; the existing prompt pins ride it); at ``zh`` the Chinese
+#: instruction the switcher asks for.
+_WRITER_PROSE_LINE = {
+    "en": "Write the segment's prose in English.",
+    "zh": "用中文写作这一段的正文。",
+}
+
+#: The three JSON arms' language line per word — the same default made
+#: explicit (the semantics today's prompts already carried implicitly),
+#: and its Chinese counterpart. JSON keys, identity strings and the
+#: three-word enum are never language: the line names the
+#: natural-language fields only.
+_JSON_PROSE_LINE = {
+    "en": "Write every natural-language field (all prose) in English.",
+    "zh": "所有自然语言字段（全部散文内容）一律用中文写作。",
+}
+
+#: The continuity law's sentence (V3-8g, §10.4 item 6; see the module
+#: docstring): the event lists are what has already happened AND has
+#: already been narrated — the segment advances the story and never
+#: re-tells what those lists carry. A continuation resuming a
+#: committed ruling obeys the same law (the ruling is already
+#: narrated). Stated once in the writer prompt; the same arm writes
+#: plain segments and continuations both.
+_CONTINUITY_SENTENCE = (
+    "Advance the story, never re-tell it: the events listed below"
+    " under cognition / memory — and, for a continuation, the"
+    " committed ruling it resumes — have already happened and have"
+    " already been narrated; they are this segment's past, never its"
+    " content. Write what happens next (new beats, actions and"
+    " perceptions) and never repeat, restate or transcribe a"
+    " narration already on those lists; continue from where the"
+    " lists end."
+)
+
+
+def _prose_language_word(language: str) -> str:
+    """The language word a prompt renders — the two-word vocabulary, or
+    the default for anything outside it. The reading face normalizes the
+    stored setting before it constructs these providers, so an unknown
+    word here is a caller's bug that stays on the default face — never a
+    crash and never a third dialect."""
+
+    return language if language in PROSE_LANGUAGE_WORDS else (
+        PROSE_LANGUAGE_DEFAULT
+    )
+
+
+def _writer_prompt(
+    context: PovContext, *, language: str = PROSE_LANGUAGE_DEFAULT
+) -> str:
     """The Writer arm's prompt (see the class docstring): the POV-safe
     context is all this assembly may read — the compiled object is the
-    hard door, and no face it does not carry can ride into the prompt."""
+    hard door, and no face it does not carry can ride into the prompt.
+    The prose-language line and the continuity law are V3-8g's two
+    additions (see the module docstring)."""
 
     lines = [
         "You are the POV writer for ONE segment of an interactive story",
-        "world. Write the segment's prose in English.",
+        f"world. {_WRITER_PROSE_LINE[_prose_language_word(language)]}",
         "",
         "Hard rules:",
         "- One main point of view: write only what "
@@ -751,6 +846,7 @@ def _writer_prompt(context: PovContext) -> str:
         "  character: the user's own will is not yours to invent.",
         "- Only present what has already happened: never narrate the",
         "  future or anything not yet established.",
+        f"- {_CONTINUITY_SENTENCE}",
         "- Never reveal, state or hint at the must_hide face below — not",
         "  in narration, not in dialogue, not in metaphor.",
         "",
@@ -785,24 +881,34 @@ def _writer_prompt(context: PovContext) -> str:
     return "\n".join(lines)
 
 
-def _planner_prompt(context: ScenePlanContext) -> str:
+def _planner_prompt(
+    context: ScenePlanContext, *, language: str = PROSE_LANGUAGE_DEFAULT
+) -> str:
     """The Planner arm's prompt for a fresh scene plan — the POV-safe
     scene context and nothing else."""
 
-    return _scene_plan_prompt(context, replan=False)
+    return _scene_plan_prompt(context, replan=False, language=language)
 
 
-def _planner_replan_prompt(context: ScenePlanContext) -> str:
+def _planner_replan_prompt(
+    context: ScenePlanContext, *, language: str = PROSE_LANGUAGE_DEFAULT
+) -> str:
     """The Planner arm's prompt for the SCENE replan — the current
     element is the content the revision starts from."""
 
-    return _scene_plan_prompt(context, replan=True)
+    return _scene_plan_prompt(context, replan=True, language=language)
 
 
-def _scene_plan_prompt(context: ScenePlanContext, *, replan: bool) -> str:
+def _scene_plan_prompt(
+    context: ScenePlanContext, *, replan: bool,
+    language: str = PROSE_LANGUAGE_DEFAULT
+) -> str:
     """The shared scene-plan prompt body: the scene's identity, the
     current plan content and the POV's own cognition / memory; the
-    answer is one JSON object in the element's own nine-key shape."""
+    answer is one JSON object in the element's own nine-key shape. The
+    language line names the language the JSON's natural-language fields
+    are written in (V3-8g; keys and identity strings are never
+    language)."""
 
     if replan:
         opening = [
@@ -820,6 +926,7 @@ def _scene_plan_prompt(context: ScenePlanContext, *, replan: bool) -> str:
         ]
     lines = [
         *opening,
+        _JSON_PROSE_LINE[_prose_language_word(language)],
         "",
         "The object's keys (all required; keys beyond them are ignored).",
         _PROSE_TYPE_SENTENCE,
@@ -858,32 +965,42 @@ def _scene_plan_prompt(context: ScenePlanContext, *, replan: bool) -> str:
     return "\n".join(lines)
 
 
-def _director_prompt(context: DirectorPlanContext) -> str:
+def _director_prompt(
+    context: DirectorPlanContext, *, language: str = PROSE_LANGUAGE_DEFAULT
+) -> str:
     """The Director arm's prompt for the initial chapter plan — the
     full ``DirectorContext`` and nothing else (the chapter plan is the
     world's, not one character's)."""
 
-    return _blueprint_prompt(context, replan=False)
+    return _blueprint_prompt(context, replan=False, language=language)
 
 
-def _director_replan_prompt(context: DirectorPlanContext) -> str:
+def _director_replan_prompt(
+    context: DirectorPlanContext, *, language: str = PROSE_LANGUAGE_DEFAULT
+) -> str:
     """The Director arm's prompt for the CHAPTER replan — the committed
     ruling that invalidated the plan and the current Blueprint the
     revision starts from."""
 
-    return _blueprint_prompt(context, replan=True)
+    return _blueprint_prompt(context, replan=True, language=language)
 
 
-def _blueprint_prompt(context: DirectorPlanContext, *, replan: bool) -> str:
+def _blueprint_prompt(
+    context: DirectorPlanContext, *, replan: bool,
+    language: str = PROSE_LANGUAGE_DEFAULT
+) -> str:
     """The shared Blueprint prompt body: the world-authoritative
     ``DirectorContext`` reading, the wording law, the payload's own
     schema (nine chapter fields; ten-key scene elements) — plus, on the
-    replan arm, the triggering ruling and the current Blueprint."""
+    replan arm, the triggering ruling and the current Blueprint. The
+    language line names the language the JSON's natural-language fields
+    are written in (V3-8g)."""
 
     director_context: DirectorContext = context.director_context
     lines = [
         "You are the world director of an interactive story world. Plan",
         "ONE chapter and answer with one JSON object and nothing else.",
+        _JSON_PROSE_LINE[_prose_language_word(language)],
         "",
         "The object's chapter fields (all required).",
         _PROSE_TYPE_SENTENCE,
@@ -963,14 +1080,18 @@ def _blueprint_prompt(context: DirectorPlanContext, *, replan: bool) -> str:
     return "\n".join(lines)
 
 
-def _resolver_prompt(context: ResolverContext) -> str:
+def _resolver_prompt(
+    context: ResolverContext, *, language: str = "en"
+) -> str:
     """The Resolver arm's prompt — the world-authoritative context: the
     Bible, the settled facts, the player's profile, the counterparts,
     the scene's place and participants, the **player character's own**
     knowledge arms (``player_cognition`` / ``player_memory`` — the
     authority for what the user character knows, V3-8c's F4) and the
     scene's POV face (the presentation face, carried beside them), plus
-    the user's own durable submission."""
+    the user's own durable submission. The language line names the
+    language the JSON's natural-language fields are written in
+    (V3-8g)."""
 
     if context.player_character is None:
         player_block = "(no player character is declared for this world)"
@@ -1001,6 +1122,7 @@ def _resolver_prompt(context: ResolverContext) -> str:
         "what actually happens — the world's one authoritative outcome.",
         "Answer with one JSON object and nothing else, carrying exactly",
         "these keys.",
+        _JSON_PROSE_LINE[_prose_language_word(language)],
         _PROSE_TYPE_SENTENCE,
         _IDENTITY_SENTENCE,
         '- "interpretation": one JSON string — what the submission means',
@@ -1071,19 +1193,29 @@ def _resolver_prompt(context: ResolverContext) -> str:
 class LlmWriterProvider:
     """The Writer arm over one :class:`TextCompletion` seam: the
     POV-safe prompt (the compiled context is the hard door), then the
-    cleaned prose. An empty answer is the honest ``no-output`` refusal
-    — :class:`~elc.world.writer.PovWriter`'s deterministic guards and
+    cleaned prose. ``language`` is the prose-language word this arm's
+    prompt carries (V3-8g; default ``en`` — the existing prompt). An
+    empty answer is the honest ``no-output`` refusal —
+    :class:`~elc.world.writer.PovWriter`'s deterministic guards and
     the SEGMENT COMMIT stay the library face's, downstream."""
 
-    def __init__(self, completion: TextCompletion) -> None:
+    def __init__(
+        self,
+        completion: TextCompletion,
+        language: str = PROSE_LANGUAGE_DEFAULT,
+    ) -> None:
         self._completion = completion
+        self._language = language
 
     def write_segment(self, context: PovContext) -> str:
         """One segment's prose from the POV-safe context (see the class
         docstring)."""
 
         body = _clean(
-            _complete_text(self._completion, _writer_prompt(context))
+            _complete_text(
+                self._completion,
+                _writer_prompt(context, language=self._language),
+            )
         )
         if not body:
             raise LlmProviderError("no-output")
@@ -1096,17 +1228,26 @@ class LlmPlannerProvider:
     answers the scene's element payload, ``replan_element`` the SCENE
     replan's revised element — both parsed in the element's own
     nine-key shape; the seats that consume them keep every deeper
-    judgment."""
+    judgment. ``language`` is the JSON's natural-language word
+    (V3-8g; default ``en``)."""
 
-    def __init__(self, completion: TextCompletion) -> None:
+    def __init__(
+        self,
+        completion: TextCompletion,
+        language: str = PROSE_LANGUAGE_DEFAULT,
+    ) -> None:
         self._completion = completion
+        self._language = language
 
     def plan_scene(self, context: ScenePlanContext) -> Mapping[str, Any]:
         """The scene's plan content (see the class docstring)."""
 
         return _parse_scene_element(
             _payload_object(
-                _complete_text(self._completion, _planner_prompt(context))
+                _complete_text(
+                    self._completion,
+                    _planner_prompt(context, language=self._language),
+                )
             )
         )
 
@@ -1118,7 +1259,10 @@ class LlmPlannerProvider:
         return _parse_scene_element(
             _payload_object(
                 _complete_text(
-                    self._completion, _planner_replan_prompt(context)
+                    self._completion,
+                    _planner_replan_prompt(
+                        context, language=self._language
+                    ),
                 )
             )
         )
@@ -1129,10 +1273,17 @@ class LlmDirectorProvider:
     and the CHAPTER replan) over one :class:`TextCompletion` seam — the
     full ``DirectorContext`` reading goes in, the Blueprint payload's
     shape comes out; ``Director.open_next_chapter`` /
-    ``apply_action_replan`` keep the validation and the persistence."""
+    ``apply_action_replan`` keep the validation and the persistence.
+    ``language`` is the JSON's natural-language word (V3-8g; default
+    ``en``)."""
 
-    def __init__(self, completion: TextCompletion) -> None:
+    def __init__(
+        self,
+        completion: TextCompletion,
+        language: str = PROSE_LANGUAGE_DEFAULT,
+    ) -> None:
         self._completion = completion
+        self._language = language
 
     def draft_blueprint(
         self, context: DirectorPlanContext
@@ -1140,7 +1291,10 @@ class LlmDirectorProvider:
         """The initial Blueprint (see the class docstring)."""
 
         return _parse_blueprint(
-            _complete_text(self._completion, _director_prompt(context))
+            _complete_text(
+                self._completion,
+                _director_prompt(context, language=self._language),
+            )
         )
 
     def replan_blueprint(
@@ -1151,7 +1305,10 @@ class LlmDirectorProvider:
 
         return _parse_blueprint(
             _complete_text(
-                self._completion, _director_replan_prompt(context)
+                self._completion,
+                _director_replan_prompt(
+                    context, language=self._language
+                ),
             )
         )
 
@@ -1164,14 +1321,23 @@ class LlmResolverProvider:
     :class:`~elc.world.action.Adjudication` shape verbatim — the sole
     adjudication authority
     (:func:`elc.world.action.commit_action`) is downstream and
-    unchanged."""
+    unchanged. ``language`` is the JSON's natural-language word
+    (V3-8g; default ``en``)."""
 
-    def __init__(self, completion: TextCompletion) -> None:
+    def __init__(
+        self,
+        completion: TextCompletion,
+        language: str = PROSE_LANGUAGE_DEFAULT,
+    ) -> None:
         self._completion = completion
+        self._language = language
 
     def adjudicate(self, context: ResolverContext) -> Adjudication:
         """The verdict for this submission (see the class docstring)."""
 
         return _parse_adjudication(
-            _complete_text(self._completion, _resolver_prompt(context))
+            _complete_text(
+                self._completion,
+                _resolver_prompt(context, language=self._language),
+            )
         )

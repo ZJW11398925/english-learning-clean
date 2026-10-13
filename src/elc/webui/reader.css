@@ -28,6 +28,45 @@ body.reader {
 
 #reader-status { margin: 0 0 var(--sp-5); }
 
+/* V3-8g: the busy line — the visible progress face while a drive runs
+   (spinner + elapsed/stage note). The [hidden] rule keeps the UA's
+   display:none in force (an unconditional display:flex would override
+   it); the spinner is the page's own CSS animation, zero assets. */
+.reader-busyline {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-4);
+  font: var(--t-ui);
+  color: var(--ink-soft);
+  letter-spacing: var(--ls-ui);
+}
+.reader-busyline[hidden] { display: none; }
+.reader-spinner {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--rule);
+  border-top-color: var(--ink-soft);
+  border-radius: 50%;
+  animation: reader-spin 1s linear infinite;
+}
+@keyframes reader-spin {
+  to { transform: rotate(360deg); }
+}
+
+.reader-lang {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-5);
+}
+.reader-lang-label {
+  font: var(--t-ui);
+  color: var(--ink-soft);
+  letter-spacing: var(--ls-ui);
+}
+
 .reader-flow { margin: 0 0 var(--sp-6); }
 
 .reader-passage { margin: 0 0 var(--sp-5); }

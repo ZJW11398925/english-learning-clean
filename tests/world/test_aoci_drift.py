@@ -1107,3 +1107,84 @@ def test_v3_8f_entries_carry_the_wiring_baseline_faces() -> None:
     ).read_text(encoding="utf-8")
     for symbol in ("def with_timeout(", "stream_transport=self._stream"):
         assert symbol in provider_source, symbol
+
+
+# ---------------------------------------------------------------------------
+# V3-8g (TASK-OPI-c0f4d9b4…24 / the opening ruling …22, the paradigm
+# shift §10.4 items 5 and 6): the re-touched entries
+# ---------------------------------------------------------------------------
+
+
+def test_v3_8g_entries_carry_the_continuity_and_language_faces() -> None:
+    """V3-8g's ledger faces ride their entries: the ``llm_providers.py``
+    entry (the language vocabulary / constructor word and the continuity
+    sentence — the events list is already-narrated fact), the
+    ``narrative_web.py`` entry (``v3_prose_language``, the write face,
+    the live per-drive read and the never-rewrite-canon law) and the
+    ``web.py`` entry (the one new route). Zero migration: no migration
+    entry moves, and the coverage law above keeps every existing one
+    present."""
+
+    elc_section = "===D:/english-learning-clean/src/elc/==="
+    world_section = "===D:/english-learning-clean/src/elc/world/==="
+    for section, tag, keywords in (
+        (
+            world_section,
+            "llm_providers.py[LP8T]",
+            (
+                "V3-8g",
+                "PROSE_LANGUAGE_WORDS",
+                "PROSE_LANGUAGE_DEFAULT",
+                "_CONTINUITY_SENTENCE",
+                "已发生且已被叙述",
+            ),
+        ),
+        (
+            elc_section,
+            "narrative_web.py[NW8E]",
+            (
+                "V3-8g",
+                "v3_prose_language",
+                "set_language",
+                "prose_language_of",
+                "v3_language_request",
+                "永不改写",
+            ),
+        ),
+        (
+            elc_section,
+            "web.py[EC8L]",
+            (
+                "V3-8g",
+                "/api/v3/language",
+                "v3_language_request",
+            ),
+        ),
+    ):
+        entry = _entry_line_in_section(section, tag)
+        for keyword in keywords:
+            assert keyword in entry, (tag, keyword)
+
+    # coherence: the symbols the entries name are the live sources' own —
+    # renaming one side alone reddens here.
+    llm_source = (
+        REPO / "src" / "elc" / "world" / "llm_providers.py"
+    ).read_text(encoding="utf-8")
+    for symbol in (
+        'PROSE_LANGUAGE_DEFAULT = "en"',
+        'PROSE_LANGUAGE_WORDS = ("en", "zh")',
+        "_CONTINUITY_SENTENCE = (",
+    ):
+        assert symbol in llm_source, symbol
+    narrative_source = (
+        REPO / "src" / "elc" / "narrative_web.py"
+    ).read_text(encoding="utf-8")
+    for symbol in (
+        'V3_PROSE_LANGUAGE_KEY = "v3_prose_language"',
+        "def prose_language_of(",
+        "def v3_language_request(",
+        "def set_language(",
+    ):
+        assert symbol in narrative_source, symbol
+    web_source = (REPO / "src" / "elc" / "web.py").read_text(encoding="utf-8")
+    assert 'if self.path == "/api/v3/language":' in web_source

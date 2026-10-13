@@ -87,6 +87,27 @@ step *is* its settlement), and ``next_chapter`` refuses until the latest
 chapter is ``CLOSED`` (the SETTLING 前置律's flip side — a chapter's
 story does not overlap the next plan).
 
+**The prose-language face (V3-8g, the paradigm shift §10.4 item 5).**
+The reader's prose language is one durable setting —
+:data:`V3_PROSE_LANGUAGE_KEY` in the host's own ``app_setting`` table
+(the migration-0022 store; vocabulary ``en`` / ``zh``, default ``en``,
+:data:`~elc.world.llm_providers.PROSE_LANGUAGE_WORDS`). ``GET
+/api/v3/state`` carries the effective word as ``language``; ``POST
+/api/v3/language`` persists a switch through this face
+(:meth:`NarrativeWebFace.set_language` — one upsert, an unchanged word
+is a zero-write idempotent replay). Every drive reads the word **live**
+(:meth:`NarrativeWebFace._pipeline`) and hands it to the four real
+providers, so the segment prose and the JSON faces' natural-language
+content follow the setting, while JSON keys, identity strings and the
+three-word enum never do. **Passages already committed are canon and
+are never rewritten by a language switch** (no backfill, no re-write of
+an existing ``narrative_passage`` row): a switch affects only segments
+written after it. The fresh beat's own ``language`` seat (the
+SegmentBeat field the SEGMENT COMMIT stamps onto the passage row)
+follows the same live word, so the durable row declares the language
+its prose is actually written in; the replayed committed prefix keeps
+each stored row's own word (the replay shape comparison reads it).
+
 **One derivation law, two readers.** The read half
 (:class:`_DurableReads`) is built over one connection and answers the
 whole state (and the walk the write routes drive from). The face builds
@@ -120,13 +141,14 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from elc.persona.openai_provider import OpenAICompatibleProvider
 from elc.persona.types import CompiledPrompt
+from elc.platform.db.app_settings import AppSettingStore
 from elc.platform.db.epoch import RuntimeEpochFence, load_current_epoch
 from elc.platform.types import Err, PersonaId
 from elc.world.action import (
@@ -148,6 +170,8 @@ from elc.world.gold import (
     seed_gold_world,
 )
 from elc.world.llm_providers import (
+    PROSE_LANGUAGE_DEFAULT,
+    PROSE_LANGUAGE_WORDS,
     CompletionOutcome,
     LlmDirectorProvider,
     LlmPlannerProvider,
@@ -179,14 +203,18 @@ if TYPE_CHECKING:
 __all__ = [
     "REASON_NO_EGRESS",
     "READER_ID",
+    "V3_LANGUAGE_GRAMMAR",
+    "V3_PROSE_LANGUAGE_KEY",
     "WORLD_EGRESS_TIMEOUT_SECONDS",
     "DurableReplayResolver",
     "DurableReplayWriter",
     "NarrativeWebFace",
     "PersonaEgressCompletion",
     "narrative_state_ro",
+    "prose_language_of",
     "v3_ack_request",
     "v3_continue_request",
+    "v3_language_request",
     "v3_submit_request",
 ]
 
@@ -241,6 +269,14 @@ V3_SUBMIT_GRAMMAR = (
     " database already holds a submission for"
 )
 V3_ACK_GRAMMAR = 'need a JSON body {"passage_ids": ["...", ...]}'
+V3_LANGUAGE_GRAMMAR = 'need a JSON body {"language": "en"|"zh"}'
+
+#: The prose-language setting's own ``app_setting`` key (V3-8g, §10.4
+#: item 5): the reading face owns the key, the host's generic
+#: migration-0022 table stores it, and the vocabulary is the providers'
+#: own two words (:data:`~elc.world.llm_providers.PROSE_LANGUAGE_WORDS`)
+#: — an absent row is the honest default ``en``, never a written one.
+V3_PROSE_LANGUAGE_KEY = "v3_prose_language"
 
 #: The one default tick an open scene's continue moves (see the module
 #: docstring: the open-scene calibration, stated once).
@@ -270,6 +306,29 @@ def _utc_now() -> str:
     return datetime.now(tz=UTC).isoformat()
 
 
+def prose_language_of(conn: sqlite3.Connection) -> str:
+    """The effective prose language of this app.db — the V3-8g setting
+    read (one plain SELECT; a read fences nothing).
+
+    ``en`` when the row is absent (the honest default — absence is "not
+    chosen yet", never a written row) and ``en`` as well for a stored
+    word outside the two-word vocabulary: the write face fail-closes so
+    an out-of-vocabulary row is hand-edited, and the effective language
+    — the word the pipeline will hand the providers — is the honest
+    value a read face answers. The same function feeds the state's
+    ``language`` field and the drive's provider construction, so the
+    two can never disagree."""
+
+    row = conn.execute(
+        "SELECT value FROM app_setting WHERE key = ?",
+        (V3_PROSE_LANGUAGE_KEY,),
+    ).fetchone()
+    if row is None:
+        return PROSE_LANGUAGE_DEFAULT
+    word = str(row[0])
+    return word if word in PROSE_LANGUAGE_WORDS else PROSE_LANGUAGE_DEFAULT
+
+
 def _empty_state() -> dict[str, Any]:
     """The reading state's honest empty shape — every face present, none
     invented (the page renders it without special cases)."""
@@ -283,6 +342,7 @@ def _empty_state() -> dict[str, Any]:
         "gates": [],
         "settlement": None,
         "plan": None,
+        "language": PROSE_LANGUAGE_DEFAULT,
         "next": {"kind": "none", "scene_id": None, "detail": None},
         "controls": {
             "can_start": False,
@@ -375,6 +435,21 @@ def v3_ack_request(
             return V3_ACK_GRAMMAR, None
         words.append(word)
     return None, tuple(words)
+
+
+def v3_language_request(
+    payload: object,
+) -> tuple[str | None, str | None]:
+    """The language route's grammar (V3-8g): exactly ``{"language":
+    "en"|"zh"}`` — one whitelisted word, fail-closed; anything else is
+    the 400 人话. The word is re-checked at the write face against the
+    same vocabulary (the mode / ui-language writes' own posture)."""
+
+    if isinstance(payload, dict) and set(payload) == {"language"}:
+        word = payload["language"]
+        if isinstance(word, str) and word in PROSE_LANGUAGE_WORDS:
+            return None, word
+    return V3_LANGUAGE_GRAMMAR, None
 
 
 # ---------------------------------------------------------------------------
@@ -889,8 +964,9 @@ class _DurableReads:
         world's existence, the latest chapter (status / index), the
         roster and the current scene (status / POV), this chapter's
         committed passages (id / seq / body / language), the gates not
-        ``CLOSED`` (options / status), the settlement when one landed and
-        the adopted plan's summary (the «下一章» face)."""
+        ``CLOSED`` (options / status), the settlement when one landed,
+        the adopted plan's summary (the «下一章» face) and the effective
+        prose language (V3-8g: the live setting, ``en`` when absent)."""
 
         world = self._worlds.get_world(WORLD_ID)
         if world is None:
@@ -899,6 +975,7 @@ class _DurableReads:
                 "did": None,
                 "error": None,
                 **_empty_state(),
+                "language": prose_language_of(self._conn),
                 "world": {
                     "exists": False,
                     "world_id": WORLD_ID,
@@ -926,6 +1003,7 @@ class _DurableReads:
             "did": None,
             "error": None,
             **_empty_state(),
+            "language": prose_language_of(self._conn),
             "world": {
                 "exists": True,
                 "world_id": WORLD_ID,
@@ -1201,6 +1279,13 @@ class NarrativeWebFace:
         self._completion: TextCompletion = PersonaEgressCompletion(
             self._provider_of
         )
+        # V3-8g: the host's generic settings store (the migration-0022
+        # table) — the prose-language write's home; None on a host that
+        # carries no settings leg (the write answers the honest refusal,
+        # the state read keeps its default).
+        self._app_settings: AppSettingStore | None = getattr(
+            host, "app_settings", None
+        )
         self._clock = clock if clock is not None else _utc_now
 
     # -- the honest refusals -------------------------------------------------
@@ -1299,12 +1384,25 @@ class NarrativeWebFace:
 
     # -- the drive -----------------------------------------------------------
 
+    def _prose_language(self) -> str:
+        """The effective prose language, read live (V3-8g): one SELECT
+        per drive on the host's own connection — a settings hot swap
+        lands on the very next drive, and the state read answers the
+        same function (one derivation, two readers)."""
+
+        if self._conn is None:
+            return PROSE_LANGUAGE_DEFAULT
+        return prose_language_of(self._conn)
+
     def _pipeline(self) -> Pipeline:
         """A fresh orchestrator over the host's own connection and stores
         — the replay-aware writer / resolver in front of the real egress
         (see the module docstring). Constructed per drive: the instance
         holds no state worth keeping, and the durable rows are the
-        position."""
+        position. The four real providers are built with the live prose
+        language (V3-8g): a switch takes effect on the next drive with
+        no re-assembly, and the default ``en`` renders today's prompts
+        byte for byte."""
 
         assert (
             self._conn is not None
@@ -1313,6 +1411,7 @@ class NarrativeWebFace:
             and self._casts is not None
             and self._narrative is not None
         )
+        language = self._prose_language()
         return Pipeline(
             self._conn,
             world_store=self._worlds,
@@ -1320,12 +1419,18 @@ class NarrativeWebFace:
             bible_store=self._bibles,
             narrative_store=self._narrative,
             writer_provider=DurableReplayWriter(
-                self._conn, LlmWriterProvider(self._completion)
+                self._conn,
+                LlmWriterProvider(self._completion, language=language),
             ),
-            planner_provider=LlmPlannerProvider(self._completion),
-            director_provider=LlmDirectorProvider(self._completion),
+            planner_provider=LlmPlannerProvider(
+                self._completion, language=language
+            ),
+            director_provider=LlmDirectorProvider(
+                self._completion, language=language
+            ),
             resolver_provider=DurableReplayResolver(
-                self._conn, LlmResolverProvider(self._completion)
+                self._conn,
+                LlmResolverProvider(self._completion, language=language),
             ),
             action_duration_ticks=ACTION_DURATION_TICKS,
         )
@@ -1449,14 +1554,24 @@ class NarrativeWebFace:
                 {"kind": "gate_open", "gate_id": opened.gate_id}
             )
         beat = walk.beat
+        # V3-8g: the fresh beat's language seat follows the live setting
+        # (the SegmentBeat docstring: the language is the driver's seat,
+        # and this face is the driver) — the SEGMENT COMMIT stamps it
+        # onto the passage row, so the row declares the language its
+        # prose is actually written in. The replayed committed prefix
+        # keeps each stored row's own word (``_prefix_from_segments``).
+        language = self._prose_language()
         if not isinstance(beat, SegmentBeat):
             # An open scene's beat is this face's own calibration (the
             # module docstring: one tick; the reader's 「结束本场」 is
             # the closing flag).
             beat = SegmentBeat(
+                language=language,
                 duration_ticks=OPEN_SCENE_SEGMENT_TICKS,
                 is_last_segment=end_scene,
             )
+        else:
+            beat = replace(beat, language=language)
         driven, error = self._drive(scene_id, (*walk.prefix, beat), now)
         if error is not None:
             return self._refuse(error)
@@ -1543,7 +1658,13 @@ class NarrativeWebFace:
             scene_id, beat.gate_seq
         )
         if continuation is not None:
-            beats.append(continuation)
+            # V3-8g: the continuation is fresh prose under the live
+            # setting — its beat's language seat follows it (see
+            # ``advance``); a continuation already committed would ride
+            # the reconstructed prefix instead, never this fresh beat.
+            beats.append(
+                replace(continuation, language=self._prose_language())
+            )
         driven, error = self._drive(scene_id, beats, now)
         if error is not None:
             return self._refuse(error)
@@ -1653,6 +1774,42 @@ class NarrativeWebFace:
             "recorded": recorded,
             "missed": missed,
         }
+
+    def set_language(self, word: str) -> dict[str, Any]:
+        """Persist the prose language (V3-8g, §10.4 item 5): one
+        ``app_setting`` upsert under
+        :data:`V3_PROSE_LANGUAGE_KEY`, idempotently — an unchanged word
+        answers ``idempotent: true`` and writes nothing (the
+        ui-language write's own posture). The word was validated at the
+        HTTP layer; it is re-checked here against the same vocabulary
+        (fail-closed at both ends).
+
+        **A switch never rewrites canon**: the existing
+        ``narrative_passage`` rows are untouched — no backfill, no
+        re-write — and only segments written after this call carry the
+        new language (the next drive's providers, and the fresh beat's
+        own language seat, read the live value)."""
+
+        if not self._legs_ready():
+            return self._no_legs()
+        if word not in PROSE_LANGUAGE_WORDS:
+            return self._refuse(
+                '正文语言只支持 "en" 或 "zh"——这一次没有写任何设置。'
+            )
+        if self._app_settings is None:
+            return self._refuse(
+                "这个进程的 host 没有设置存储（app_setting 缺失）——"
+                "正文语言没有可落的地方。"
+            )
+        current = self._app_settings.get(V3_PROSE_LANGUAGE_KEY)
+        if current == word:
+            return self._landed(
+                {"kind": "language", "language": word, "idempotent": True}
+            )
+        self._app_settings.set(V3_PROSE_LANGUAGE_KEY, word)
+        return self._landed(
+            {"kind": "language", "language": word, "idempotent": False}
+        )
 
     # -- the writes' helpers -------------------------------------------------
 

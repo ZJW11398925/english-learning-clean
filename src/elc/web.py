@@ -431,6 +431,7 @@ from elc.narrative_web import (
     narrative_state_ro,
     v3_ack_request,
     v3_continue_request,
+    v3_language_request,
     v3_submit_request,
 )
 from elc.persona.card_store import (
@@ -9332,6 +9333,25 @@ def _build_server(
                     return
                 self._run_on_host_thread(
                     lambda: face.narrative.ack(passage_ids)
+                )
+                return
+            if self.path == "/api/v3/language":
+                # V3-8g: the prose-language write — one whitelisted word
+                # (``en`` / ``zh``) persisted into the host's app_setting
+                # table through the reading face; an idempotent replay
+                # writes nothing. The very next drive reads the word
+                # live, and only passages written after the switch carry
+                # it (committed canon is never rewritten). A fast
+                # settings upsert: the house worker budget is right for
+                # it (no override passed).
+                lang_error, lang_word = v3_language_request(
+                    self._read_json_body()
+                )
+                if lang_error is not None or lang_word is None:
+                    self._send_json(400, {"error": lang_error})
+                    return
+                self._run_host_write(
+                    lambda: (200, face.narrative.set_language(lang_word))
                 )
                 return
             if self.path not in (

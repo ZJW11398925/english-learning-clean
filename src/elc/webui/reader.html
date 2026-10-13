@@ -3,10 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>试读 · V3 故事线</title>
-<!-- V3-8e 试读面（/v3）：独立于主 UI 的新页面。样式一律复用
-     tokens.css + components.css（组件唯一样式源），本页只在 reader.css
-     登记 .reader-* 屏级骨架；零外链、零内联样式、零内联脚本。 -->
+  <title>试读 · V3 故事线</title>
+  <!-- V3-8e 试读面（/v3）：独立于主 UI 的新页面。样式一律复用
+       tokens.css + components.css（组件唯一样式源），本页只在 reader.css
+       登记 .reader-* 屏级骨架；零外链、零内联样式、零内联脚本。
+       V3-8g：进度可见（忙碌行 + spinner + 已用时/阶段提示）、忙碌点击
+       必反馈、正文语言可切（en/中文，只影响此后新写段落）。 -->
+
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" href="/static/tokens.css">
 <link rel="stylesheet" href="/static/components.css">
@@ -21,6 +24,11 @@
 </header>
 
 <p class="sysline" id="reader-status">正在读取状态…</p>
+
+<p class="reader-busyline" id="reader-busyline" hidden>
+  <span class="reader-spinner" aria-hidden="true"></span>
+  <span id="reader-busy-note"></span>
+</p>
 
 <main id="reader-flow" class="reader-flow" aria-live="polite"></main>
 
@@ -45,6 +53,14 @@
   <button id="reader-end-scene" class="btn btn--faint" type="button">结束本场</button>
   <button id="reader-settle" class="btn btn--faint" type="button">结束本章</button>
   <button id="reader-next" class="btn btn--faint" type="button">下一章</button>
+</section>
+
+<section class="reader-lang" aria-label="正文语言">
+  <span class="reader-lang-label">正文语言：</span>
+  <button id="reader-lang-en" class="btn btn--faint" type="button"
+    aria-pressed="true">en</button>
+  <button id="reader-lang-zh" class="btn btn--faint" type="button"
+    aria-pressed="false">中文</button>
 </section>
 
 <section class="reader-readout">
