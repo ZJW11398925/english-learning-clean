@@ -27,9 +27,12 @@ DOMAIN §20.3-1 unchanged). The Resolver's *input* is the world's:
 the player's profile and the scene's canonical cast beside the user's
 own submission — the resolver knows the real world's rules and physical
 facts and must not invent the user's intent (the submission rides from
-the durable ``user_action`` row); the POV's cognition / memory ride for
-**what the player character knows**, never as the resolver's own
-knowledge ceiling.
+the durable ``user_action`` row); the **player character's own**
+cognition / memory ride for **what the user character knows** (V3-8c's
+F4 — ``player_cognition`` / ``player_memory``, the player's own read
+face), the scene POV's cognition / memory ride as the **presentation
+face** (RA §27's 「＋ 当前 POV 面」), and neither arm is the resolver's
+own knowledge ceiling.
 
 **The POV-safe context compilation hard door** (V3-5R's registered
 obligation, TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11's item 5) takes
@@ -184,12 +187,27 @@ class ResolverContext:
       row contributes no entry (the honest undeclared, never a guessed
       one).
 
-    The knowledge arm — ``pov_actor_id`` / ``cognition`` / ``memory``,
-    plus ``current_tick`` — is the scene's POV's own read (the views'
-    ``viewer_id`` equals ``pov_actor_id``), and its role here is **what
-    the player character knows**: the resolver may see what the user
-    could know and what the user could not, but its own knowledge
-    ceiling is the world's (the authority arms above), not the POV's.
+    The knowledge arms (the F4 ruling, V3-8c, TASK-OPI-cddb517c…7):
+
+    - ``player_cognition`` / ``player_memory`` — the **player
+      character's own** read faces (their ``viewer_id`` equals
+      ``player_character.player_character_id``; both are ``None`` for a
+      world that declares no player — the same conditional law the
+      ``player_character`` arm keeps). This pair is the authority for
+      **what the user character knows**: the player's durable
+      cognition / memory read, read for the player's own identity;
+    - ``pov_actor_id`` / ``cognition`` / ``memory`` — the scene's
+      **narrative POV's** own read (the views' ``viewer_id`` equals
+      ``pov_actor_id``), carried alongside per RA §27's 「＋ 当前 POV
+      面」 as the **presentation face** (the prose presents through
+      this POV). When the scene's POV is not the player character the
+      two faces differ, and the POV's read is **not** the judge of
+      what the user knows — the F4 wording disambiguation (V3-8c);
+    - ``current_tick`` — the canonical story time both arms were read
+      at.
+
+    Neither knowledge arm bounds the resolver's own knowledge ceiling:
+    that is the world's (the authority arms above).
     """
 
     gate_id: str
@@ -204,6 +222,8 @@ class ResolverContext:
     place: str
     participants: tuple[str, ...]
     counterparts: tuple[ActorProfileRecord, ...]
+    player_cognition: V3CognitionView | None
+    player_memory: V3MemoryView | None
     pov_actor_id: str
     cognition: V3CognitionView
     memory: V3MemoryView

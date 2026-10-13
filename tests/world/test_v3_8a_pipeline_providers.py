@@ -73,6 +73,7 @@ from elc.world.action import (
 from elc.world.bible import BibleContent, SqliteBibleStore
 from elc.world.bootstrap import ActorSeed, PlayerSeed, create_world_with_bible
 from elc.world.cast import SqliteCastStore, StoryRole
+from elc.world.cognition import v3_cognition_view
 from elc.world.director import Director
 from elc.world.memory import v3_memory_view
 from elc.world.narrative import (
@@ -772,6 +773,14 @@ def test_the_fake_is_deterministic_and_caller_influenceable(
     assert player is not None
     profile = cast_store.actor_profile(ACTOR)
     assert profile is not None
+    # the player character's own knowledge arms (V3-8c's F4): the reads
+    # addressed to the player's identity, taken from the same world.
+    player_cognition = v3_cognition_view(
+        conn, world_id=TOWN, viewer_id=PLAYER
+    )
+    assert isinstance(player_cognition, Ok)
+    player_memory = v3_memory_view(conn, world_id=TOWN, viewer_id=PLAYER)
+    assert isinstance(player_memory, Ok)
     resolver_context = ResolverContext(
         gate_id=GATE,
         scene_id=SCENE,
@@ -785,6 +794,8 @@ def test_the_fake_is_deterministic_and_caller_influenceable(
         place=opening.dossier.place,
         participants=opening.dossier.participants,
         counterparts=(profile,),
+        player_cognition=player_cognition.value,
+        player_memory=player_memory.value,
         pov_actor_id=ACTOR,
         cognition=opening.context.cognition,
         memory=opening.context.memory,
@@ -1138,6 +1149,12 @@ def test_the_pipeline_drives_the_gold_scenario_shaped_chain(
     ] == [ACTOR]
     assert resolver_context.pov_actor_id == ACTOR
     assert resolver_context.memory.viewer_id == ACTOR
+    # V3-8c's F4: the player character's own knowledge arms ride beside
+    # the POV's narrative face, addressed to the player's identity.
+    assert resolver_context.player_cognition is not None
+    assert resolver_context.player_cognition.viewer_id == PLAYER
+    assert resolver_context.player_memory is not None
+    assert resolver_context.player_memory.viewer_id == PLAYER
 
     # the canonical rows (the lineage table carries the two SEGMENT rows
     # and the ruling's ACTION_OUTCOME row).

@@ -1002,12 +1002,16 @@ class Pipeline:
         replaced): the user's own submission (from the durable
         ``user_action`` row) beside the world's real authority — the
         ``CURRENT`` Bible, the settled ``world_state_fact`` half, the
-        player's durable row and the scene's counterpart profiles — and
-        the ruling scene's own plan face (its adopted dossier's place /
-        participants and the POV's read, for *what the player character
-        knows*). The reads are the stores' own public faces; nothing
-        here interprets a value (the honesty statements live on the
-        record's docstring)."""
+        player's durable row and the scene's counterpart profiles — the
+        ruling scene's own plan face (its adopted dossier's place /
+        participants) and **two knowledge arms** (V3-8c's F4): the
+        player character's **own** cognition / memory read
+        (``viewer = player_character_id`` — the authority for *what the
+        user character knows*; both ``None`` when the world declares no
+        player) and the POV's read (the presentation face, RA §27's
+        「＋ 当前 POV 面」). The reads are the stores' own public faces;
+        nothing here interprets a value (the honesty statements live on
+        the record's docstring)."""
 
         dossier = self._narrative.adopted_dossier(gate.scene_id)
         if dossier is None:
@@ -1031,6 +1035,25 @@ class Pipeline:
         world_id = chapter.value.world_id
         player = self._cast.player_character(world_id)
         player_id = None if player is None else player.player_character_id
+        player_cognition = None
+        player_memory = None
+        if player is not None:
+            cognition_read = v3_cognition_view(
+                self._conn,
+                world_id=world_id,
+                viewer_id=player.player_character_id,
+            )
+            if isinstance(cognition_read, Err):
+                return Err(cognition_read.error)
+            player_cognition = cognition_read.value
+            memory_read = v3_memory_view(
+                self._conn,
+                world_id=world_id,
+                viewer_id=player.player_character_id,
+            )
+            if isinstance(memory_read, Err):
+                return Err(memory_read.error)
+            player_memory = memory_read.value
         counterparts = tuple(
             profile
             for profile in (
@@ -1054,6 +1077,8 @@ class Pipeline:
                 place=dossier.place,
                 participants=dossier.participants,
                 counterparts=counterparts,
+                player_cognition=player_cognition,
+                player_memory=player_memory,
                 pov_actor_id=dossier.pov_actor_id,
                 cognition=context.value.cognition,
                 memory=context.value.memory,

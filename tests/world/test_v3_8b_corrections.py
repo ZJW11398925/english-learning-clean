@@ -830,8 +830,9 @@ def test_the_settling_precondition_rides_the_flip_transaction() -> None:
 def test_the_resolver_context_field_set_is_frozen() -> None:
     """The shape pin: the Resolver's input names the world-authoritative
     faces (Bible / facts / player / scene cast / counterparts) beside
-    the user's submission and the POV's knowledge read — the
-    POV-limited ``AdjudicationContext`` is gone."""
+    the user's submission, the player character's own knowledge arms
+    (V3-8c's F4) and the POV's narrative face — the POV-limited
+    ``AdjudicationContext`` is gone."""
 
     names = tuple(field.name for field in dataclasses.fields(ResolverContext))
     assert names == (
@@ -847,6 +848,8 @@ def test_the_resolver_context_field_set_is_frozen() -> None:
         "place",
         "participants",
         "counterparts",
+        "player_cognition",
+        "player_memory",
         "pov_actor_id",
         "cognition",
         "memory",
@@ -871,8 +874,9 @@ def test_the_resolver_context_carries_the_world_authoritative_faces(
     the player's profile row, the scene's canonical facts and the
     counterpart's profile — beside the user's own submission. The
     intent rides from the durable ``user_action`` row; the resolver
-    never sees a fabricated one, and the POV's cognition / memory ride
-    for what the player character knows."""
+    never sees a fabricated one, and the player character's own
+    cognition / memory ride as the *what the user knows* authority
+    beside the POV's presentation face (V3-8c's F4)."""
 
     assert isinstance(
         _create_town(conn, world_store, cast_store, bible_store), Ok
@@ -946,7 +950,13 @@ def test_the_resolver_context_carries_the_world_authoritative_faces(
     assert context.gate_id == GATE and context.scene_id == SCENE
     assert context.options == ("hold the ledger", "step back")
     assert "I draw my sword" not in str(context)
-    # the POV's knowledge read rides for what the player character knows.
+    # the knowledge arms (V3-8c's F4): the player character's own read
+    # is the "what the user knows" authority; the POV's rides as the
+    # narrative presentation face.
+    assert context.player_cognition is not None
+    assert context.player_cognition.viewer_id == PLAYER
+    assert context.player_memory is not None
+    assert context.player_memory.viewer_id == PLAYER
     assert context.pov_actor_id == ACTOR
     assert context.cognition.viewer_id == ACTOR
     assert context.memory.viewer_id == ACTOR
