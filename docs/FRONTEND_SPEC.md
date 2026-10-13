@@ -344,6 +344,17 @@ src/elc/webui/
                     面（案头主从条、信封沓、编辑台、笔友档案）/ 事件 /
                     轮询 / 学习与诊断渲染（面板三态走 #14；进空间落
                     默认节，切节即拉）
+  reader.html       **V3-8e 试读面（独立文档，非主壳屏）**：/v3 的唯一
+                    入口——复用 tokens.css + components.css（组件样式
+                    零重复定义），页级骨架只在 reader.css；零内联
+                    样式/脚本、零外链
+  reader.css        reader.html 的屏级布局（`.reader-*` 页级骨架；
+                    不定义任何组件类、不造第二套滚动条语汇；只用
+                    文档流滚动）
+  reader.js         试读面的唯一脚本（零依赖；DOM 一律 createElement +
+                    textContent；驱动 = 一次 POST 一个长请求 + 期间的
+                    /api/v3/state 轮询；渲染后对新增 passage 发一次
+                    /api/v3/ack——渲染即曝光）
 ```
 
 - **ES modules、零构建**：浏览器直 import 相对路径（`./api.js`），无打包
@@ -421,6 +432,10 @@ R-1 时代的逐页剖析（信息组织 / 表达方式 / 特色延续三个否�
 - dock 四项常驻（案头 / 世界 / 温故 / 抽屉；D-4 起世界入坞——世界详情
   屏升格为导航一级成员，见 9.17；WR-5–D-3 间曾三项）；门厅 dock 让位
   不变；节签横排不变（#20 契约）。
+- **试读面无坞内入口（V3-8e）**：`/v3` 是 Narrative V3 故事线的最小
+  试读面，**URL 直达、不进 dock、无任何主壳入口**（外审明令：双门通过
+  前不切主 UI；用户明令：现役 UI 不许删）——主壳的 index.html/app.js
+  对 /v3 零引用（钉在 tests/host/test_v3_8e_reader.py）。
 - **页题只念一遍**：spacehead 节名槽承担「我在哪」，节签承担「还能去哪」；
   页内 h2 取消，页首以引导句开场（8.2.9）。
 - 「为什么」的归处：读数与原委归 温故 · 档案 的 why_not 面与原始读数；
@@ -1214,6 +1229,38 @@ textarea；常驻税 163→104px 级）；**点触发条/寄出链 = 升起 `.do
   拉取，档案节现役语义迁入）。
 - 组件：#21、#9、#14（屏级三态）、#16（筛框备用）。
 - 零开闸面：读面 = 现役 observations 端点；无新端点、无写面。
+
+---
+
+#### 8.2.13 试读面（V3-8e 新增——独立新页，非主壳屏）
+
+Narrative V3 故事线（Gold Scenario）的最小试读面——「好玩」亲验的前置
+运行面（外审明令：双门通过前不切主 UI；用户明令：现役 web 内新增试读
+面、原本 UI 不许删）。它是**独立文档**（reader.html/css/js 三新文件、
+静态白名单只增三条），不经主壳、不改主壳一个字节。
+
+- 路由（只增不改，见 `elc/web.py` 的 V3-8e 分支）：`GET /v3` 发页面；
+  `GET /api/v3/state` **脱队读**（`narrative_state_ro` 自开 mode=ro
+  短连接——驱动占工作队列整轮模型往返时，轮询仍秒答且绝不 500，与
+  `/api/teaching/current` 同一例外姿态）；`POST
+  /api/v3/start|continue|submit|settle|next_chapter|ack`（handler 只做
+  fail-closed 语法 400，服务面全在 `elc/narrative_web.py`；一次驱动 =
+  一段/一步，位置全自 durable 行推导——重开页面从故事当下续跑）。
+- 组件：**零新增组件**——复用 #1 link-btn（开始/继续/结束本场/结束本章/
+  下一章/提交/选项）、#2 pen（自由输入）、#3 note-paper（门的卡）、
+  #4 letter 的 `.say`（段落正文排印）、#9 meter-row（计划/结算读数）、
+  #12 system-line（一行状态句）。库表 ③ 不加行（无新组件 ⇒ 无登记
+  义务；`test_fg1_architecture.py` 的 COMPONENTS 不动）。
+- 页级骨架 = `.reader-*`（reader.css 唯一定义处；不定义/不覆写组件类、
+  不造第二套滚动条语汇、只用文档流滚动）。
+- 状态完备性：五个驱动钮 + 提交钮各自 `[disabled]` 态（#1 的既有态面）
+  由 `state.controls` 驱动；空态/未配置/失败一律一行人话（`.sysline`），
+  不造骨架屏、不伪进度（驱动中一行「写作中…」+ 轮询刷新）。
+- 文案：中文界面；段落正文即模型原文（不译、不裁）；门卡选项 = 世界的
+  自然举动原文。
+- 诚实边界：页面只读这个世界自己的账（无诊断/无运营面）；story 只
+  属试读，产物与主 UI 的会话/教学设计面互不打扰（exposure 记录独立
+  落 `reader_exposure`）。
 
 ---
 

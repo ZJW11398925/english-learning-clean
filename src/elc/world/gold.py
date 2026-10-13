@@ -965,7 +965,17 @@ def _seed_persona_cards(conn: sqlite3.Connection, now: str) -> None:
     commit — the creation service opens its own ``BEGIN IMMEDIATE``, so
     this preamble must not leave a transaction open (the tests' own
     ``_insert_card`` posture). ``INSERT OR IGNORE``: a re-seed is a
-    no-op, never a rewrite."""
+    no-op, never a rewrite.
+
+    V3-8e: ``lore_refs`` is written as the canonical empty array document
+    (``json.dumps([])`` — the card store's ``_lore_document`` shape), not
+    the bare empty string: the reading face's host open reads the whole
+    card table (``CharacterCardPackages.__len__`` → ``list_all`` →
+    ``json.loads(lore_refs)``), so a gold card must be a decodable row
+    like any other — a process restart over a gold-seeded app.db opens
+    clean (the fix is this fixture's own; the V3 store-level suites never
+    open a host over these rows and are unaffected).
+    """
 
     for ordinal, card in enumerate(GOLD_PERSONA_CARDS, start=1):
         conn.execute(
@@ -974,7 +984,7 @@ def _seed_persona_cards(conn: sqlite3.Connection, now: str) -> None:
             " background, speech_style, \"values\", boundaries, opening,"
             " scenario, generation_policy, lore_refs, revision, status,"
             " is_builtin, created_at, updated_at"
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', 'auto', '', 1,"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', 'auto', '[]', 1,"
             " 'active', 1, ?, ?)",
             (f"gold-card-{ordinal}", *card, now, now),
         )

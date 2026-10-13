@@ -1,0 +1,88 @@
+/* reader.css —— V3 试读面（/v3）的屏级布局。
+   纪律：组件样式一律来自 components.css（本文件不定义、不覆写任何
+   组件类；命名只走 .reader-* 页级骨架）；声明值一律 var() 引
+   tokens.css；零内联样式之外的第二套滚动条语汇（本页只用文档流滚动，
+   不造新的容器内滚动面）。 */
+
+body.reader {
+  margin: 0 auto;
+  max-width: var(--measure);
+  padding: var(--sp-6) var(--sp-5) var(--sp-8);
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--t-body);
+}
+
+.reader-top { margin: 0 0 var(--sp-4); }
+.reader-title {
+  margin: 0 0 var(--sp-1);
+  font: var(--t-title);
+  letter-spacing: var(--ls-title);
+}
+.reader-sub {
+  margin: 0;
+  font: var(--t-ui);
+  color: var(--ink-faint);
+  letter-spacing: var(--ls-ui);
+}
+
+#reader-status { margin: 0 0 var(--sp-5); }
+
+.reader-flow { margin: 0 0 var(--sp-6); }
+
+.reader-passage { margin: 0 0 var(--sp-5); }
+.reader-meta {
+  margin: 0 0 var(--sp-1);
+  font: var(--t-ui);
+  color: var(--ink-faint);
+  letter-spacing: var(--ls-ui);
+}
+
+.reader-gate { margin: 0 0 var(--sp-6); }
+.reader-options {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-3);
+}
+.reader-free {
+  display: block;
+  margin: 0 0 var(--sp-2);
+  font: var(--t-ui);
+  color: var(--ink-soft);
+  letter-spacing: var(--ls-ui);
+}
+.reader-gate-actions {
+  margin: var(--sp-3) 0 0;
+  text-align: right;
+}
+
+.reader-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3) var(--sp-5);
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin: 0 0 var(--sp-6);
+}
+
+.reader-readout { margin: 0 0 var(--sp-6); }
+.reader-readout .kvgroup { margin: 0 0 var(--sp-4); }
+
+.reader-foot {
+  margin-top: var(--sp-7);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--rule-soft);
+}
+.reader-note {
+  margin: 0;
+  font: var(--t-note);
+  color: var(--ink-faint);
+}
+
+@media (max-width: 560px) {
+  body.reader { padding: var(--sp-5) var(--sp-4) var(--sp-7); }
+}

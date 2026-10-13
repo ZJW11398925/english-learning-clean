@@ -424,6 +424,13 @@ from elc.curriculum.readiness import READINESS_LEVELS
 from elc.deletion.controller import DeletionController
 from elc.deletion.types import DeletionRequest, DeletionScope
 from elc.host import Host
+from elc.narrative_web import (
+    NarrativeWebFace,
+    narrative_state_ro,
+    v3_ack_request,
+    v3_continue_request,
+    v3_submit_request,
+)
 from elc.persona.card_store import (
     CharacterCardRecord,
     SqliteCharacterCardStore,
@@ -748,6 +755,11 @@ _STATIC_TYPES: dict[str, str] = {
     "api.js": "text/javascript; charset=utf-8",
     "components.js": "text/javascript; charset=utf-8",
     "app.js": "text/javascript; charset=utf-8",
+    # V3-8e: the reading face's own page — a separate file set (the main
+    # UI's seven files are untouched; the allowlist grows, nothing else).
+    "reader.html": "text/html; charset=utf-8",
+    "reader.css": "text/css; charset=utf-8",
+    "reader.js": "text/javascript; charset=utf-8",
 }
 
 #: The favicon (v3-d 清扫, the v31R 登记「favicon 既有」): one inline SVG —
@@ -3330,6 +3342,22 @@ class _WebFace:
                     )
         except OSError:
             self._world_packages = {}
+        # V3-8e: the reading face's service half (the assembly-layer
+        # module next door) is built lazily on first use — a stub host in
+        # the existing suites carries neither the connection nor the
+        # world legs, so this constructor must not require what those
+        # hosts lack. Every route that touches it reaches it from the
+        # host's thread (the work queue), which is where it may be built.
+        self._narrative_face: NarrativeWebFace | None = None
+
+    @property
+    def narrative(self) -> NarrativeWebFace:
+        """The V3 reading face (V3-8e): the whole 试读面 contract lives
+        in :mod:`elc.narrative_web`; this face only reaches it."""
+
+        if self._narrative_face is None:
+            self._narrative_face = NarrativeWebFace(self._host)
+        return self._narrative_face
 
     def _require_cards(self) -> SqliteCharacterCardStore:
         """The card store, or the loud refusal (never a silent empty)."""
@@ -8906,6 +8934,21 @@ def _build_server(
                 # (active ∧ no resolved projection fact). Nothing is
                 # evaluated or retired here; same 404 guard.
                 self._run_host_write(lambda: face.world_storylines())
+            elif self.path == "/v3":
+                # V3-8e: the reading face's own page — a separate file
+                # set (the main UI's shell is untouched; the URL is the
+                # only entry). Served from the static allowlist like
+                # every other page file.
+                self._send_page_file("reader.html")
+            elif self.path == "/api/v3/state":
+                # V3-8e: the reading state — a pure read derived from the
+                # durable rows. Served **off the work queue** over its own
+                # short read-only connection (the /api/teaching/current
+                # posture): a drive holds the worker for a whole model
+                # round trip, and the poll must not queue behind it. A
+                # read that cannot answer says so in one sentence — never
+                # a 500 (the page's next tick retries).
+                self._send_json(200, narrative_state_ro(face.app_db_path))
             else:
                 self._send_json(404, {"error": "not found"})
 
@@ -9188,6 +9231,66 @@ def _build_server(
                     )
                     return
                 self._run_host_write(lambda: face.character_switch(asked))
+                return
+            if self.path == "/api/v3/start":
+                # V3-8e: the reading face's idempotent start (no body —
+                # the durable world itself is the request; a replay of
+                # either half is a zero-write no-op).
+                self._run_on_host_thread(face.narrative.start)
+                return
+            if self.path == "/api/v3/continue":
+                # V3-8e: drive the next step — one segment, or open the
+                # gate the story stops at. The grammar is fail-closed (an
+                # empty body or {"end_scene": <bool>}); the position is
+                # the durable walk's own.
+                cont_error, end_scene = v3_continue_request(
+                    self._read_json_body()
+                )
+                if cont_error is not None:
+                    self._send_json(400, {"error": cont_error})
+                    return
+                self._run_on_host_thread(
+                    lambda: face.narrative.advance(end_scene)
+                )
+                return
+            if self.path == "/api/v3/submit":
+                # V3-8e: the user's own submission at a gate (or the
+                # durable re-drive of one already stored — see
+                # elc.narrative_web). The grammar is fail-closed; a
+                # runtime refusal rides 200 inside the payload.
+                sub_error, submission = v3_submit_request(
+                    self._read_json_body()
+                )
+                if sub_error is not None or submission is None:
+                    self._send_json(400, {"error": sub_error})
+                    return
+                self._run_on_host_thread(
+                    lambda: face.narrative.submit(submission)
+                )
+                return
+            if self.path == "/api/v3/settle":
+                # V3-8e: end the chapter (no body — the durable rows are
+                # the request: the roster must be walked out first).
+                self._run_on_host_thread(face.narrative.settle)
+                return
+            if self.path == "/api/v3/next_chapter":
+                # V3-8e: plan the next chapter through the real Director
+                # provider (the latest chapter must be CLOSED).
+                self._run_on_host_thread(face.narrative.next_chapter)
+                return
+            if self.path == "/api/v3/ack":
+                # V3-8e: the render acknowledgement — the passage ids
+                # the page just rendered, recorded through the decoupled
+                # reader_exposure face (no actor memory, no belief).
+                ack_error, passage_ids = v3_ack_request(
+                    self._read_json_body()
+                )
+                if ack_error is not None or passage_ids is None:
+                    self._send_json(400, {"error": ack_error})
+                    return
+                self._run_on_host_thread(
+                    lambda: face.narrative.ack(passage_ids)
+                )
                 return
             if self.path not in (
                 "/api/turn",

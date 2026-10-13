@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>试读 · V3 故事线</title>
+<!-- V3-8e 试读面（/v3）：独立于主 UI 的新页面。样式一律复用
+     tokens.css + components.css（组件唯一样式源），本页只在 reader.css
+     登记 .reader-* 屏级骨架；零外链、零内联样式、零内联脚本。 -->
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/components.css">
+<link rel="stylesheet" href="/static/reader.css">
+<script type="module" src="/static/reader.js"></script>
+</head>
+<body class="reader">
+
+<header class="reader-top">
+  <h1 class="reader-title">试读 · V3 故事线</h1>
+  <p class="reader-sub" id="reader-world">正在读取状态…</p>
+</header>
+
+<p class="sysline" id="reader-status">正在读取状态…</p>
+
+<main id="reader-flow" class="reader-flow" aria-live="polite"></main>
+
+<section id="reader-gate" class="reader-gate" hidden>
+  <div class="note-paper">
+    <p class="note-head" id="reader-gate-head">故事在这里停住，等你</p>
+    <div id="reader-options" class="reader-options"></div>
+    <label class="reader-free" for="reader-intent">
+      或者，用你角色的口吻写下你要说的话：
+    </label>
+    <textarea id="reader-intent" class="pen" rows="3"
+      placeholder="自由输入（英文或中文皆可）"></textarea>
+    <p class="reader-gate-actions">
+      <button id="reader-submit" class="btn btn--send" type="button">提交</button>
+    </p>
+  </div>
+</section>
+
+<section class="reader-controls" aria-label="驱动">
+  <button id="reader-start" class="btn btn--ink" type="button">开始</button>
+  <button id="reader-continue" class="btn btn--ink" type="button">继续</button>
+  <button id="reader-end-scene" class="btn btn--faint" type="button">结束本场</button>
+  <button id="reader-settle" class="btn btn--faint" type="button">结束本章</button>
+  <button id="reader-next" class="btn btn--faint" type="button">下一章</button>
+</section>
+
+<section class="reader-readout">
+  <div class="kvgroup" id="reader-plan"></div>
+  <div class="kvgroup" id="reader-settlement"></div>
+</section>
+
+<footer class="reader-foot">
+  <p class="reader-note">
+    这一页是新故事线（Narrative V3）的最小试读面：每一段由真实模型写下，
+    裁定由世界规则给出；故事停在「用户意志点」等你开口。主界面不受影响，
+    这里只读这个世界自己的账。
+  </p>
+</footer>
+
+</body>
+</html>
