@@ -196,8 +196,11 @@ S3_SEGMENT_1_TICKS = 30
 
 #: The private context each AI actor's ``world_actor_profile`` carries.
 #: ``MOTHER_PRIVATE`` is the POV-safe contrast witness: it rides the
-#: world-authoritative faces (the Director's and the Resolver's prompts)
-#: and never a POV-limited one (the Writer's).
+#: world-authoritative Director's prompts (the full cast reading) and
+#: never a POV-limited one (the Writer's). The Resolver's counterpart
+#: arm carries only the ruling scene's participants minus the player,
+#: and Mother is no scene's participant — so in this fixture the
+#: Resolver's prompts do not carry it either.
 LIA_PRIVATE = (
     "LIA_PRIVATE: she noticed the folded paper at Mother's sleeve before"
     " anyone else did."
@@ -708,10 +711,11 @@ LEAK_SAMPLE = (
 
 #: The Writer arm's script, keyed by the scene's ``(place,
 #: segment_seq)`` pair — the two faces the prompt carries. Scene 1's
-#: post-gate continuation takes the ``(gate, 2)`` entry: in the full
-#: drive that key is the planned second segment, in the crash-resume
-#: window it is the continuation passage — the same place, the same
-#: segment ordinal, the same honest prose either way.
+#: post-gate continuation takes the ``(gate, 3)`` entry in both windows:
+#: the full drive writes segments 1–2, the gate, then the continuation
+#: as segment 3; the crash-resume window derives the continuation's
+#: ordinal from the committed rows (``max + 1`` = 3) — the same place,
+#: the same segment ordinal, the same honest prose either way.
 GOLD_PROSE: dict[tuple[str, int], str] = {
     (PLACE_GATE, 1): S1_PROSE_1,
     (PLACE_GATE, 2): S1_PROSE_2,
