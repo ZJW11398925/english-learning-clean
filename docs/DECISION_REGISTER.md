@@ -534,3 +534,25 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 7. **盖章与收口**：VR `VR-OPI-c0f4d9b4-…28`（PASS，盖于 `feab75d`）；design_sync REBUILD+CHECK = SYNCED（834 对象/rev 837）；收口 DEC `…30`（rev 838）。**下一动 = 开 V3-8h（核心循环补完：停点律 + 章间作者层——用户亲验新反馈两条，引据范式篇 §1.1/§2.5/附录 A）**。
 
 授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\elc-scratch\v38g\review\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交 `feab75d`，本条目为处置留痕。
+
+### v1.7.14 — 2026-10-14 V3-8h 开工裁决（核心循环补完：停点律 + 章间作者层；授权：用户亲验反馈两条）
+
+**结论**：用户亲验两条（原话：「模型运行一次，会在没有任何剧情需求点停下……用户无需做任何选择」「用户根本无法决定章节走向」）均为范式篇 §1.1 核心循环的已写条款、此前只落骨架——本刀补齐实现口径。**合同增量（总控亲写，提交 `307d835`）**：范式篇 §10.5「阅读面核心循环落法」（停点律：一次驱动跑到下一真停点——User Gate／章内计划尽／段数上限〔有故之停+说明句〕；段场自动续写；提交同律；不跨章。章间作者层：方向输入两式作软期望注入 Director 初始计划、措辞律、不写正史）+ IP §20 镜像句。**首执行者（executor-pro）被用户停止**（约 5 分钟，遗 `narrative_web.py` 半成品 99+/12−）——总控裁「拒收重交」、留档 `D:\elc-scratch\v38h\rejected-partial.diff`、树恢复净；第四十五会话（新总控）按任务书要点重派 executor-pro 执行完毕。总控亲读 diff 复核两面合同点（拒收件方向合规仅参考、未照搬信任）。
+
+授权：用户 2026-10-13 亲验反馈；DMCP 开工裁决 `DEC-OPI-c0f4d9b4-0f97-4507-9fa9-6f27152964d7.32`（rev 839）；三件 = TASK `…34`（rev 840）/ VAL `…36`（rev 841；criterion=pytest_failures==0）。
+
+### v1.7.15 — 2026-10-14 V3-8h 独立评审处置与收口 + 产品三级阶梯/三仓战略（ACCEPT-WITH-FINDINGS 无阻断；F1–F5 全登记；授权：评审结论转呈 + 用户产品裁定）
+
+**结论**：交付 `860ab31`（实现+钉，14 文件 +1698/−236）+ `7d0c658`（台账随迁，2 文件）。面 A 停点律：`narrative_web` 的 advance/submit 改经 `_press_on` 驱动循环——三真停点（User Gate 开／章内计划尽〔停在「结束本章」前〕／`V3_DRIVE_SEGMENT_CEILING`=12 上限〔有故之停：`_ceiling_sentence` 入 did.note 与 app_setting `v3_drive_note`、state.note 随轮询可见；每驱动入口先清旧注〕）；段场自动续写、不跨章、每步仍走同一既有单步路径（**无第二条写路径**）、单步失败停在原地（已落段不丢不重写、失败句带落段计数、零落段保旧拒句字节）；`web.py` 等待 600→1800（循环算术）。面 B 章间作者层：`next_chapter` 可选 `{direction}`（空体/空对象=旧义逐字等义、非法 400 人话）→ `Pipeline.plan_chapter(author_direction=…)` keyword-only → `DirectorPlanContext.author_direction` 新字段 → 初始计划 prompt 软期望段 `_AUTHOR_DIRECTION_SENTENCE`（en/zh 措辞律逐字；replan 臂永不携；无方向 prompt 逐字节不变；零正史写入、零迁移）。页面：状态行 note 优先、章间方向输入框（复用 #16 field、留空不带 body、成功清空）。
+
+1. **四门（总控亲跑 + 评审员独立，双路）**：pytest **6314/0/0**（EXIT=0）/ ruff / mypy 205 / compileall / drift **22**（21→22：新 v3_8h 族 + 600→1800 一致性随迁）。
+2. **真实驱动验证**（`D:\elc-scratch\v38h\smoke.log`，真实 deepseek、用户 8760/app.db 零触碰）：①continue 41.8s 两段到门（stopped_on=gate）；②submit 515.1s 四段到计划尽（plan_exhausted）；③direction「让莉亚主动追查信件」45.8s 后 ch2 计划明确朝「查封存信不开封」压（软期望可见、默认路径无方向混入）；零 500 / 零 ok:false；单驱动最长 515s ≪ 1800s——未触发开工 revisit 条件。
+3. **独立评审（executor-pro 新上下文只读）ACCEPT-WITH-FINDINGS**：F1 无方向 prompt 等义钉为结构性等义（diff 亲核兜底；golden 字面钉后刀可选）；F2 `_press_on` 的 `_current_scene is None` 防御分支答面少报落段（现形不可达；下次触 narrative_web 的刀顺手改带收获报告形——**二级表达面刀优先**）；F3 state note docstring 收窄（同 F2 时机）；F4 上限计数只在段写后检查的边界记录；F5 direction 带空白透传无害。评审自加 **R1（上限臂拔除）/R2（已落段重写）变异均由绿转红**（齿独立证成）；旧钉随迁（8e/8f/8g）判**零放松**（多处强化）；执行者观察「resolver 裁 replan_scope 非 CHAPTER ⇒ plan_revision 留 1」定性为 **Resolver 正典自由裁量非缺陷**。
+4. **处置**：F1–F5 全登记（零代码改动）。
+5. **纪律与形态留痕**：执行者一次 `python - <<EOF` 只读内联探针（零文件写入、自报）——按 V3-8g F7 先例至多训诫级；**VR 形态教训（新防坑）**：criterion 引擎按 metric 名在 measurements 配对——本刀首两投 VR `…5`/`…7` INCONCLUSIVE 系名不匹配（报 `pytest_failed_or_skipped`、判据认 `pytest_failures`），携精确名三投 `…9` = PASS。
+6. **盖章与收口**：VR `VR-OPI-f55cd8c7-…9`（PASS，盖于 `7d0c658`）；收口 DEC `DEC-OPI-f55cd8c7-…11`（rev 842）；design_sync REBUILD+CHECK = **SYNCED**（840 对象/rev 843）。
+7. **产品战略 DEC `DEC-OPI-f55cd8c7-…13`（rev 843）**：**三级阶梯 1→2→3 + 三新仓严格顺序裁定**——1 代入式小说创作应用（现 V3 引擎+阅读面，本仓收尾）、2 基于 1 底座「创作想法用英语表达」可学英语应用、3 基于英语学习应用「按用户需求/水平/表达思维发展世界」；每级可独立发布、异名、异前端；引擎随迁不重写；先收 V3-8h 再切仓（用户裁定原话要点：写代码花钱花时间、肯定不能从头开始写）。
+8. **D 盘清根（防坑㊵）**：`D:\elc-scratch\v38h\` 保留五件证据（smoke.log / smoke_drive.py / mutation-log.txt / pytest-master.log / rejected-partial.diff），评审 `rev\` 已删，D:\ 根零新落物。
+9. **下一动 = 用户重启 8760（Ctrl+C 旧进程 → `python -m elc web --app-db ./app.db`）世界级亲验**（停点律一次驱动到真停点 + 章间方向输入；双门之二——亦为切仓前最后验证）；亲验过后：一级发布就绪差距审计 → 终末交接块（阶梯裁定+资产清单）→ 议切一级产品新仓。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\elc-scratch\v38h\rev\` 已清，2026-10-14）+ 用户产品裁定（2026-10-13/14 对话）；本条目为收口留痕。
