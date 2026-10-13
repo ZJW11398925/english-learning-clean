@@ -418,3 +418,17 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 7. **范围与登记**：**零迁移**（不新增表）；真实网络调用/凭证读取**不在本刀**（缝上适配归 V3-8e）；**最小阅读面/结构验收 12 条/用户「好玩」亲验归 V3-8d/e**；多世界 UI / 多主角不动（MVP 规模纪律）。**禁改面**：`behavioral_baselines/**` 一字节不动；sealed `0029–0037` 不改；`v3_cognition_view`/`v3_memory_view` 行为不破（各钉族全绿）；`reader_exposure` 写面语义不动；legacy V2 链与现役 UI（`src/elc/web.py` 既有路由、`src/elc/webui/**`）不动；`src/elc/persona/**` 既有面不改（本刀根本不 import 它）；`host.py` legacy C1 不动；零新依赖（stdlib only；`pyproject.toml` 不动）。**门**：pytest（自 6206 起）/ruff/mypy（202→203 files）/compileall 亲跑全绿；新钉族 `tests/world/test_v3_8c_*.py` + 受影响 8a/8b 两族随迁。**双门纪律不变**：结构验收 12 条全绿 + 用户亲验「好玩」两者同时通过前，不切主 UI、不退役 Legacy V2（外审明令）。
 
 授权：V3-8b 收口 `DEC-OPI-06b954e0-…24`（rev 817）「下一动 = V3-8 本体」+ 用户明示（本机已配 OpenAI 兼容凭证、直接接线；「好玩」亲验以真实 LLM 跑 Gold Scenario 收官）；DMCP 开工裁决 `DEC-OPI-cddb517c-dafb-4a64-a99e-0a691394156e.5`（rev 818）；三件 = TASK `…7`（rev 819）/ VAL `…9`（rev 820）。
+
+### v1.7.5 — 2026-10-13 V3-8c 独立评审处置（ACCEPT-WITH-FINDINGS 无 HIGH/MEDIUM 阻断；F1/F2/F3 升格本刀修；授权：评审结论转呈）
+
+**结论**：V3-8c **维持推进**（不重开）；真实 LLM 接线的四实现 / POV-safe 装配 / 严格解析 / 失败姿态与 F4 四处逐项在码在册；**点名变异全红**（执行者 M1–M4 评审抽验一致 + 评审自加 V1–V6 相邻面变异全按预期红且零溢出）；POV-safe 硬门（prompt 级端到端）与解析拒绝族经独立 AST/探针复核；禁改面零触碰；零迁移；副本四族 88/0 + collect 6226 + 静态三门绿。F1/F2/F3（LOW/INFO）**升格本刀修**（总控亲写，提交 `b63fcbb`）；F4 口径确认（不改码）；F5 INFO 登记。
+
+1. **F1（LOW，修——防坑㉘ 散文扫尾补全）**：`writer.py`「provider Writer 硬门」段的「this docstring is its in-repo record **until that cut lands**」随 V3-8c 落地已成假句 ⇒ 改为「POV-safe compilation **landed in V3-8c**」（compiled by `pov_context_of`〔V3-8a〕+ rendered by `llm_providers`〔V3-8c〕；「好玩」仍待装配面接线与 Gold Scenario 双门）；`pipeline.py` 三处同族陈旧句（`SegmentBeat`「the LLM planner's seat in a later wiring」／`Pipeline` 类 docstring「the LLM resolver judging its own duration is the later wiring」／`_drive_continuation`「the planner's seat in the LLM wiring」）统一为「LLM faces landed in V3-8c；该席位分配是 later, explicit cut」口径。**`settlement.py:1206`「registered later cuts」复核判仍真**（LLM summary 未落）——不改，入窗口回归册后刀扫尾。
+2. **F2（LOW，修）**：`llm_providers.py` 删两个死常量 `_BLUEPRINT_SCENE_TEXT_KEYS`／`_BLUEPRINT_TEXT_KEYS`（评审 AST 扫描 `loads=[]` 实证零引用；删除零行为改动；`_parse_blueprint` 手工逐键展开不变）。
+3. **F3（INFO，修）**：`_clean` docstring 补「闭合围栏可缺省」档（实现本已容忍 open-only 围栏，宽容方向安全——文档与实现对齐）。
+4. **F4（LOW，口径确认，不改码）**：DMCP 开工裁决 `DEC-OPI-cddb517c-…5`／TASK `…7` 原文的「失败值语义／不 raise」指**缝**（`TextCompletion`）与解析的判定形态；`ResolverContext` 等冻结 Protocol 面无 Result 通道 ⇒ 四实现类的**运行时失败以 `LlmProviderError` 异常外逸承载**（与 fake 的 `ValueError` 程序错误姿态分族；模块 docstring 成文；REGISTER v1.7.4 第 4 点已登记）。收口 DEC 同载——**口径确认留痕，不 amend 纪律⑱**。
+5. **F5（INFO，登记）**：`llm_providers.py` AST 纪律钉（零 SQL/事务/时钟）为 attr 词表扫——P4-2 先例（取方法值绕过）可绕，**维护须知 = 结构性论据优先**（构造面不收 conn／运行时 import 面仅两值形状／`import elc.world` 不加载该模块——评审三证在案）；入窗口回归册。
+6. **遗留登记**：persona BYOK egress → `TextCompletion` 适配器归 **V3-8e**（本刀零网络/零凭证）；缝的 streaming 扩展点（`complete_streaming`）后刀按需显式重开；解析宽容度边界（多行围栏内嵌文本/前置说明文本拒；多余键忽略并丢弃）成文并钉。
+7. **处置后四门完整重跑（防坑㉞）**：pytest 6226/0/0（分段合计核验）、ruff clean、mypy 203 files clean、compileall clean、drift 19/19。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v38c_review\`／`D:\v38c_mut_r\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交 `b63fcbb`，本条目为处置留痕。
