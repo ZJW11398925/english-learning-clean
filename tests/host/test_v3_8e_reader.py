@@ -19,10 +19,12 @@ Pinned here:
    values never raises, the prompt and the key never carried back, the
    unconfigured and non-OpenAI faces answering honest codes;
 2. the routes (2b) — ``start`` (idempotent, zero-write replay), the
-   durable ``state``, ``continue`` (one segment per call, the gate opened
+   durable ``state``, ``continue`` (V3-8h: one call drives to the next
+   real stop — the segments and scenes auto-continue, the gate opened
    at its beat), ``submit`` (the user's own free input → the ruling →
    the continuation with its ``outcome_ref`` → the gate CLOSED → the
-   auto-routed CHAPTER replan), ``settle``, ``next_chapter`` and ``ack``
+   auto-routed CHAPTER replan — and the same call presses on through
+   the remaining scenes), ``settle``, ``next_chapter`` and ``ack``
    (``reader_exposure`` rows and nothing else);
 3. the durable-position law — a restart over the same app.db continues
    exactly where the story stands, and a crashed ruling is finished from
@@ -52,6 +54,8 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator, Mapping
+
+import pytest
 
 from elc.host import open_host
 from elc.narrative_web import (
@@ -413,17 +417,18 @@ def test_the_egress_adapter_never_carries_the_prompt_or_the_key() -> None:
 
 
 def _to_the_gate(stack: _V3Stack) -> None:
-    """start → two segments → the gate opened (the shared approach every
+    """start → one drive to the gate (the loop law: the two scripted
+    segments auto-continue, the gate opens — the shared approach every
     route test below uses)."""
 
     started = stack.start()
     assert started["ok"] is True, started["error"]
-    for _ in range(2):
-        driven = stack.advance()[1]
-        assert driven["ok"] is True, driven["error"]
-    opened = stack.advance()[1]
-    assert opened["ok"] is True, opened["error"]
-    assert opened["did"]["kind"] == "gate_open"
+    driven = stack.advance()[1]
+    assert driven["ok"] is True, driven["error"]
+    assert driven["did"]["stopped_on"] == "gate"
+    state = stack.state()
+    assert len(state["passages"]) == 2
+    assert state["controls"]["can_submit"] is True
 
 
 def test_start_is_idempotent_and_the_state_carries_the_durable_faces(
@@ -487,12 +492,15 @@ def test_start_is_idempotent_and_the_state_carries_the_durable_faces(
         assert len(stack.post.prompts("director")) == 1
 
 
-def test_continue_writes_one_segment_per_call_and_opens_the_gate(
+def test_continue_drives_to_the_next_real_stop_and_opens_the_gate(
     tmp_path: Path,
 ) -> None:
-    """One continue = one segment (the position from ``segment_commit``);
-    reaching the gate beat opens the durable gate and stops there — the
-    OPEN row is the story's stop, the options are the author's."""
+    """One continue presses on to the next real stop (V3-8h, the drive
+    loop): the scene's two scripted segments auto-continue (SEGMENT
+    COMMIT is not a stop) and the gate beat opens the durable gate and
+    stops there — the OPEN row is the story's stop, the options are the
+    author's. The answer's ``did`` reports the whole harvest and the
+    stop."""
 
     app_db = tmp_path / "app.db"
     with v3_stack(app_db) as stack:
@@ -500,31 +508,30 @@ def test_continue_writes_one_segment_per_call_and_opens_the_gate(
         assert started["world"]["current_tick"] == 0
 
         first = stack.advance()[1]
+        assert first["ok"] is True, first["error"]
         assert first["did"] == {
-            "kind": "segment",
+            "kind": "drive",
+            "stopped_on": "gate",
+            "note": None,
             "scene_id": gold.S1,
-            "passage_ids": [f"{gold.S1}-p0001"],
+            "gate_id": gold.GATE,
+            "closed_gates": [],
+            "segments_written": 2,
+            "passage_ids": [
+                f"{gold.S1}-p0001",
+                f"{gold.S1}-p0002",
+            ],
         }
         assert [row["passage_id"] for row in first["passages"]] == [
-            f"{gold.S1}-p0001"
-        ]
-        assert first["world"]["current_tick"] == 300
-        assert first["scene"]["status"] == "ACTIVE"
-        assert first["scene"]["pov_actor_id"] == gold.LIA
-
-        second = stack.advance()[1]
-        assert [row["passage_id"] for row in second["passages"]] == [
             f"{gold.S1}-p0001",
             f"{gold.S1}-p0002",
         ]
-        assert second["world"]["current_tick"] == 540
-        assert second["next"]["kind"] == "gate"
+        assert first["world"]["current_tick"] == 540
+        assert first["scene"]["status"] == "ACTIVE"
+        assert first["scene"]["pov_actor_id"] == gold.LIA
+        assert first["next"]["kind"] == "gate"
 
-        opened = stack.advance()[1]
-        assert opened["did"] == {
-            "kind": "gate_open",
-            "gate_id": gold.GATE,
-        }
+        opened = stack.state()
         connection = sqlite3.connect(app_db)
         try:
             gate_row = get_gate(connection, gold.GATE)
@@ -545,9 +552,9 @@ def test_continue_writes_one_segment_per_call_and_opens_the_gate(
             }
         ]
         assert opened["controls"]["can_submit"] is True
-        # the gate open is not a segment: the passage count stands.
-        assert len(opened["passages"]) == 2
-        # one real writing per segment — never a re-generation.
+        # one real writing per fresh segment — never a re-generation
+        # (the loop's second step re-presented the first segment and
+        # the replay provider answered it from canon).
         assert len(stack.post.prompts("writer")) == 2
 
 
@@ -557,11 +564,14 @@ def test_submit_lands_the_free_input_the_ruling_and_the_continuation(
     """The user's own free input goes in; the ruling lands (NCP-2), the
     continuation passage carries its ``outcome_ref``, the gate closes,
     and the CHAPTER verdict auto-routes the replan (revision 2, the
-    discarded scene gone from the roster)."""
+    discarded scene gone from the roster) — and the same call presses
+    on (V3-8h): the re-planned scenes auto-continue to the chapter's
+    plan exhaustion, the next real stop."""
 
     app_db = tmp_path / "app.db"
     with v3_stack(app_db) as stack:
         _to_the_gate(stack)
+        writer_before = len(stack.post.prompts("writer"))
         status, payload = stack.submit(
             {
                 "submission_id": WEB_SUBMISSION_ID,
@@ -570,9 +580,19 @@ def test_submit_lands_the_free_input_the_ruling_and_the_continuation(
         )
         assert status == 200
         assert payload["ok"] is True, payload["error"]
+        assert payload["did"]["kind"] == "submit"
+        assert payload["did"]["stopped_on"] == "plan_exhausted"
         assert payload["did"]["gate_id"] == gold.GATE
         assert payload["did"]["closed_gates"] == [gold.GATE]
-        assert payload["did"]["passage_ids"] == [f"{gold.S1}-p0003"]
+        # the continuation, then the re-planned scenes walked out: S2
+        # (two segments) and S3 (one) — four fresh passages in all.
+        assert payload["did"]["passage_ids"] == [
+            f"{gold.S1}-p0003",
+            f"{gold.S2}-p0001",
+            f"{gold.S2}-p0002",
+            f"{gold.S3}-p0001",
+        ]
+        assert payload["did"]["segments_written"] == 4
         assert payload["gates"] == []
 
         connection = sqlite3.connect(app_db)
@@ -596,8 +616,9 @@ def test_submit_lands_the_free_input_the_ruling_and_the_continuation(
             "SELECT status FROM user_gate WHERE gate_id = ?",
             (gold.GATE,),
         ) == ("CLOSED",)
-        # the CHAPTER replan landed as revision 2; the discarded scene is
-        # gone from the roster and from the adopted plan.
+        # the CHAPTER replan landed as revision 2; the re-planned scenes
+        # were walked out by the same call — the plan is exhausted, the
+        # settlement is the reader's own next act.
         assert payload["plan"]["plan_revision"] == 2
         assert _read(
             app_db,
@@ -605,13 +626,17 @@ def test_submit_lands_the_free_input_the_ruling_and_the_continuation(
             " chapter_id = ? AND status = 'ADOPTED'",
             (gold.CH1,),
         ) == (gold.PLAN_R2,)
-        assert [row["scene_id"] for row in payload["roster"]] == [
-            gold.S2,
-            gold.S3,
-        ]
-        assert payload["scene"]["scene_id"] == gold.S2
-        # exactly one ruling was made (the resolver was asked once).
+        assert payload["roster"] == []
+        assert payload["scene"] is None
+        assert payload["controls"]["can_settle"] is True
+        assert payload["next"]["kind"] == "settle"
+        # exactly one ruling was made (the resolver was asked once) and
+        # one real writing per fresh segment (four — the approach drive's
+        # two are not this call's).
         assert len(stack.post.prompts("resolver")) == 1
+        assert (
+            len(stack.post.prompts("writer")) - writer_before == 4
+        )
 
         # a second submit has nothing to drive — an honest sentence.
         again = stack.submit({})
@@ -622,10 +647,10 @@ def test_submit_lands_the_free_input_the_ruling_and_the_continuation(
 def test_settle_and_next_chapter_close_and_reopen_the_story(
     tmp_path: Path,
 ) -> None:
-    """The re-planned scenes are walked out (one segment per call), the
-    chapter settles (``ACTIVE → SETTLING → CLOSED`` + NCP-4), and the
-    next chapter is planned through the real Director provider — its
-    scenes are fresh (not the fixture's anchors)."""
+    """The re-planned scenes were walked out by the submit drive itself
+    (the loop law), the chapter settles (``ACTIVE → SETTLING → CLOSED``
+    + NCP-4), and the next chapter is planned through the real Director
+    provider — its scenes are fresh (not the fixture's anchors)."""
 
     app_db = tmp_path / "app.db"
     with v3_stack(app_db) as stack:
@@ -637,14 +662,15 @@ def test_settle_and_next_chapter_close_and_reopen_the_story(
             }
         )[1]
         assert landed["ok"] is True, landed["error"]
-        # S2 (two segments) and S3 (one) — three more continues.
-        for expected in (4, 5, 6):
-            driven = stack.advance()[1]
-            assert driven["ok"] is True, driven["error"]
-            assert len(driven["passages"]) == expected
+        assert landed["did"]["stopped_on"] == "plan_exhausted"
         walked = stack.state()
         assert walked["controls"]["can_settle"] is True
         assert walked["next"]["kind"] == "settle"
+        # nothing is left to drive — a bare continue is the honest
+        # refusal it always was at this position.
+        refused = stack.advance()[1]
+        assert refused["ok"] is False
+        assert "结束本章" in refused["error"]
 
         settled = _post_empty(stack.port, "/api/v3/settle")[1]
         assert settled["ok"] is True, settled["error"]
@@ -687,19 +713,28 @@ def test_settle_and_next_chapter_close_and_reopen_the_story(
 
 
 def test_the_open_scene_default_policy_drives_and_closes(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The **non-anchor** arm (a scene a real replan created — chapter
-    two's own): one continue = one segment (the face's default: one tick,
+    two's own): one step = one segment (the face's default: one tick,
     language ``en``), and the reader's 「结束本场」 drives the closing
     segment with ``is_last_segment=True`` — the two defaults the module
-    docstring states once. The screenplay is extended the fixture's own
-    documented way (its writer arm keys on ``(place, segment_seq)``)."""
+    docstring states once. Under the drive loop (V3-8h) the ceiling is
+    the open scene's only organic stop (no script ever closes it), so
+    this pin rides a patched-down ceiling: the plain drive stops at it
+    with the reasoned sentence, the closing flag is spent by the loop's
+    first segment, and the drive presses on into the next scene. The
+    screenplay is extended the fixture's own documented way (its writer
+    arm keys on ``(place, segment_seq)``)."""
+
+    import elc.narrative_web as narrative_web_module
 
     def _script() -> gold.GoldScriptedCompletion:
         prose = dict(gold.GOLD_PROSE)
         prose[(gold.PLACE_CH2_YARD, 1)] = "The yard is cold; the cart waits."
         prose[(gold.PLACE_CH2_YARD, 2)] = "The pack goes up; the gate shuts."
+        prose[(gold.PLACE_CH2_YARD, 3)] = "The cart rolls out at dawn."
+        prose[(gold.PLACE_CH2_ROAD, 1)] = "The road climbs above the town."
         return gold.GoldScriptedCompletion(
             prose=prose,
             adjudications={gold.GOLD_INTENT: gold.GOLD_ADJUDICATION_PAYLOAD},
@@ -713,19 +748,24 @@ def test_the_open_scene_default_policy_drives_and_closes(
             elements={},
         )
 
+    monkeypatch.setattr(narrative_web_module, "V3_DRIVE_SEGMENT_CEILING", 2)
     app_db = tmp_path / "app.db"
     with v3_stack(app_db, post=_GoldPost(script=_script())) as stack:
         assert stack.start()["ok"] is True
-        for _ in range(3):
-            assert stack.advance()[1]["ok"] is True
-        assert stack.submit(
+        assert stack.advance()[1]["ok"] is True
+        landed = stack.submit(
             {
                 "submission_id": WEB_SUBMISSION_ID,
                 "intent_text": gold.GOLD_INTENT,
             }
-        )[1]["ok"] is True
-        for _ in range(3):
-            assert stack.advance()[1]["ok"] is True
+        )[1]
+        assert landed["ok"] is True, landed["error"]
+        # the patched ceiling stops the submit drive mid-chapter (the
+        # continuation + S2's first segment); one more drive walks the
+        # chapter's plan out to its exhaustion.
+        assert landed["did"]["stopped_on"] == "ceiling"
+        walked = stack.advance()[1]
+        assert walked["ok"] is True, walked["error"]
         assert _post_empty(stack.port, "/api/v3/settle")[1]["ok"] is True
         assert _post_empty(stack.port, "/api/v3/next_chapter")[1]["ok"] is True
         # chapter two: the plan's two scenes are fresh anchors (open).
@@ -735,37 +775,52 @@ def test_the_open_scene_default_policy_drives_and_closes(
         assert all(row["anchored"] is False for row in opened["roster"])
         first_scene = opened["roster"][0]["scene_id"]
         tick_before = opened["world"]["current_tick"]
-        # the open-scene default: one segment, one tick.
+        # the open-scene default: one tick per segment; the ceiling is
+        # this drive's reasoned stop and both faces carry its sentence.
         driven = stack.advance()[1]
         assert driven["ok"] is True, driven["error"]
-        assert driven["did"]["passage_ids"] == [f"{first_scene}-p0001"]
+        assert driven["did"]["stopped_on"] == "ceiling"
+        assert driven["did"]["segments_written"] == 2
+        assert driven["did"]["passage_ids"] == [
+            f"{first_scene}-p0001",
+            f"{first_scene}-p0002",
+        ]
+        assert "本次已连写 2 段" in driven["did"]["note"]
+        assert "点「继续」接上" in driven["did"]["note"]
+        assert driven["note"] == driven["did"]["note"]
         assert driven["scene"]["status"] == "ACTIVE"
         assert driven["scene"]["place"] == gold.PLACE_CH2_YARD
-        assert driven["world"]["current_tick"] == tick_before + 1
+        assert driven["world"]["current_tick"] == tick_before + 2
         assert driven["controls"]["can_end_scene"] is True
-        # 「结束本场」 closes it with the terminal segment.
+        # 「结束本场」 closes it with the terminal segment — and the
+        # same drive presses on into the chapter's second open scene
+        # (the SCENE COMMIT is not a stop; the ceiling is).
         closed = stack.advance(end_scene=True)[1]
         assert closed["ok"] is True, closed["error"]
-        assert closed["did"]["passage_ids"] == [f"{first_scene}-p0002"]
-        assert closed["world"]["current_tick"] == tick_before + 2
-        assert [row["scene_id"] for row in closed["roster"]] != []
-        assert closed["roster"][0]["scene_id"] != first_scene
+        assert closed["did"]["stopped_on"] == "ceiling"
+        assert closed["did"]["passage_ids"] == [
+            f"{first_scene}-p0003",
+            f"{opened['roster'][1]['scene_id']}-p0001",
+        ]
+        assert closed["world"]["current_tick"] == tick_before + 4
         assert _read(
             app_db,
             "SELECT is_last_segment FROM segment_commit WHERE scene_id = ?"
-            " AND segment_seq = 2",
+            " AND segment_seq = 3",
             (first_scene,),
         ) == (1,)
         # one real writing per fresh segment — the replayed prefix never
-        # re-generates (both yard passages were fresh).
+        # re-generates (every yard passage was fresh; the replayed two
+        # rode the rows on the closing drive).
         yard = [
             prompt
             for prompt in stack.post.prompts("writer")
             if f"- place: {gold.PLACE_CH2_YARD}" in prompt
         ]
-        assert len(yard) == 2
+        assert len(yard) == 3
         assert "- segment_seq: 1" in yard[0]
         assert "- segment_seq: 2" in yard[1]
+        assert "- segment_seq: 3" in yard[2]
 
 
 def test_ack_records_exposure_only(tmp_path: Path) -> None:
@@ -796,7 +851,7 @@ def test_ack_records_exposure_only(tmp_path: Path) -> None:
             "missed": [],
         }
         assert _count(app_db, "reader_exposure") == (
-            before["reader_exposure"] + 1
+            before["reader_exposure"] + len(ids)
         )
         assert _read(
             app_db,
@@ -806,7 +861,7 @@ def test_ack_records_exposure_only(tmp_path: Path) -> None:
         # the replay is the first-wins no-op.
         stack.ack(ids)
         assert _count(app_db, "reader_exposure") == (
-            before["reader_exposure"] + 1
+            before["reader_exposure"] + len(ids)
         )
         # nothing else moved — the record face is decoupled.
         for table in ("actor_memory", "narrative_passage", "segment_commit"):
@@ -826,14 +881,19 @@ def test_ack_records_exposure_only(tmp_path: Path) -> None:
 def test_the_position_survives_a_restart(tmp_path: Path) -> None:
     """Two segments in, the process stops; a fresh stack over the same
     app.db reads the same position from the rows and continues exactly
-    where the story stood — no in-process state anywhere."""
+    where the story stood — no in-process state anywhere. The resumed
+    gate's submit re-presents the whole prefix (the script law): the
+    replay providers answer the committed segments from canon, so the
+    fresh writings are the continuation and the re-planned scenes
+    alone — the zero-regeneration teeth."""
 
     app_db = tmp_path / "app.db"
     with v3_stack(app_db) as first:
         first.start()
         first.advance()
-        second = first.advance()[1]
-        assert len(second["passages"]) == 2
+        state = first.state()
+        assert len(state["passages"]) == 2
+        assert state["next"]["kind"] == "gate"
     with v3_stack(app_db) as resumed:
         state = resumed.state()
         assert state["world"]["current_tick"] == 540
@@ -842,13 +902,16 @@ def test_the_position_survives_a_restart(tmp_path: Path) -> None:
             f"{gold.S1}-p0002",
         ]
         assert state["next"]["kind"] == "gate"
-        opened = resumed.advance()[1]
-        assert opened["did"]["kind"] == "gate_open"
+        # continue will not re-drive a gate that awaits the reader's own
+        # submission — it says so (the OPEN row is the durable stop).
+        refused = resumed.advance()[1]
+        assert refused["ok"] is False
+        assert "门开着等你" in refused["error"]
         # Submit so the drive re-presents the whole prefix (the script
         # law): the replay providers answer the committed segments from
-        # canon, so the model's single fresh writing is the continuation
-        # alone — the zero-regeneration teeth (a regenerating replay
-        # would show three writer prompts on this drive). The fixture's
+        # canon, so the model's single fresh S1 writing is the
+        # continuation alone — and the drive presses on through the
+        # re-planned scenes (three more fresh writings). The fixture's
         # own submission id keeps the CHAPTER replan's scripted key.
         status, landed = resumed.submit(
             {
@@ -858,7 +921,13 @@ def test_the_position_survives_a_restart(tmp_path: Path) -> None:
         )
         assert status == 200
         assert landed["ok"] is True, landed.get("error")
-        assert len(resumed.post.prompts("writer")) == 1
+        gate_place = [
+            prompt
+            for prompt in resumed.post.prompts("writer")
+            if f"- place: {gold.PLACE_GATE}" in prompt
+        ]
+        assert len(gate_place) == 1  # the continuation alone — no re-gen
+        assert landed["did"]["segments_written"] == 4
 
 
 def test_the_state_poll_answers_a_corrupted_row(tmp_path: Path) -> None:
@@ -940,18 +1009,25 @@ def test_a_crashed_ruling_finishes_from_canon_alone(tmp_path: Path) -> None:
         refused = stack.advance()[1]
         assert refused["ok"] is False
         assert "durable 面优先" in refused["error"]
-        # the empty-body re-drive finishes the ruling from canon.
+        # the empty-body re-drive finishes the ruling from canon, and
+        # the same call presses on through the re-planned scenes.
         status, finished = stack.submit({})
         assert status == 200
         assert finished["ok"] is True, finished["error"]
         assert finished["did"]["closed_gates"] == [gold.GATE]
-        assert finished["did"]["passage_ids"] == [f"{gold.S1}-p0003"]
+        assert finished["did"]["passage_ids"] == [
+            f"{gold.S1}-p0003",
+            f"{gold.S2}-p0001",
+            f"{gold.S2}-p0002",
+            f"{gold.S3}-p0001",
+        ]
         # no second ruling and no re-generated prose: the resolver was
-        # asked once (the fixture's own drive), the writer once (the
-        # continuation).
+        # asked once (the fixture's own drive), the writer once per
+        # fresh segment (the continuation + the re-planned scenes'
+        # three) — the S1 place saw exactly one fresh writing.
         assert stack.post.prompts("resolver") == []
-        assert len(stack.post.prompts("writer")) == 1
-        assert _count(app_db, "narrative_passage") == 3
+        assert len(stack.post.prompts("writer")) == 4
+        assert _count(app_db, "narrative_passage") == 6
         assert _read(
             app_db,
             "SELECT COUNT(*) FROM user_action WHERE gate_id = ?",
@@ -1054,7 +1130,9 @@ def test_the_state_poll_is_served_off_the_work_queue(
             driver.join(timeout=60.0)
         assert not driver.is_alive()
         assert answers[0]["ok"] is True
-        assert len(answers[0]["passages"]) == 1
+        # the released step was the drive's first segment; the loop
+        # pressed on through the second and stopped at the gate.
+        assert len(answers[0]["passages"]) == 2
 
 
 # ---------------------------------------------------------------------------

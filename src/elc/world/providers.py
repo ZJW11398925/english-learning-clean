@@ -283,6 +283,16 @@ class DirectorPlanContext:
       intent), and ``blueprint`` the chapter's current adopted payload
       (the content the replanning starts from).
 
+    ``author_direction`` (V3-8h, the paradigm shift §10.5 item 2) is
+    the **author layer's** optional word between chapters: the reader's
+    free-text direction for the next chapter, handed to the **initial**
+    planning arm only as a **soft expectation** — the prompt block says
+    where the chapter should press toward, never a postcondition, and
+    never a story fact invented on the reader's behalf. The replan arm
+    never reads it (a replan's reason is the committed ruling alone),
+    and nothing persists it: the direction touches the plan face only
+    and writes no canon row of its own (zero migration).
+
     The payload either arm answers is only a proposal: the Director's
     own faces (``open_next_chapter`` / ``apply_action_replan``) keep
     the validation and the persistence — a bad plan content is refused
@@ -294,6 +304,7 @@ class DirectorPlanContext:
     replan_request_id: str | None
     trigger: UserActionRecord | None
     blueprint: Mapping[str, Any] | None
+    author_direction: str | None = None
 
 
 @runtime_checkable

@@ -1058,7 +1058,10 @@ def test_v3_8f_entries_carry_the_wiring_baseline_faces() -> None:
                 "_V3_DRIVE_WAIT_SECONDS",
                 "_WORKER_WAIT_SECONDS",
                 "_run_host_write",
-                "600.0",
+                # V3-8h moved the budget 600 → 1800 for the drive loop;
+                # the entry carries the new value beside the historical
+                # one (the drift is a red test, never a silent lie).
+                "1800.0",
             ),
         ),
         (
@@ -1089,7 +1092,7 @@ def test_v3_8f_entries_carry_the_wiring_baseline_faces() -> None:
         assert symbol in llm_source, symbol
     web_source = (REPO / "src" / "elc" / "web.py").read_text(encoding="utf-8")
     for symbol in (
-        "_V3_DRIVE_WAIT_SECONDS = 600.0",
+        "_V3_DRIVE_WAIT_SECONDS = 1800.0",
         "_WORKER_WAIT_SECONDS = 60.0",
         "def _run_host_write(",
     ):
@@ -1188,3 +1191,111 @@ def test_v3_8g_entries_carry_the_continuity_and_language_faces() -> None:
         assert symbol in narrative_source, symbol
     web_source = (REPO / "src" / "elc" / "web.py").read_text(encoding="utf-8")
     assert 'if self.path == "/api/v3/language":' in web_source
+
+
+# ---------------------------------------------------------------------------
+# V3-8h (TASK-OPI-c0f4d9b4…34 / the opening ruling …32, the paradigm
+# shift §10.5 — the drive loop and the author layer): the re-touched
+# entries
+# ---------------------------------------------------------------------------
+
+
+def test_v3_8h_entries_carry_the_drive_loop_and_author_layer_faces() -> None:
+    """V3-8h's ledger faces ride their entries: the ``narrative_web.py``
+    entry (the drive loop's three real stops, the ceiling constant, the
+    stop-note seat, the next_chapter direction grammar), the ``web.py``
+    entry (the optional direction body and the recalibrated wait), the
+    ``llm_providers.py`` entry (the author-direction soft-expectation
+    sentence) and the ``pipeline.py`` / ``providers.py`` entries (the
+    ``author_direction`` pass-through and field). Zero migration: no
+    migration entry moves, and the coverage law above keeps every
+    existing one present."""
+
+    elc_section = "===D:/english-learning-clean/src/elc/==="
+    world_section = "===D:/english-learning-clean/src/elc/world/==="
+    for section, tag, keywords in (
+        (
+            elc_section,
+            "narrative_web.py[NW8E]",
+            (
+                "V3-8h",
+                "V3_DRIVE_SEGMENT_CEILING",
+                "_ceiling_sentence",
+                "v3_drive_note",
+                "v3_next_chapter_request",
+                "V3_NEXT_CHAPTER_GRAMMAR",
+                "author_direction",
+                "点「继续」接上",
+                "不跨章",
+            ),
+        ),
+        (
+            elc_section,
+            "web.py[EC8L]",
+            (
+                "V3-8h",
+                "v3_next_chapter_request",
+                "600→1800",
+            ),
+        ),
+        (
+            world_section,
+            "llm_providers.py[LP8T]",
+            (
+                "V3-8h",
+                "_AUTHOR_DIRECTION_SENTENCE",
+                "_author_direction_lines",
+                "postcondition",
+            ),
+        ),
+        (
+            world_section,
+            "pipeline.py[PL8T]",
+            (
+                "V3-8h",
+                "author_direction",
+            ),
+        ),
+        (
+            world_section,
+            "providers.py[PV8T]",
+            (
+                "V3-8h",
+                "author_direction",
+                "不写正史",
+            ),
+        ),
+    ):
+        entry = _entry_line_in_section(section, tag)
+        for keyword in keywords:
+            assert keyword in entry, (tag, keyword)
+
+    # coherence: the symbols the entries name are the live sources' own —
+    # renaming one side alone reddens here.
+    narrative_source = (
+        REPO / "src" / "elc" / "narrative_web.py"
+    ).read_text(encoding="utf-8")
+    for symbol in (
+        "V3_DRIVE_SEGMENT_CEILING = 12",
+        'V3_DRIVE_NOTE_KEY = "v3_drive_note"',
+        "def _ceiling_sentence(",
+        "def v3_next_chapter_request(",
+        "def _press_on(",
+    ):
+        assert symbol in narrative_source, symbol
+    llm_source = (
+        REPO / "src" / "elc" / "world" / "llm_providers.py"
+    ).read_text(encoding="utf-8")
+    for symbol in (
+        "_AUTHOR_DIRECTION_SENTENCE = {",
+        "def _author_direction_lines(",
+    ):
+        assert symbol in llm_source, symbol
+    pipeline_source = (
+        REPO / "src" / "elc" / "world" / "pipeline.py"
+    ).read_text(encoding="utf-8")
+    assert "author_direction: str | None = None" in pipeline_source
+    providers_source = (
+        REPO / "src" / "elc" / "world" / "providers.py"
+    ).read_text(encoding="utf-8")
+    assert "author_direction: str | None = None" in providers_source

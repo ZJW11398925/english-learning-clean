@@ -53,6 +53,14 @@
   <button id="reader-end-scene" class="btn btn--faint" type="button">结束本场</button>
   <button id="reader-settle" class="btn btn--faint" type="button">结束本章</button>
   <button id="reader-next" class="btn btn--faint" type="button">下一章</button>
+  <!-- V3-8h：章间作者层——下一章的方向输入（可留空=让世界自行发展）；
+       与「下一章」钮同区（本带内一行），组件复用 #16 field（label
+       包裹 input），只在本页登记整行落位。 -->
+  <label class="field reader-author">
+    <span class="fieldname">下一章方向</span>
+    <input id="reader-direction" type="text"
+      placeholder="给下一章一个方向（可留空=让世界自行发展）">
+  </label>
 </section>
 
 <section class="reader-lang" aria-label="正文语言">

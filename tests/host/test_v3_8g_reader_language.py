@@ -43,6 +43,7 @@ from elc.narrative_web import (
     V3_LANGUAGE_GRAMMAR,
     NarrativeWebFace,
 )
+from elc.world import gold
 from tests.host.test_v3_8e_reader import (
     _gold_egress,
     _GoldPost,
@@ -218,12 +219,14 @@ def test_the_face_refuses_out_of_vocabulary_and_legless_hosts(
 def test_the_switch_reaches_the_next_prompts_and_never_rewrites_canon(
     tmp_path: Path,
 ) -> None:
-    """Start under ``en``, switch to ``zh``, then continue: the writer
-    prompt recorded by the offline transport carries the Chinese line
-    (the live-setting pass-through), the fresh passage row declares
-    ``zh`` (the beat-language seat follows the driver), and the
-    already-committed rows are byte-identical — a language switch
-    never rewrites canon."""
+    """Start under ``en``, switch to ``zh``, then submit at the gate:
+    the writer prompts recorded by the offline transport carry the
+    Chinese line (the live-setting pass-through), the fresh passage rows
+    declare ``zh`` (the beat-language seat follows the driver), and the
+    already-committed rows are byte-identical — a language switch never
+    rewrites canon. (The submit is the resumed drive: the switch happened
+    at the gate stop, and the submission's drive presses on through the
+    re-planned scenes — V3-8h's loop law — all under the live word.)"""
 
     app_db = tmp_path / "app.db"
     with v3_stack(app_db) as stack:
@@ -237,30 +240,38 @@ def test_the_switch_reaches_the_next_prompts_and_never_rewrites_canon(
         assert "Write the segment's prose in English" in writer_prompts[0]
 
         before = _passage_rows(app_db)
-        assert len(before) == 1
-        assert before[0][1] == "en"
+        assert len(before) == 2
+        assert before[0][1] == "en" and before[1][1] == "en"
 
         status, switched = _post_json(
             stack.port, "/api/v3/language", {"language": "zh"}
         )
         assert status == 200 and switched["ok"] is True
 
-        second = stack.advance()
+        second = stack.submit(
+            {
+                "submission_id": gold.SUBMISSION_ID,
+                "intent_text": gold.GOLD_INTENT,
+            }
+        )
         assert second[1]["ok"] is True, second
 
         after_prompts = stack.post.prompts("writer")
-        assert len(after_prompts) == len(writer_prompts) + 1
-        assert "用中文写作这一段的正文" in after_prompts[-1]
-        assert "Write the segment's prose in English" not in after_prompts[-1]
+        assert len(after_prompts) == len(writer_prompts) + 4
+        for prompt in after_prompts[len(writer_prompts):]:
+            assert "用中文写作这一段的正文" in prompt
+            assert "Write the segment's prose in English" not in prompt
 
         after = _passage_rows(app_db)
-        assert len(after) == 2
+        assert len(after) == 6
         assert after[0] == before[0]  # the committed canon row: untouched
-        assert after[1][1] == "zh"  # the fresh row declares the switch
+        assert after[1] == before[1]  # ... and the second one likewise
+        for _row in after[2:]:
+            assert _row[1] == "zh"  # every fresh row declares the switch
         state = stack.state()
         assert state["language"] == "zh"
         languages = [passage["language"] for passage in state["passages"]]
-        assert languages == ["en", "zh"]
+        assert languages == ["en", "en", "zh", "zh", "zh", "zh"]
 
 
 # ---------------------------------------------------------------------------

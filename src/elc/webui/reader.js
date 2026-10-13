@@ -13,6 +13,13 @@
 // 明确反馈（不再静默吞掉）；③正文语言选择器（en/中文）：POST
 // /api/v3/language 后重读 state 渲染；已写下的段落永不改写，切语言只
 // 影响此后新写的段落。
+//
+// V3-8h：①一次驱动跑到下一个真停点（门开/章内计划尽/段数上限）——
+// 服务端语义，页面只多等一会儿（busy 行照转）；②「有故之停」的说明句
+// 随 state 的 note 字段随行——状态行优先显示 note（无 note 才回退
+// next.detail）；③章间作者层：controls 带内的「下一章方向」输入框，
+// 「下一章」点下携带 {direction}（留空=不带 body=让世界自行发展），
+// 成功后清空输入框。
 
 const API = {
   state: "/api/v3/state",
@@ -266,7 +273,10 @@ function render(payload) {
     return;
   }
   lastPayload = payload;
-  setStatus((payload.next && payload.next.detail) || "");
+  // V3-8h: the reasoned stop's own sentence (the state's note — the
+  // drive loop's ceiling explanation) outranks the generic next-step
+  // line, so a pause is never shown without its why.
+  setStatus(payload.note || (payload.next && payload.next.detail) || "");
   setWorld(payload);
   renderFlow(payload);
   renderGate(payload);
@@ -413,8 +423,21 @@ el("reader-end-scene").addEventListener("click", () =>
   drive(API.continue_, { end_scene: true }, "收束本场…（真实模型）"));
 el("reader-settle").addEventListener("click", () =>
   drive(API.settle, undefined, "结束本章、落结算…"));
-el("reader-next").addEventListener("click", () =>
-  drive(API.nextChapter, undefined, "导演起新的一幕…（真实模型）"));
+el("reader-next").addEventListener("click", async () => {
+  // V3-8h: the author layer's direction — a non-empty word rides the
+  // body as a soft expectation for the Director's plan; an empty one
+  // sends no body at all (the old meaning: let the world develop on
+  // its own). The box clears when the plan lands.
+  const direction = el("reader-direction").value.trim();
+  await drive(
+    API.nextChapter,
+    direction ? { direction } : undefined,
+    "导演起新的一幕…（真实模型）"
+  );
+  if (lastPayload && lastPayload.ok) {
+    el("reader-direction").value = "";
+  }
+});
 el("reader-submit").addEventListener("click", () => submit(null, null));
 el("reader-lang-en").addEventListener("click", () => setLanguage("en"));
 el("reader-lang-zh").addEventListener("click", () => setLanguage("zh"));

@@ -108,6 +108,13 @@ body.reader {
   margin: 0 0 var(--sp-6);
 }
 
+/* V3-8h: the author layer's direction input — the between-chapters
+   face, one full-width line inside the controls' own bordered band
+   (the 「下一章」 button's own area). The component is #16 field,
+   reused verbatim (no component styles redefined here); this only
+   lays the row out on its own line. */
+.reader-author { flex: 1 1 100%; }
+
 .reader-readout { margin: 0 0 var(--sp-6); }
 .reader-readout .kvgroup { margin: 0 0 var(--sp-4); }
 

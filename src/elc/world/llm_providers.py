@@ -810,6 +810,34 @@ _CONTINUITY_SENTENCE = (
     " lists end."
 )
 
+#: The author layer's soft-expectation sentence per word (V3-8h, the
+#: paradigm shift §10.5 item 2): the reader's between-chapters
+#: direction is quoted into the **initial** chapter plan prompt with
+#: the wording law stated verbatim — the direction says where the
+#: chapter should PRESS toward, it is never a postcondition or a hard
+#: requirement, and no story fact may be invented on the reader's
+#: behalf (the world's own rules and settled facts decide what
+#: actually happens). The CHAPTER replan arm never carries it (its
+#: reason is the committed ruling alone), and an absent direction
+#: carries no line at all — the prompt stays byte for byte today's.
+_AUTHOR_DIRECTION_SENTENCE = {
+    "en": (
+        "The reader's author-layer direction (quoted below) is a soft"
+        " expectation only: it says where the next chapter should"
+        " PRESS toward — treat it as pressure on the plan's choices,"
+        " never as a postcondition, never as a hard requirement, and"
+        " never invent story facts on the reader's behalf: the"
+        " world's own rules and settled facts decide what actually"
+        " happens."
+    ),
+    "zh": (
+        "读者的作者层方向（见下方引文）只是软期望：它只表达下一章"
+        "「朝哪里压」——把它当作对计划选择的倾向性压力，绝不是"
+        " postcondition、不是硬性条件；不得替读者发明剧情事实："
+        "实际发生什么由世界自己的规则与既定事实决定。"
+    ),
+}
+
 
 def _prose_language_word(language: str) -> str:
     """The language word a prompt renders — the two-word vocabulary, or
@@ -965,6 +993,25 @@ def _scene_plan_prompt(
     return "\n".join(lines)
 
 
+def _author_direction_lines(
+    context: DirectorPlanContext, *, replan: bool, language: str
+) -> list[str]:
+    """The author layer's prompt block, or ``[]`` — the wording-law
+    sentence in the prompt's own language plus the direction quoted
+    verbatim (``!r``). ``[]`` (never an empty-headed block) on the
+    replan arm or when there is no non-blank direction: the
+    no-direction prompt stays byte for byte today's."""
+
+    direction = context.author_direction
+    if replan or not isinstance(direction, str) or not direction.strip():
+        return []
+    return [
+        _AUTHOR_DIRECTION_SENTENCE[_prose_language_word(language)],
+        f"- the direction, verbatim: {direction.strip()!r}",
+        "",
+    ]
+
+
 def _director_prompt(
     context: DirectorPlanContext, *, language: str = PROSE_LANGUAGE_DEFAULT
 ) -> str:
@@ -1036,6 +1083,13 @@ def _blueprint_prompt(
         "participants is a JSON array of participant identity strings;",
         "planned_start_tick is one JSON integer.",
         "",
+        # V3-8h: the author layer's soft expectation — the initial arm
+        # only (a CHAPTER replan's reason is the committed ruling, and
+        # it never reads this); an absent direction leaves the prompt
+        # byte for byte what it always was.
+        *_author_direction_lines(
+            context, replan=replan, language=language
+        ),
         "The world you plan for:",
         f"- world: {director_context.world_id}",
         f"- current_tick: {director_context.current_tick}",

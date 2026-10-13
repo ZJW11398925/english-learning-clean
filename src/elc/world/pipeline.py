@@ -318,7 +318,13 @@ class Pipeline:
 
         return self._director.open_next_chapter(world_id, blueprint, now)
 
-    def plan_chapter(self, world_id: str, now: str) -> Result[ChapterOpening]:
+    def plan_chapter(
+        self,
+        world_id: str,
+        now: str,
+        *,
+        author_direction: str | None = None,
+    ) -> Result[ChapterOpening]:
         """Plan the world's next chapter through the **Director
         provider** — V3-8b's initial-Blueprint arm (HIGH-3): the
         Blueprint's production is the world's own planning face, fed the
@@ -326,7 +332,14 @@ class Pipeline:
         :class:`~elc.world.providers.DirectorPlanContext`);
         ``Director.open_next_chapter`` keeps the validation and the
         persistence. A dangling world is answered ``NOT_FOUND`` before
-        the provider is asked (the context read presumes the world)."""
+        the provider is asked (the context read presumes the world).
+
+        ``author_direction`` (V3-8h, the paradigm shift §10.5 item 2)
+        is the reading face's optional author-layer word: it rides the
+        context as a **soft expectation** for the Director's initial
+        prompt — plan-face only, never persisted, never a canon row —
+        and ``None`` (the default, every existing caller) builds the
+        very prompt this method always built."""
 
         tick = read_current_tick(self._conn, world_id)
         if isinstance(tick, Err):
@@ -338,6 +351,7 @@ class Pipeline:
                 replan_request_id=None,
                 trigger=None,
                 blueprint=None,
+                author_direction=author_direction,
             )
         )
         return self._director.open_next_chapter(world_id, payload, now)

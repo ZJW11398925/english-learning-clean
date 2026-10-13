@@ -432,6 +432,7 @@ from elc.narrative_web import (
     v3_ack_request,
     v3_continue_request,
     v3_language_request,
+    v3_next_chapter_request,
     v3_submit_request,
 )
 from elc.persona.card_store import (
@@ -633,12 +634,19 @@ _WORKER_WAIT_SECONDS = 60.0
 #: trips — ``submit`` is the ruling + the auto-routed CHAPTER replan + the
 #: continuation, ≈ three calls — so the house 60s wait reported "the host
 #: worker did not answer in time" (a 500) while the story was still landing
-#: (the page's own poll showed the progress; the answer lied). The budget =
-#: the world egress's single-call ceiling
-#: (:data:`elc.narrative_web.WORLD_EGRESS_TIMEOUT_SECONDS`, 180s) × the
-#: drive's largest real call count (3) + headroom. Only the five V3 write
-#: routes pass it; every other host touch keeps :data:`_WORKER_WAIT_SECONDS`.
-_V3_DRIVE_WAIT_SECONDS = 600.0
+#: (the page's own poll showed the progress; the answer lied). V3-8h (the
+#: paradigm shift §10.5, the drive loop) widened the budget: one call now
+#: presses on through segments and scenes to the next real stop — up to
+#: ``V3_DRIVE_SEGMENT_CEILING`` (12) fresh segments — so the budget moved
+#: 600 → 1800 on the drive loop's own arithmetic (the measured 43–72s per
+#: real call × the ceiling + the planning round trips, with headroom; a
+#: drive whose step *fails* stops there, so the pathological all-timeout
+#: case cannot outrun this). The budget = the world egress's single-call
+#: ceiling (:data:`elc.narrative_web.WORLD_EGRESS_TIMEOUT_SECONDS`, 180s)
+#: × the drive loop's largest real call count + headroom. Only the five V3
+#: write routes pass it; every other host touch keeps
+#: :data:`_WORKER_WAIT_SECONDS`.
+_V3_DRIVE_WAIT_SECONDS = 1800.0
 
 #: The card's Chinese readings of the moment lifecycle vocabulary (the
 #: canonical ``MomentState`` words, docs/STATE_MACHINES.md §1). Display only:
@@ -9268,11 +9276,14 @@ def _build_server(
                 )
                 return
             if self.path == "/api/v3/continue":
-                # V3-8e: drive the next step — one segment, or open the
-                # gate the story stops at. The grammar is fail-closed (an
-                # empty body or {"end_scene": <bool>}); the position is
-                # the durable walk's own. V3-8f: the drive wait is the
-                # reading face's own (_V3_DRIVE_WAIT_SECONDS).
+                # V3-8e: drive the next step — V3-8h: one call presses on
+                # to the next REAL stop (a User Gate opening, the
+                # chapter's plan exhausted, or the drive's segment
+                # ceiling — the reasoned stop carries its sentence). The
+                # grammar is fail-closed (an empty body or
+                # {"end_scene": <bool>}); the position is the durable
+                # walk's own. V3-8f: the drive wait is the reading face's
+                # own (_V3_DRIVE_WAIT_SECONDS).
                 cont_error, end_scene = v3_continue_request(
                     self._read_json_body()
                 )
@@ -9315,9 +9326,19 @@ def _build_server(
             if self.path == "/api/v3/next_chapter":
                 # V3-8e: plan the next chapter through the real Director
                 # provider (the latest chapter must be CLOSED). V3-8f:
-                # the drive wait is the reading face's own.
+                # the drive wait is the reading face's own. V3-8h: the
+                # optional author-layer direction body — an empty body is
+                # the old meaning (let the world develop on its own), a
+                # {"direction": "…"} body rides the plan face as a soft
+                # expectation (never a canon row).
+                next_error, direction = v3_next_chapter_request(
+                    self._read_json_body()
+                )
+                if next_error is not None:
+                    self._send_json(400, {"error": next_error})
+                    return
                 self._run_host_write(
-                    lambda: (200, face.narrative.next_chapter()),
+                    lambda: (200, face.narrative.next_chapter(direction)),
                     wait=_V3_DRIVE_WAIT_SECONDS,
                 )
                 return

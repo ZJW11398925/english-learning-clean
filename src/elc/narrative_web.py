@@ -49,17 +49,32 @@ and a re-opened page continues exactly where the story stands.
   beat is the author's (its options are the gate's options; the
   submission is the user's own free input);
 - an **open scene** (a scene a real replan created — no script) drives
-  on the minimal default: **one segment per continue** (a
+  on the minimal default: **one segment per step** (a
   :class:`~elc.world.pipeline.SegmentBeat` — one tick, language ``en``),
   and the reader's 「结束本场」 drives the closing segment with
   ``is_last_segment=True`` (the two defaults are this face's own
   calibration, stated here once);
-- **one continue call = one segment** (one real writing under a real
-  model). A drive that continues a scene past its first segment must
-  re-present the committed prefix to the orchestrator (the V3-8b script
-  law: the i-th beat is the i-th segment), so the prefix is
-  **reconstructed from the durable rows** (the stored length, language
-  and terminality) and every committed beat is re-driven as a replay;
+- **one drive call presses on to the next real stop** (V3-8h, the
+  paradigm shift §10.5 item 1): a continue / submit loops the existing
+  single-step path — the segment write, the scene opening, the prefix
+  replay, the gate opening — **until a real stop**, of which there are
+  three: a **User Gate opened** (the reader's own act is the
+  submission), the **chapter's plan exhausted** (settlement is the
+  reader's own 「结束本章」 — the drive stops before it), or this
+  drive's **segment ceiling** (:data:`V3_DRIVE_SEGMENT_CEILING` — a
+  *reasoned* stop: the answer and the state carry the note sentence,
+  never a silent halt). Segments and scenes **auto-continue** (a
+  SEGMENT / SCENE COMMIT is not a stop) and a drive **never crosses a
+  chapter boundary**. A step that fails stops the drive **where it
+  stands** — the segments already written are durable rows, reported in
+  the answer, never lost and never re-written (the replay providers);
+  no second write path exists: every step is the same single-step drive
+  this face always had. A drive that continues a scene past its first
+  segment must re-present the committed prefix to the orchestrator (the
+  V3-8b script law: the i-th beat is the i-th segment), so the prefix
+  is **reconstructed from the durable rows** (the stored length,
+  language and terminality) and every committed beat is re-driven as a
+  replay;
 - **the replay providers keep the model out of canon re-writes**: a
   committed segment's prose is durable canon and is answered from the
   row (:class:`DurableReplayWriter` — the committed passage is returned
@@ -75,11 +90,28 @@ and a re-opened page continues exactly where the story stands.
   submission is **not** driven by continue — the submission is the
   reader's own act (``/api/v3/submit``), which drives ``open → NCP-1 →
   the ruling → NCP-2 → the auto-routed replan → the continuation passage
-  carrying its ``outcome_ref`` → the gate CLOSED`` — **one drive call**.
-  A gate the database already holds a submission for is **re-driven from
-  that durable submission** (a crashed ruling finishes; a committed
-  ruling replays through the replay providers and its continuation
-  lands) — the request body is the durable face's equal-or-nothing.
+  carrying its ``outcome_ref`` → the gate CLOSED`` — **one drive call** —
+  and then **presses on** (V3-8h): the ruling is not a stop, and the
+  same call continues through the chapter's remaining scenes to the
+  next real stop. A gate the database already holds a submission for
+  is **re-driven from that durable submission** (a crashed ruling
+  finishes; a committed ruling replays through the replay providers and
+  its continuation lands) — the request body is the durable face's
+  equal-or-nothing.
+
+**The author layer between chapters (V3-8h, the paradigm shift §10.5
+item 2).** ``next_chapter`` takes one **optional** word: the
+``{"direction": "…"}`` body (an absent / empty body is the old meaning —
+let the world develop on its own, the prompt byte for byte as before)
+rides :meth:`NarrativeWebFace.next_chapter` →
+:meth:`~elc.world.pipeline.Pipeline.plan_chapter` →
+:class:`~elc.world.providers.DirectorPlanContext.author_direction` and
+lands in the Director's **initial** plan prompt as a **soft
+expectation** — where the chapter should press toward, never a
+postcondition, never a story fact invented on the user's behalf (the
+replan arm never reads it). The direction writes **no canon row of its
+own**: the author layer touches the plan face only, never the story's
+ledger (zero migration).
 
 Two recovery steps ride the same durable reads: a chapter left
 ``SETTLING`` (a crashed settlement) is finished by ``advance`` (the next
@@ -149,7 +181,11 @@ from typing import TYPE_CHECKING, Any
 from elc.persona.openai_provider import OpenAICompatibleProvider
 from elc.persona.types import CompiledPrompt
 from elc.platform.db.app_settings import AppSettingStore
-from elc.platform.db.epoch import RuntimeEpochFence, load_current_epoch
+from elc.platform.db.epoch import (
+    RuntimeEpochFence,
+    StaleEpochError,
+    load_current_epoch,
+)
 from elc.platform.types import Err, PersonaId
 from elc.world.action import (
     ActionStatus,
@@ -203,7 +239,10 @@ if TYPE_CHECKING:
 __all__ = [
     "REASON_NO_EGRESS",
     "READER_ID",
+    "V3_DRIVE_NOTE_KEY",
+    "V3_DRIVE_SEGMENT_CEILING",
     "V3_LANGUAGE_GRAMMAR",
+    "V3_NEXT_CHAPTER_GRAMMAR",
     "V3_PROSE_LANGUAGE_KEY",
     "WORLD_EGRESS_TIMEOUT_SECONDS",
     "DurableReplayResolver",
@@ -215,6 +254,7 @@ __all__ = [
     "v3_ack_request",
     "v3_continue_request",
     "v3_language_request",
+    "v3_next_chapter_request",
     "v3_submit_request",
 ]
 
@@ -270,6 +310,10 @@ V3_SUBMIT_GRAMMAR = (
 )
 V3_ACK_GRAMMAR = 'need a JSON body {"passage_ids": ["...", ...]}'
 V3_LANGUAGE_GRAMMAR = 'need a JSON body {"language": "en"|"zh"}'
+V3_NEXT_CHAPTER_GRAMMAR = (
+    'need an empty body or a JSON object {"direction": "<text>"} with a'
+    " non-empty string"
+)
 
 #: The prose-language setting's own ``app_setting`` key (V3-8g, §10.4
 #: item 5): the reading face owns the key, the host's generic
@@ -281,6 +325,28 @@ V3_PROSE_LANGUAGE_KEY = "v3_prose_language"
 #: The one default tick an open scene's continue moves (see the module
 #: docstring: the open-scene calibration, stated once).
 OPEN_SCENE_SEGMENT_TICKS = 1
+
+#: The single drive's segment ceiling (V3-8h, the paradigm shift §10.5
+#: item 1): one drive (「继续」/「提交」) presses on through segments and
+#: scenes until a real stop — a User Gate opens, the chapter's plan is
+#: exhausted, or this many **fresh** segments have been written in the
+#: one drive. Reaching it is a *reasoned* stop («有故之停，不得无解释
+#: 之停»): the answer's ``did`` and the state's ``note`` carry the
+#: sentence (:func:`_ceiling_sentence`), so the page never shows a
+#: silent halt. Twelve is calibrated against the reading face's own
+#: pacing: a real writing round is a tens-of-seconds-to-minutes round
+#: trip (V3-8f's measured 43–72s), so the longest single drive stays
+#: inside the routes' 1800s host wait, and an open scene — which no
+#: script ever closes on its own — still answers the reader regularly.
+V3_DRIVE_SEGMENT_CEILING = 12
+
+#: The last drive's stop-note seat in the host's generic ``app_setting``
+#: table (V3-8h): the ceiling stop's sentence is written here (any new
+#: drive clears it first), and the state face — the drive answer and
+#: every off-queue poll alike — reads it into its ``note`` field, so the
+#: explanation of a reasoned stop survives the page's own polling. A
+#: bookkeeping word, never canon: no narrative table carries it.
+V3_DRIVE_NOTE_KEY = "v3_drive_note"
 
 #: The one sentence a host without the V3 legs answers (a stub host —
 #: construction is lazy, so the existing suite family's doubles never
@@ -450,6 +516,53 @@ def v3_language_request(
         if isinstance(word, str) and word in PROSE_LANGUAGE_WORDS:
             return None, word
     return V3_LANGUAGE_GRAMMAR, None
+
+
+def v3_next_chapter_request(
+    payload: object,
+) -> tuple[str | None, str | None]:
+    """The next_chapter route's grammar (V3-8h, §10.5 item 2): no body
+    (or ``{}``) is the **old meaning** — let the world develop on its
+    own; a JSON object carrying exactly one non-empty string
+    ``direction`` hands the author layer's soft expectation to the
+    Director's initial plan. Anything else (a non-object, a blank or
+    non-string word, an extra key) is the 400 人话."""
+
+    if payload is None or payload == {}:
+        return None, None
+    if (
+        isinstance(payload, dict)
+        and set(payload) == {"direction"}
+        and isinstance(payload["direction"], str)
+        and payload["direction"].strip()
+    ):
+        return None, payload["direction"]
+    return V3_NEXT_CHAPTER_GRAMMAR, None
+
+
+def _ceiling_sentence(written: int, ceiling: int) -> str:
+    """The ceiling stop's own sentence (V3-8h, §10.5 item 1: the stop
+    must carry its reason —「本次已连写 N 段，点「继续」接上」). It rides
+    the drive's ``did`` and the state's ``note``, so the answer and
+    every later poll both say why the story paused."""
+
+    return (
+        f"本次已连写 {written} 段（一次驱动最多 {ceiling} 段）——"
+        "点「继续」接上。"
+    )
+
+
+def _drive_note_of(conn: sqlite3.Connection) -> str | None:
+    """The stored stop-note for this app.db — the state face's ``note``
+    (one plain SELECT; a read fences nothing). ``None`` when no note is
+    stored (the honest "the last drive needs no explanation" — a gate
+    stop's explanation is the next-step face's own sentence)."""
+
+    row = conn.execute(
+        "SELECT value FROM app_setting WHERE key = ?",
+        (V3_DRIVE_NOTE_KEY,),
+    ).fetchone()
+    return None if row is None else str(row[0])
 
 
 # ---------------------------------------------------------------------------
@@ -965,8 +1078,10 @@ class _DurableReads:
         roster and the current scene (status / POV), this chapter's
         committed passages (id / seq / body / language), the gates not
         ``CLOSED`` (options / status), the settlement when one landed,
-        the adopted plan's summary (the «下一章» face) and the effective
-        prose language (V3-8g: the live setting, ``en`` when absent)."""
+        the adopted plan's summary (the «下一章» face), the effective
+        prose language (V3-8g: the live setting, ``en`` when absent) and
+        the last drive's stop-note (V3-8h: the ceiling stop's sentence;
+        ``None`` when the last drive needs no explanation)."""
 
         world = self._worlds.get_world(WORLD_ID)
         if world is None:
@@ -976,6 +1091,7 @@ class _DurableReads:
                 "error": None,
                 **_empty_state(),
                 "language": prose_language_of(self._conn),
+                "note": _drive_note_of(self._conn),
                 "world": {
                     "exists": False,
                     "world_id": WORLD_ID,
@@ -1004,6 +1120,7 @@ class _DurableReads:
             "error": None,
             **_empty_state(),
             "language": prose_language_of(self._conn),
+            "note": _drive_note_of(self._conn),
             "world": {
                 "exists": True,
                 "world_id": WORLD_ID,
@@ -1474,6 +1591,7 @@ class NarrativeWebFace:
             and self._casts is not None
             and self._narrative is not None
         )
+        self._write_drive_note(None)
         now = self._clock()
         if self._worlds.get_world(WORLD_ID) is None:
             created = seed_gold_world(
@@ -1498,14 +1616,23 @@ class NarrativeWebFace:
         return self._landed({"kind": "start"})
 
     def advance(self, end_scene: bool) -> dict[str, Any]:
-        """Drive the next step — one segment, or open the gate the
-        script stops at (see the module docstring). The position is the
-        durable walk's; the prefix is reconstructed; the replay
-        providers keep the model out of canon re-writes."""
+        """Drive to the next real stop (V3-8h, the paradigm shift §10.5
+        item 1) — one call loops the existing single-step drive (the
+        segment write, the scene opening, the prefix replay, the gate
+        opening) until a User Gate opens, the chapter's plan is
+        exhausted (「结束本章」 stays the reader's own act — the drive
+        stops before it), or the drive's segment ceiling is reached
+        (the reasoned stop: its sentence rides ``did`` and the state's
+        ``note``). Segments and scenes auto-continue; a chapter
+        boundary is never crossed; a failed step stops the drive where
+        it stands, the segments already written durable and reported. A
+        chapter left ``SETTLING`` (a crashed settlement) is still
+        finished by the same call — the recovery the face always had."""
 
         if not self._legs_ready():
             return self._no_legs()
         assert self._reads is not None
+        self._write_drive_note(None)
         chapter = self._reads._current_chapter()
         if chapter is None:
             return self._refuse("还没有第一幕——先点「开始」。")
@@ -1516,85 +1643,274 @@ class NarrativeWebFace:
             if error is not None:
                 return self._refuse(error)
             return self._landed({"kind": "settle"})
-        roster = self._reads._roster(chapter.chapter_id)
-        if not roster:
-            return self._refuse("本章的计划场都走完了——点「结束本章」。")
-        current = self._reads._current_scene(roster)
-        if current is None:
-            return self._refuse("计划里没有可驱动的场。")
-        scene_id, scene = current
-        if end_scene and scene_id in self._reads._anchored:
-            return self._refuse(
-                "这一幕的收束由作者脚本定席（它的最后一段自带终场）——"
-                "「结束本场」只对重规划新建的场有效。"
-            )
-        walk = self._reads.walk(scene_id)
-        if walk.kind == "gate_submit":
-            if walk.stored_action is not None:
+        return self._press_on(
+            written=0, fresh_ids=(), first=True, end_scene=end_scene
+        )
+
+    def _press_on(
+        self,
+        *,
+        written: int,
+        fresh_ids: Sequence[str],
+        first: bool,
+        end_scene: bool = False,
+        did_kind: str = "drive",
+        chain_gate_id: str | None = None,
+        closed_gates: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """The drive loop's body (V3-8h) — the three-stop law in one
+        place. From the durable position it performs one single-step
+        drive after another (each with its own reconstructed prefix and
+        per-step language seat) until a real stop: a User Gate opened
+        or awaiting the reader's submission, the chapter's plan
+        exhausted, or the segment ceiling. ``written`` / ``fresh_ids``
+        carry what earlier steps of this same call already landed (the
+        submit route enters with its gate chain's harvest); ``first``
+        marks the call's entry position, where the historical refusals
+        keep their refusal shape — a bare click with nothing to drive
+        is a refusal, byte for byte yesterday's sentence, while the
+        same positions met mid-drive are honest stops that report what
+        the drive already wrote. ``end_scene`` is the open-scene
+        closing flag, spent by the loop's first segment."""
+
+        assert self._reads is not None
+        while True:
+            chapter = self._reads._current_chapter()
+            if chapter is None:
+                return self._refuse("还没有第一幕——先点「开始」。")
+            if chapter.status is ChapterStatus.CLOSED:
+                return self._refuse("本章已经结束——点「下一章」。")
+            roster = self._reads._roster(chapter.chapter_id)
+            if not roster:
+                if first and written == 0:
+                    return self._refuse(
+                        "本章的计划场都走完了——点「结束本章」。"
+                    )
+                return self._drive_stopped(
+                    written=written,
+                    fresh_ids=fresh_ids,
+                    stopped_on="plan_exhausted",
+                    note=None,
+                    scene_id=None,
+                    gate_id=chain_gate_id,
+                    did_kind=did_kind,
+                    closed_gates=closed_gates,
+                )
+            current = self._reads._current_scene(roster)
+            if current is None:
+                return self._refuse("计划里没有可驱动的场。")
+            scene_id, scene = current
+            walk = self._reads.walk(scene_id)
+            if first and end_scene and scene_id in self._reads._anchored:
                 return self._refuse(
+                    "这一幕的收束由作者脚本定席（它的最后一段自带终场）——"
+                    "「结束本场」只对重规划新建的场有效。"
+                )
+            if walk.kind == "gate_submit":
+                sentence = (
                     "这个门已经有一个提交在库里（durable 面优先）——"
                     "直接「提交」续跑，不必再写一遍。"
+                    if walk.stored_action is not None
+                    else "门开着等你——写下你要说的话，或选一个自然举动。"
                 )
-            return self._refuse(
-                "门开着等你——写下你要说的话，或选一个自然举动。"
+                if first and written == 0:
+                    return self._refuse(sentence)
+                return self._drive_stopped(
+                    written=written,
+                    fresh_ids=fresh_ids,
+                    stopped_on="gate",
+                    note=sentence,
+                    scene_id=scene_id,
+                    gate_id=(
+                        walk.gate.gate_id
+                        if walk.gate is not None
+                        else chain_gate_id
+                    ),
+                    did_kind=did_kind,
+                    closed_gates=closed_gates,
+                )
+            if walk.kind == "scene_done":
+                sentence = "这一幕的脚本走完了，但场还没闭合——检查一下状态。"
+                if first and written == 0:
+                    return self._refuse(sentence)
+                return self._drive_stopped(
+                    written=written,
+                    fresh_ids=fresh_ids,
+                    stopped_on="scene_done",
+                    note=sentence,
+                    scene_id=scene_id,
+                    gate_id=chain_gate_id,
+                    did_kind=did_kind,
+                    closed_gates=closed_gates,
+                )
+            if first:
+                refusal = self._egress_refusal()
+                if refusal is not None:
+                    return self._refuse(refusal)
+            if walk.kind == "gate_open":
+                opened = self._open_gate_for(
+                    scene_id, scene, walk.beat, self._clock()
+                )
+                if isinstance(opened, str):
+                    return self._drive_failed(
+                        written,
+                        fresh_ids,
+                        opened,
+                        did_kind=did_kind,
+                        chain_gate_id=chain_gate_id,
+                        closed_gates=closed_gates,
+                    )
+                return self._drive_stopped(
+                    written=written,
+                    fresh_ids=fresh_ids,
+                    stopped_on="gate",
+                    note=None,
+                    scene_id=scene_id,
+                    gate_id=opened.gate_id,
+                    did_kind=did_kind,
+                    closed_gates=closed_gates,
+                )
+            # The segment step — the same single-step drive this face
+            # always had (the reconstructed prefix, the replay providers
+            # keeping canon stable). V3-8g: the fresh beat's language
+            # seat follows the live setting, read per step.
+            language = self._prose_language()
+            beat = walk.beat
+            if not isinstance(beat, SegmentBeat):
+                # An open scene's beat is this face's own calibration
+                # (the module docstring: one tick; the reader's
+                # 「结束本场」 is the closing flag — spent by this, the
+                # loop's first segment).
+                beat = SegmentBeat(
+                    language=language,
+                    duration_ticks=OPEN_SCENE_SEGMENT_TICKS,
+                    is_last_segment=first and end_scene,
+                )
+            else:
+                beat = replace(beat, language=language)
+            driven, error = self._drive(
+                scene_id, (*walk.prefix, beat), self._clock()
             )
-        if walk.kind == "scene_done":
-            return self._refuse(
-                "这一幕的脚本走完了，但场还没闭合——检查一下状态。"
-            )
-        now = self._clock()
-        refusal = self._egress_refusal()
-        if refusal is not None:
-            return self._refuse(refusal)
-        if walk.kind == "gate_open":
-            opened = self._open_gate_for(scene_id, scene, walk.beat, now)
-            if isinstance(opened, str):
-                return self._refuse(opened)
-            return self._landed(
-                {"kind": "gate_open", "gate_id": opened.gate_id}
-            )
-        beat = walk.beat
-        # V3-8g: the fresh beat's language seat follows the live setting
-        # (the SegmentBeat docstring: the language is the driver's seat,
-        # and this face is the driver) — the SEGMENT COMMIT stamps it
-        # onto the passage row, so the row declares the language its
-        # prose is actually written in. The replayed committed prefix
-        # keeps each stored row's own word (``_prefix_from_segments``).
-        language = self._prose_language()
-        if not isinstance(beat, SegmentBeat):
-            # An open scene's beat is this face's own calibration (the
-            # module docstring: one tick; the reader's 「结束本场」 is
-            # the closing flag).
-            beat = SegmentBeat(
-                language=language,
-                duration_ticks=OPEN_SCENE_SEGMENT_TICKS,
-                is_last_segment=end_scene,
-            )
-        else:
-            beat = replace(beat, language=language)
-        driven, error = self._drive(scene_id, (*walk.prefix, beat), now)
-        if error is not None:
-            return self._refuse(error)
-        assert driven is not None
+            if error is not None:
+                return self._drive_failed(
+                    written,
+                    fresh_ids,
+                    error,
+                    did_kind=did_kind,
+                    chain_gate_id=chain_gate_id,
+                    closed_gates=closed_gates,
+                )
+            assert driven is not None
+            step_ids = _fresh_passage_ids(walk.prefix, driven)
+            written += len(step_ids)
+            fresh_ids = (*fresh_ids, *step_ids)
+            first = False
+            end_scene = False
+            if written >= V3_DRIVE_SEGMENT_CEILING:
+                note = _ceiling_sentence(written, V3_DRIVE_SEGMENT_CEILING)
+                self._write_drive_note(note)
+                return self._drive_stopped(
+                    written=written,
+                    fresh_ids=fresh_ids,
+                    stopped_on="ceiling",
+                    note=note,
+                    scene_id=scene_id,
+                    gate_id=chain_gate_id,
+                    did_kind=did_kind,
+                    closed_gates=closed_gates,
+                )
+
+    def _drive_stopped(
+        self,
+        *,
+        written: int,
+        fresh_ids: Sequence[str],
+        stopped_on: str,
+        note: str | None,
+        scene_id: str | None,
+        gate_id: str | None,
+        did_kind: str,
+        closed_gates: list[str] | None,
+    ) -> dict[str, Any]:
+        """One drive's landed answer (V3-8h): the state's own faces with
+        the loop's report on top — where the drive stopped and why
+        (``stopped_on``; ``note`` is the reasoned stop's own sentence),
+        and what it wrote (the fresh passage ids in order; the replayed
+        prefix re-wrote nothing)."""
+
         return self._landed(
             {
-                "kind": "segment",
+                "kind": did_kind,
+                "stopped_on": stopped_on,
+                "note": note,
                 "scene_id": scene_id,
-                "passage_ids": _fresh_passage_ids(walk.prefix, driven),
+                "gate_id": gate_id,
+                "closed_gates": list(closed_gates or ()),
+                "segments_written": written,
+                "passage_ids": list(fresh_ids),
             }
         )
 
+    def _drive_failed(
+        self,
+        written: int,
+        fresh_ids: Sequence[str],
+        error: str,
+        *,
+        did_kind: str,
+        chain_gate_id: str | None = None,
+        closed_gates: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """A failed step stops the drive where it stands (V3-8h): the
+        honest failure sentence — counting the landed harvest when the
+        drive had already written (those segments are durable rows; the
+        retry continues from them and never re-writes them). Nothing
+        landed plus a failure is yesterday's bare refusal, byte for
+        byte."""
+
+        payload = self.state()
+        payload["ok"] = False
+        payload["did"] = (
+            None
+            if written == 0
+            else {
+                "kind": did_kind,
+                "stopped_on": "failure",
+                "note": None,
+                "scene_id": None,
+                "gate_id": chain_gate_id,
+                "closed_gates": list(closed_gates or ()),
+                "segments_written": written,
+                "passage_ids": list(fresh_ids),
+            }
+        )
+        payload["error"] = (
+            error
+            if written == 0
+            else (
+                f"{error}（本次已先写下 {written} 段，已落库不丢——"
+                "再点一次从当下续跑。）"
+            )
+        )
+        return payload
+
     def submit(self, request: Mapping[str, Any]) -> dict[str, Any]:
-        """The reader's own submission, end to end: the durable gate is
-        located, the submission is the body's (a fresh gate) or the
-        stored one (a re-drive — the durable face wins), and one drive
-        carries ``open → NCP-1 → the ruling → NCP-2 → the auto-routed
-        replan → the continuation passage with its outcome_ref → the gate
-        CLOSED``."""
+        """The reader's own submission, end to end — and then the drive
+        presses on (V3-8h, the paradigm shift §10.5 item 1): the
+        durable gate is located, the submission is the body's (a fresh
+        gate) or the stored one (a re-drive — the durable face wins),
+        one drive carries ``open → NCP-1 → the ruling → NCP-2 → the
+        auto-routed replan → the continuation passage with its
+        ``outcome_ref`` → the gate CLOSED``, and the same call then
+        continues through the chapter's remaining scenes to the next
+        real stop (the ruling is not a stop; a chapter boundary is). A
+        failed step stops the drive where it stands — the gate chain's
+        own writes are durable and reported, never re-written."""
 
         if not self._legs_ready():
             return self._no_legs()
         assert self._reads is not None
+        self._write_drive_note(None)
         chapter = self._reads._current_chapter()
         if chapter is None:
             return self._refuse("还没有第一幕——先点「开始」。")
@@ -1659,8 +1975,8 @@ class NarrativeWebFace:
         )
         if continuation is not None:
             # V3-8g: the continuation is fresh prose under the live
-            # setting — its beat's language seat follows it (see
-            # ``advance``); a continuation already committed would ride
+            # setting — its beat's language seat follows it (see the
+            # drive loop); a continuation already committed would ride
             # the reconstructed prefix instead, never this fresh beat.
             beats.append(
                 replace(continuation, language=self._prose_language())
@@ -1674,14 +1990,16 @@ class NarrativeWebFace:
             for result in driven.gates
             if result.status is GateStatus.CLOSED
         ]
-        return self._landed(
-            {
-                "kind": "submit",
-                "scene_id": scene_id,
-                "gate_id": gate.gate_id,
-                "closed_gates": closed,
-                "passage_ids": _fresh_passage_ids(walk.prefix, driven),
-            }
+        harvested = _fresh_passage_ids(walk.prefix, driven)
+        # V3-8h: the ruling is not a stop — the same call presses on
+        # through the chapter's remaining scenes to the next real stop.
+        return self._press_on(
+            written=len(harvested),
+            fresh_ids=harvested,
+            first=False,
+            did_kind="submit",
+            chain_gate_id=gate.gate_id,
+            closed_gates=closed,
         )
 
     def settle(self) -> dict[str, Any]:
@@ -1692,6 +2010,7 @@ class NarrativeWebFace:
         if not self._legs_ready():
             return self._no_legs()
         assert self._reads is not None
+        self._write_drive_note(None)
         chapter = self._reads._current_chapter()
         if chapter is None:
             return self._refuse("还没有第一幕——先点「开始」。")
@@ -1711,14 +2030,20 @@ class NarrativeWebFace:
             {"kind": "settle", "chapter_id": chapter.chapter_id}
         )
 
-    def next_chapter(self) -> dict[str, Any]:
+    def next_chapter(self, direction: str | None = None) -> dict[str, Any]:
         """Plan the next chapter through the real Director provider —
         only when the latest chapter is CLOSED (the SETTLING 前置律's
-        flip side: a chapter's story does not overlap the next plan)."""
+        flip side: a chapter's story does not overlap the next plan).
+        ``direction`` (V3-8h, the paradigm shift §10.5 item 2) is the
+        author layer's optional word: a **soft expectation** in the
+        Director's initial plan prompt — plan-face only, never a canon
+        row, never a postcondition (see the module docstring);
+        ``None`` plans exactly as this face always planned."""
 
         if not self._legs_ready():
             return self._no_legs()
         assert self._reads is not None
+        self._write_drive_note(None)
         chapter = self._reads._current_chapter()
         if chapter is None:
             return self._refuse("还没有第一幕——先点「开始」。")
@@ -1730,7 +2055,9 @@ class NarrativeWebFace:
         refusal = self._egress_refusal()
         if refusal is not None:
             return self._refuse(refusal)
-        planned = self._plan_chapter(self._clock())
+        planned = self._plan_chapter(
+            self._clock(), author_direction=direction
+        )
         if planned is not None:
             return self._refuse(planned)
         return self._landed({"kind": "next_chapter"})
@@ -1813,12 +2140,18 @@ class NarrativeWebFace:
 
     # -- the writes' helpers -------------------------------------------------
 
-    def _plan_chapter(self, now: str) -> str | None:
+    def _plan_chapter(
+        self, now: str, *, author_direction: str | None = None
+    ) -> str | None:
         """One ``Pipeline.plan_chapter`` through the real Director
-        provider; the refusal sentence, or ``None`` on success."""
+        provider (``author_direction`` rides the plan face only — see
+        :meth:`next_chapter`); the refusal sentence, or ``None`` on
+        success."""
 
         try:
-            planned = self._pipeline().plan_chapter(WORLD_ID, now)
+            planned = self._pipeline().plan_chapter(
+                WORLD_ID, now, author_direction=author_direction
+            )
         except LlmProviderError as exc:
             return self._provider_failure(exc.reason)
         if isinstance(planned, Err):
@@ -1827,6 +2160,33 @@ class NarrativeWebFace:
                 f"{planned.error.code.value}: {planned.error.message}"
             )
         return None
+
+    def _write_drive_note(self, note: str | None) -> None:
+        """The stop-note's bookkeeping write (V3-8h): ``None`` clears
+        the stale note — every drive starts by clearing, the previous
+        stop's explanation is obsolete the moment the reader acts again
+        — and a sentence stores the reasoned stop's reason (the state
+        face, polls included, reads it back). The host's generic
+        settings store is the seat (the prose-language write's own
+        table; a host without it skips the persistence — the drive's
+        own ``did`` still carries the sentence), and the write is the
+        idempotent replay posture: an unchanged word writes nothing."""
+
+        if self._app_settings is None:
+            return
+        try:
+            current = self._app_settings.get(V3_DRIVE_NOTE_KEY)
+            if note is None:
+                if current is not None:
+                    self._app_settings.delete(V3_DRIVE_NOTE_KEY)
+                return
+            if current != note:
+                self._app_settings.set(V3_DRIVE_NOTE_KEY, note)
+        except StaleEpochError:
+            # A bookkeeping word never outweighs the landed story (and
+            # the host's own fence is current by construction) — the
+            # sentence still rides the drive's own ``did``.
+            return
 
     def _settle_chapter(self, chapter_id: str) -> str | None:
         """One ``Pipeline.settle``; the refusal sentence, or ``None``."""

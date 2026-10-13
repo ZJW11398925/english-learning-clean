@@ -6,7 +6,7 @@ paradigm shift §10.4).
 the drive wait are exercised offline: every egress call rides an
 injected transport (no socket, no real credential — the V3-8e suite's
 own posture), and the wait pin patches the constant down instead of
-waiting 600 seconds. The real-model evidence is the V3-8f smoke run's
+waiting 1800 seconds. The real-model evidence is the V3-8f smoke run's
 own log (``D:\\elc-scratch\\v38f\\smoke.log``), cited in the delivery
 report — never in this suite.
 
@@ -27,13 +27,14 @@ Pinned here:
 4. ``_provider_failure`` — each failure-code family gets its own
    actionable sentence; a timeout is never dressed as a credentials
    problem (the V3-8f bug the relay fixes);
-5. web.py's drive wait — ``_V3_DRIVE_WAIT_SECONDS`` is 600.0, exactly
-   the five V3 write routes pass it, every other ``_run_host_write``
-   caller keeps the house default (60.0), and — behaviorally, with the
-   constant patched down and the offline transport blocking — a drive
-   that outlives its wait is answered with the honest 500 人话, proving
-   each route reads the drive budget (not the house wait) at request
-   time.
+5. web.py's drive wait — ``_V3_DRIVE_WAIT_SECONDS`` is 1800.0 (V3-8h
+   moved it 600 → 1800 for the drive loop: one call presses on through
+   up to twelve fresh segments), exactly the five V3 write routes pass
+   it, every other ``_run_host_write`` caller keeps the house default
+   (60.0), and — behaviorally, with the constant patched down and the
+   offline transport blocking — a drive that outlives its wait is
+   answered with the honest 500 人话, proving each route reads the
+   drive budget (not the house wait) at request time.
 """
 
 from __future__ import annotations
@@ -334,14 +335,16 @@ def test_each_failure_code_family_gets_its_own_sentence() -> None:
 def test_the_drive_wait_is_the_reading_faces_own_budget() -> None:
     """The wait split, pinned mechanically: the house default stays 60.0
     and its default arm is untouched; exactly the five V3 write routes
-    pass the 600.0 drive budget; no other ``_run_host_write`` caller
-    does (the ack route and every non-V3 write keep the house wait)."""
+    pass the 1800.0 drive budget (V3-8h: the drive loop's own arithmetic
+    — the ceiling × the measured per-call latency + the planning round
+    trips); no other ``_run_host_write`` caller does (the ack route and
+    every non-V3 write keep the house wait)."""
 
     source = (REPO / "src" / "elc" / "web.py").read_text(encoding="utf-8")
     assert web_module._WORKER_WAIT_SECONDS == 60.0
-    assert web_module._V3_DRIVE_WAIT_SECONDS == 600.0
+    assert web_module._V3_DRIVE_WAIT_SECONDS == 1800.0
     assert "_WORKER_WAIT_SECONDS = 60.0" in source
-    assert "_V3_DRIVE_WAIT_SECONDS = 600.0" in source
+    assert "_V3_DRIVE_WAIT_SECONDS = 1800.0" in source
     assert "timeout = _WORKER_WAIT_SECONDS if wait is None else wait" in source
     assert source.count("wait=") == 5
     assert source.count("wait=_V3_DRIVE_WAIT_SECONDS") == 5
