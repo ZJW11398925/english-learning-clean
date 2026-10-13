@@ -200,21 +200,6 @@ _PLAN_ELEMENT_TEXT_KEYS = (
     "must_hide",
 )
 
-#: The Blueprint scene element's text keys (the ten-key canonical set
-#: minus the identity pair and the tick).
-_BLUEPRINT_SCENE_TEXT_KEYS = ("purpose", *_PLAN_ELEMENT_TEXT_KEYS)
-
-#: The chapter's own text fields (§26.2.1's nine minus the ticks and
-#: ``scenes``).
-_BLUEPRINT_TEXT_KEYS = (
-    "goal",
-    "dramatic_question",
-    "closing_pressure",
-    "desired_development",
-    "soft_outcomes",
-    "chapter_questions_to_advance",
-)
-
 #: The ruling's three-word plan verdict, as the parser's vocabulary.
 _REPLAN_SCOPE_WORDS: dict[str, ReplanScope] = {
     "NONE": ReplanScope.NONE,
@@ -238,10 +223,11 @@ def _complete_text(completion: TextCompletion, prompt: str) -> str:
 def _clean(text: str) -> str:
     """The deterministic minimal cleaning (see the module docstring):
     strip the surrounding whitespace, then remove one fence wrapper —
-    a first line that is exactly a code fence (optionally tagged) and a
-    bare closing fence on the last line. Nothing else is reinterpreted;
-    a fence that does not fit the rule rides on to the parser and
-    fails there."""
+    a first line that is exactly a code fence (optionally tagged) and,
+    when present, the bare closing fence on the last line (a closing
+    fence that never came still strips the opening one). Nothing else
+    is reinterpreted; a fence that does not fit the rule rides on to
+    the parser and fails there."""
 
     cleaned = text.strip()
     if cleaned.startswith("```"):

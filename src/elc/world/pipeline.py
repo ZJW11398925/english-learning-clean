@@ -173,8 +173,9 @@ __all__ = [
 @dataclass(frozen=True)
 class SegmentBeat:
     """One segment the drive writes: the Writer provider produces the
-    prose; the length, the language and the terminality are the
-    driver's (the LLM planner's seat in a later wiring — the RA §27
+    prose; the length, the language and the terminality stay the
+    driver's seat (the LLM faces landed in V3-8c; assigning this seat
+    itself to a planner is a later, explicit cut — the RA §27
     diagram's 「POV Writer：正文段」 edge)."""
 
     language: str = "en"
@@ -253,9 +254,10 @@ class Pipeline:
 
     ``action_duration_ticks`` is the deterministic baseline's one
     calibration: the story-time cost NCP-2 advances for a ruling (the
-    LLM resolver judging its own duration is the later wiring). One
-    value for the instance keeps a crash retry's replay shape equal —
-    the ruling's ``duration_ticks`` rides the replay comparison.
+    LLM resolver judging its own duration is a later, explicit cut —
+    the LLM faces themselves landed in V3-8c). One value for the
+    instance keeps a crash retry's replay shape equal — the ruling's
+    ``duration_ticks`` rides the replay comparison.
     """
 
     def __init__(
@@ -1101,9 +1103,10 @@ class Pipeline:
         as the forced ``outcome_ref``, so the library face's forced law
         is satisfied and the gate closes in the same commit. The
         deterministic baseline gives the continuation the default
-        one-tick, non-terminal beat — its length and terminality are
-        the planner's seat in the LLM wiring, the same seat every
-        :class:`SegmentBeat` drives from."""
+        one-tick, non-terminal beat — its length and terminality take
+        the same default seat every :class:`SegmentBeat` drives from
+        (assigning that seat itself to a planner is a later, explicit
+        cut — the LLM faces landed in V3-8c)."""
 
         return self._drive_segment(
             scene_id,
