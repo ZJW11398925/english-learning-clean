@@ -32,7 +32,7 @@
 
 ## 🔴 当前状态（2026-10-13——单一事实源：读数/迁移/下一动以本块为准）
 
-- **rev 829 / SYNCED / 825 对象**；master tip `fc2589c`（V3-8e 终态链 `c465b54`→`bc31aa8`→`23afd74`→`fc2589c`；AGENTS 刷基提交在其上，push 随本块批量进行）。
+- **rev 829 / SYNCED / 825 对象**；master tip 以 `git log --oneline -1` 复核为准（本交接时点 `77558be` 已 push、本地=远端 0 ahead；链 = V3-8e 终态 `c465b54`→`bc31aa8`→`23afd74`→`fc2589c` + AGENTS 刷基 `b671fa6` + 本交接块 `77558be`）。
 - **Narrative V3 程序：V3-1 + V3-2（含 V3-2R）+ V3-3（含 V3-3R）+ V3-4（含 V3-4R）+ V3-5 + V3-5R + V3-6 + V3-6R + V3-7 + V3-8a + V3-8b + V3-8c + V3-8d + V3-8e 已 COMPLETE（V3-8 本体三刀序全毕）**。读数 **6261/0/0**；迁移 **0037/37**（V3-7 的 actor_memory + chapter_settlement 两表；V3-8a/V3-8b/V3-8c/V3-8d/V3-8e 零迁移）；mypy **205** 文件；GLOBAL_CONTENT_TABLES **23 员**。
 - **下一动 = 用户「好玩」亲验（双门之二；V3-8 本体三刀序 c/d/e 全毕，结构验收 12 条已全绿）**——运行：`python -m elc web --app-db ./app.db` → 浏览器开 `http://127.0.0.1:8760/v3`（凭证 = 主 UI「抽屉·设置 → 模型与端点」已存 BYOK，保存即热生效）；页面步骤：开始 → 继续×n → 门卡（写自由输入或点自然举动）→ 提交 → … → 结束本章 → 下一章。**双门同时通过后**才议：试读面并入主 UI 与入口、Legacy V2 退役、真实 rollout 开闸（SessionBudget 三分 + 内容补课仍为前置）。**外审明令：双门通过前不切主 UI、不退役 Legacy V2**。亲验反馈（prompt/UX 需求）归后续刀。
 - **最新收口 DEC**：`DEC-OPI-b8dc176c-…4`（V3-8e 收口，rev 829）。各刀盖章态：V3-7 = 交付 `c263192`/处置 `b4a1c4b`/VR `…12`/收口 `…14`；V3-8a = `04c5d8f`/`10b4489`/VR `…8`/收口 `…10`；V3-8b = `73f6fd7`/`2863ed8`/VR `…21`/收口 `…24`；V3-8c = 开工 `…5`/TASK `…7`/VAL `…9`/交付 `e68dcb5`（+散文扫尾 `9be8453`）/处置 `b63fcbb`/台账 `7cae9aa`/VR `…13`/收口 `…17`；V3-8d = 开工 `…19`/TASK `…21`/VAL `…23`/交付 `0013593`（+补钉 `4adba5d`）/处置 `cccae95`/台账 `439fadc`/VR `…25`/收口 `…29`；V3-8e = 开工 `…31`（rev 826）/TASK `…33`（rev 827）/VAL `…35`（rev 828）/交付 `c465b54`（+补钉 `bc31aa8`）/处置 `23afd74`/台账 `fc2589c`/VR `…37`（PASS）/收口 `…4`（族 `OPI-b8dc176c`，rev 829）。更早各刀（V3-1..V3-6R 与 Phase 4-10/D 程序）的交付明细见 `docs/sessions/session-handoffs-archive.md` 与 git 历史。
