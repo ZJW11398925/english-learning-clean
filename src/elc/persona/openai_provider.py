@@ -62,7 +62,7 @@ import json
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from email.message import Message
 from typing import IO, Callable, Iterator, Mapping, Protocol
 
@@ -281,6 +281,31 @@ class OpenAICompatibleProvider:
         still rebuild a swapped provider over the same source."""
 
         return self._secrets
+
+    def with_timeout(self, seconds: float) -> OpenAICompatibleProvider:
+        """One derivation of this provider, overriding **only** the
+        timeout — the additive arm the V3-8f calibration needs.
+
+        Real-model writing rounds take tens of seconds to a few minutes
+        (the paradigm shift's §10.4), so the world-drive assembly cannot
+        ride the general 30s egress default: it derives the live provider
+        with the drive's own budget (:data:`elc.narrative_web`'s
+        ``WORLD_EGRESS_TIMEOUT_SECONDS``). Everything else rides
+        unchanged by construction — the same coordinates (``base_url`` /
+        ``model``), the same ``secret_ref`` and :class:`SecretSource`, and
+        the very transports this instance was built with (an injected
+        ``HttpPost`` / ``HttpStreamPost`` stays the one dialled, which is
+        what keeps the tests offline) — so the derivation is no second
+        configuration face and no second credential channel: it is the
+        *same* live egress with one number moved.
+        """
+
+        return OpenAICompatibleProvider(
+            replace(self._config, timeout_seconds=seconds),
+            self._secrets,
+            transport=self._post,
+            stream_transport=self._stream,
+        )
 
     def call(self, prompt: CompiledPrompt) -> ProviderOutput:
         """Check the destination, resolve the key, POST once, answer a value.

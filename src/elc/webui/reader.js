@@ -2,7 +2,7 @@
 //
 // 纪律：零依赖、零外链、零内联样式；DOM 一律 createElement +
 // textContent（不拼 HTML 串）；每一次驱动（continue/submit/…）是一个
-// 长请求（真实模型一段可能 10–60 秒），页面在此期间以定时轮询
+// 长请求（真实模型一段可能数十秒至两三分钟），页面在此期间以定时轮询
 // /api/v3/state 呈现进度——state 路由在服务端脱队读（自己的只读连接），
 // 不会被驱动阻塞。渲染后对新增 passage 发一次 ack（record_exposure 的
 // 页面侧：渲染即曝光；与对话/提交解耦）。
@@ -240,7 +240,7 @@ async function submit(optionText, optionWord) {
   };
   if (lastAttempt.option !== null) body.selected_option = lastAttempt.option;
   busy = true;
-  setStatus("裁定与续写中…（真实模型，可能 10–60 秒）");
+  setStatus("裁定与续写中…（真实模型，可能数十秒至两三分钟）");
   startPolling();
   let payload = null;
   try {
@@ -268,7 +268,7 @@ async function submit(optionText, optionWord) {
 el("reader-start").addEventListener("click", () =>
   drive(API.start, undefined, "种下世界、起第一幕…（真实模型）"));
 el("reader-continue").addEventListener("click", () =>
-  drive(API.continue_, {}, "写下下一段…（真实模型，可能 10–60 秒）"));
+  drive(API.continue_, {}, "写下下一段…（真实模型，可能数十秒至两三分钟）"));
 el("reader-end-scene").addEventListener("click", () =>
   drive(API.continue_, { end_scene: true }, "收束本场…（真实模型）"));
 el("reader-settle").addEventListener("click", () =>

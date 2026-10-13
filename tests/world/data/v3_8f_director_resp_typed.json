@@ -1,0 +1,42 @@
+{
+  "goal": "Get the Li household through the first morning after Father's dawn departure: the storehouse opened, the ledger kept, the cousin Renn received, and the folded red-sealed paper kept just under the surface of ordinary talk.",
+  "dramatic_question": "Can Lia get a straight account of Father's errand before the household absorbs Renn and the day's work, or will Mother's silence and the red-sealed paper make the storehouse a place where everyone counts what is missing?",
+  "planned_start_tick": 0,
+  "planned_end_tick": 540,
+  "closing_pressure": "At the close, Renn's pack is by the door, the ledger has a blank line where Father's cart should be entered, and Mother's hand keeps returning to the folded paper before she puts it in the meal chest; the household presses toward whether it can speak before the evening lamp or let silence become the day's rule.",
+  "desired_development": "Lia presses from private noticing toward public half-knowledge: she tests Mother's silence, sees Renn notice what is omitted, and finds the ledger's blank line for Father's cart refusing to close by arithmetic.",
+  "soft_outcomes": "The shape reached toward: Mother's silence around the letter, Lia's questions held mostly in public, Renn received without being told why the yard feels careful, and the red seal unspoken yet impossible to ignore.",
+  "chapter_questions_to_advance": "What did Father carry up the capital road?\nWhy does Mother keep the red-sealed paper folded at her sleeve?\nHow much will the household tell Renn, and how much will Lia let herself ask?",
+  "scenes": [
+    {
+      "purpose": "Open in the Li storehouse before dawn and let the day's first irregular fact arrive through ordinary work: Father's cart is being loaded outside, Mother's manner is clipped, and a folded paper shows at her sleeve.",
+      "place": "The Li storehouse, lamp low, ledgers and candle tally on the counting table; the yard beyond is dark and the cart can be heard at the gate.",
+      "pov_actor_id": "Lia",
+      "participants": [
+        "Lia",
+        "Mother"
+      ],
+      "planned_start_tick": 0,
+      "entry_goals": "Lia wants to finish the dawn tally before Father's cart comes to the gate.\nMother wants the storehouse records ready and the yard to look ordinary.",
+      "exit_condition": "Mother's sleeve catches the lamp as she reaches for the key, and Lia sees the folded paper; Mother sends her to check the gate.",
+      "elasticity": "Can stretch over the slow tally of sacks and candle stubs; can compress to the single moment the paper shows.",
+      "revealable": "The cart is being loaded for a longer absence than a market day.\nMother is carrying a folded paper she does not enter in any ledger.",
+      "must_hide": "What the paper says or who sealed it.\nWhy Mother's voice is clipped.\nThe exact errand Father is taking up the capital road."
+    },
+    {
+      "purpose": "Show the road after the cart has gone and let Lia press her first direct question against Mother's practical silence.",
+      "place": "The Li gate and the first stretch of the capital road beyond the walled yard, dawn gray on the hills.",
+      "pov_actor_id": "Lia",
+      "participants": [
+        "Lia",
+        "Mother"
+      ],
+      "planned_start_tick": 300,
+      "entry_goals": "Lia wants to close the gate and write the cart's departure in the day's book.\nMother wants to turn the household toward the morning's work.",
+      "exit_condition": "Lia asks where Father went; Mother answers with a task and the folded paper shifts at her sleeve.",
+      "elasticity": "Can linger on the gate bar, the wheel ruts, and the cold air; can shorten to the question and the non-answer.",
+      "revealable": "The cart took the capital road, not the market road.\nMother avoids naming a return.",
+      "must_hide": "The red seal's message.\nWhether Mother has already decided what the household will do.\nAny promise that Father will write or return soon."
+    }
+  ]
+}

@@ -18,7 +18,13 @@ next to ``web.py``): the two halves the V3-8c register left to this cut —
    the settings page's hot swaps all ride unchanged — **no second
    configuration face, no second credential channel**. The prompt never
    rides back in a value, and a key a hostile endpoint echoes is refused
-   by the persona adapter before it can (its ``key-echo`` arm);
+   by the persona adapter before it can (its ``key-echo`` arm). The call
+   itself goes out over the live egress's **additive time derivation**
+   (``live.with_timeout(WORLD_EGRESS_TIMEOUT_SECONDS)``): a real writing
+   round takes tens of seconds to a few minutes (V3-8f's §10.4) and the
+   general 30s egress default died on every drive, so the world face
+   carries its own independently calibrated budget — same coordinates,
+   same secret source, same injected transport, one number moved;
 2. **the reading face's service half** (:class:`NarrativeWebFace`): the
    route implementations ``web.py``'s new branches ship to the host
    thread (the one-thread work queue). ``web.py`` adds the branches and
@@ -173,6 +179,7 @@ if TYPE_CHECKING:
 __all__ = [
     "REASON_NO_EGRESS",
     "READER_ID",
+    "WORLD_EGRESS_TIMEOUT_SECONDS",
     "DurableReplayResolver",
     "DurableReplayWriter",
     "NarrativeWebFace",
@@ -192,6 +199,28 @@ READER_ID = "local-user"
 #: one" (a scripted double, or none at all): a body-free value, never a
 #: raise, never a fabricated completion.
 REASON_NO_EGRESS = "no-egress"
+
+#: The world drive's own egress budget (seconds), **independently
+#: calibrated** — the V3-8f fix (the paradigm shift's §10.4), stated here
+#: once:
+#:
+#: - *why a separate calibration:* a real model's single writing round is
+#:   a "tens of seconds to a few minutes" round trip (measured 43–72s per
+#:   call, with reasoning tokens dominating); the persona egress's general
+#:   default (:data:`~elc.persona.openai_provider.OpenAICompatibleConfig`
+#:   ``timeout_seconds=30.0``) died on **every** world drive with a real
+#:   credential. 180s covers the measured round with headroom;
+#: - *why not a second configuration face:* the value is a module
+#:   constant, not a setting — the settings page's endpoint / model / key
+#:   and their hot swap stay the **one** configuration face, and the
+#:   budget is applied through the live egress's additive derivation
+#:   (``with_timeout``): the same coordinates, the same secret source,
+#:   the same injected transport — one number moved, no second channel
+#:   for the credential and no second place to look when something is
+#:   wrong. The long drive's user face stays the page's own polling (no
+#:   streaming; an async drive / streaming are a later cut's explicit
+#:   re-open).
+WORLD_EGRESS_TIMEOUT_SECONDS = 180.0
 
 #: The egress adapter's two ``CompiledPrompt`` fields. The world's
 #: prompts are not a persona's, so the identity and the contract name are
@@ -373,6 +402,14 @@ class PersonaEgressCompletion:
     ever carries the prompt or a credential back: a failure value is a
     code, and a reply that echoed the key is refused by the persona
     adapter before this seam sees it.
+
+    The one number this seam moves is the timeout: the call goes out over
+    the live egress's additive derivation,
+    ``live.with_timeout(WORLD_EGRESS_TIMEOUT_SECONDS)`` — the drive's own
+    independently calibrated budget (:data:`WORLD_EGRESS_TIMEOUT_SECONDS`;
+    same coordinates, same secret source, same injected transport). The
+    derivation is rebuilt per call, so a settings-page hot swap still
+    lands on the very next call.
     """
 
     def __init__(self, provider_of: Callable[[], object]) -> None:
@@ -384,7 +421,7 @@ class PersonaEgressCompletion:
         live = self._provider_of()
         if not isinstance(live, OpenAICompatibleProvider):
             return CompletionOutcome(text=None, error=REASON_NO_EGRESS)
-        output = live.call(
+        output = live.with_timeout(WORLD_EGRESS_TIMEOUT_SECONDS).call(
             CompiledPrompt(
                 persona_id=WORLD_PROMPT_PERSONA_ID,
                 prompt_text=prompt,
@@ -1212,6 +1249,38 @@ class NarrativeWebFace:
 
     @staticmethod
     def _provider_failure(reason: str) -> str:
+        """One failure code as one actionable human sentence (V3-8f,
+        the paradigm shift §10.4: the seam's short codes are relayed,
+        never flattened — a timeout must not reach the reader dressed
+        as a credentials problem).
+
+        The named arms are the ones with a distinct action behind them;
+        every other code keeps the generic sentence with the code
+        appended (still honest, still actionable in the retry sense).
+        """
+
+        if reason == "timeout":
+            return (
+                "模型这一次想了太久、超过了等待上限（约 180 秒）——"
+                "再点一次重试；若一直这样，换更快的模型 / 端点。"
+            )
+        if reason in ("http-401", "missing-secret", "key-echo"):
+            return (
+                f"模型端点没能通过这把密钥（{reason}）——打开「设置」"
+                "检查端点与密钥（BYOK：密钥只存在本机），保存后"
+                "再回来继续。"
+            )
+        if reason in ("not-configured", REASON_NO_EGRESS):
+            return (
+                f"这个进程没有可用的模型端点（{reason}）——先在"
+                "「设置」里填好端点与模型名（或用 --base-url / "
+                "--model 启动），再回来继续。"
+            )
+        if reason == "http-429":
+            return (
+                "模型端点限流了（http-429）——等一会儿再点一次；"
+                "若一直这样，换端点或降低请求频率。"
+            )
         return (
             f"这一次写作没有完成（{reason}）——模型端点没有给出可用的"
             "回答；重试一次即可，若一直这样，去「设置」检查端点 / "

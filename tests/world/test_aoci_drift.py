@@ -998,3 +998,107 @@ def test_v3_8b_entries_carry_the_correction_faces() -> None:
         "class DirectorProvider",
     ):
         assert symbol in providers_source, symbol
+
+
+# ---------------------------------------------------------------------------
+# V3-8f (TASK-OPI-c0f4d9b4…12 / the opening ruling …10, the real-model
+# wiring baseline — the paradigm shift §10.4): the re-touched entries
+# ---------------------------------------------------------------------------
+
+
+def test_v3_8f_entries_carry_the_wiring_baseline_faces() -> None:
+    """V3-8f's ledger faces ride their entries: the ``llm_providers.py``
+    entry (the text tolerance, the value-type contract, the relayed seam
+    codes), the ``narrative_web.py`` entry
+    (``WORLD_EGRESS_TIMEOUT_SECONDS=180.0`` and the per-code human
+    sentences), the ``web.py`` entry (``_V3_DRIVE_WAIT_SECONDS`` and the
+    house default that every other caller keeps) and the
+    ``openai_provider.py`` entry (``with_timeout`` — the additive
+    derivation). Zero migration: no migration entry moves, and the
+    coverage law above keeps every existing one present."""
+
+    elc_section = "===D:/english-learning-clean/src/elc/==="
+    persona_section = "===D:/english-learning-clean/src/elc/persona/==="
+    world_section = "===D:/english-learning-clean/src/elc/world/==="
+    for section, tag, keywords in (
+        (
+            world_section,
+            "llm_providers.py[LP8T]",
+            (
+                "V3-8f",
+                "_text",
+                "_PROSE_TYPE_SENTENCE",
+                "_IDENTITY_SENTENCE",
+                "_seam_code",
+                "bad-shape",
+                "ONE JSON string",
+            ),
+        ),
+        (
+            elc_section,
+            "narrative_web.py[NW8E]",
+            (
+                "V3-8f",
+                "WORLD_EGRESS_TIMEOUT_SECONDS=180.0",
+                "with_timeout",
+                "_provider_failure",
+                "http-429",
+            ),
+        ),
+        (
+            elc_section,
+            "web.py[EC8L]",
+            (
+                "V3-8f",
+                "_V3_DRIVE_WAIT_SECONDS",
+                "_WORKER_WAIT_SECONDS",
+                "_run_host_write",
+                "600.0",
+            ),
+        ),
+        (
+            persona_section,
+            "openai_provider.py[IN9M]",
+            (
+                "V3-8f",
+                "with_timeout",
+                "stream_transport",
+            ),
+        ),
+    ):
+        entry = _entry_line_in_section(section, tag)
+        for keyword in keywords:
+            assert keyword in entry, (tag, keyword)
+
+    # coherence: the symbols the entries name are the live sources' own —
+    # renaming one side alone reddens here.
+    llm_source = (
+        REPO / "src" / "elc" / "world" / "llm_providers.py"
+    ).read_text(encoding="utf-8")
+    for symbol in (
+        "def _text(",
+        "_PROSE_TYPE_SENTENCE = (",
+        "_IDENTITY_SENTENCE = (",
+        "def _seam_code(",
+    ):
+        assert symbol in llm_source, symbol
+    web_source = (REPO / "src" / "elc" / "web.py").read_text(encoding="utf-8")
+    for symbol in (
+        "_V3_DRIVE_WAIT_SECONDS = 600.0",
+        "_WORKER_WAIT_SECONDS = 60.0",
+        "def _run_host_write(",
+    ):
+        assert symbol in web_source, symbol
+    narrative_source = (
+        REPO / "src" / "elc" / "narrative_web.py"
+    ).read_text(encoding="utf-8")
+    for symbol in (
+        "WORLD_EGRESS_TIMEOUT_SECONDS = 180.0",
+        "def _provider_failure(",
+    ):
+        assert symbol in narrative_source, symbol
+    provider_source = (
+        REPO / "src" / "elc" / "persona" / "openai_provider.py"
+    ).read_text(encoding="utf-8")
+    for symbol in ("def with_timeout(", "stream_transport=self._stream"):
+        assert symbol in provider_source, symbol

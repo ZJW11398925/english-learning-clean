@@ -62,21 +62,47 @@ of the expected key set with the expected types (missing key →
 ``missing-field:<name>``, wrong type / non-object / bad JSON /
 out-of-vocabulary ``replan_scope`` → ``bad-shape`` / ``bad-payload``);
 keys beyond the canonical set are **ignored** (tolerance, never a
-second schema). The library faces downstream (the Director's schema,
-the ``_checked_fields`` family, ``commit_action``) keep every deeper
-judgment — the parser blesses a payload's *shape*, never its content.
+second schema). **One tolerance arm rides the text fields (V3-8f,
+§10.4)**: a text field answered as a JSON **array of strings** is
+joined deterministically into the one string the canonical type
+promises (``"\\n".join`` — the same newline separator the ``must_hide``
+fragment law splits on; an empty array is the honest empty string).
+Real models were observed to answer a plural-meaning prose field as an
+array even when the schema names a string, and the two-sided fix is the
+prompt's explicit per-field type contract **plus** this one deterministic
+join — canonical types and stored shapes are untouched (the library
+faces keep every deeper judgment; nothing else about the strictness
+moves: a non-string item, a number or an object in a text field is
+still ``bad-shape``). **A second contract rides the identity fields**
+(the V3-8f smoke's fifth face, same family as the type contract): the
+prompts state that a participant identity is the **bare id token** the
+prompt lists — the part before any parenthesised name or role — never
+the rendered composite (a real Resolver copied the prompt's own
+``cousin (Renn)`` form and the namespace check refused it, the V3-3R
+freeze doing its job); the refusal stays the strict backstop, and the
+contract is stated where the model reads it. The library faces
+downstream (the Director's
+schema, the ``_checked_fields`` family, ``commit_action``) keep every
+deeper judgment — the parser blesses a payload's *shape*, never its
+content.
 
 **Failure semantics** — the V3 Protocol face (``providers.py``, sealed)
 has no Result channel, so a real provider's runtime failure escapes as
 :class:`LlmProviderError` (a module-owned ``Exception`` carrying a
-short body-free ``reason``; the persona ``ProviderOutput`` reason-code
-style: ``transport-error`` / ``no-output`` / ``bad-payload`` /
-``missing-field:<name>`` / ``bad-shape``). The seam's own ``error``
-value is relayed as the code only — never its free text, which could
-echo a prompt. This is the runtime-error posture, the fake's honest
+short body-free ``reason``): the module's own codes (``no-output`` /
+``bad-payload`` / ``missing-field:<name>`` / ``bad-shape``, the
+persona ``ProviderOutput`` reason-code style) **plus the seam's short
+codes relayed** (V3-8f, §10.4: ``timeout`` / ``http-<status>`` /
+``missing-secret`` / ``not-configured`` / ``no-egress`` / ``key-echo``
+/ ``cleartext-http`` / ``bad-json`` / ``response-too-large`` — a
+flattened ``transport-error`` would misreport a timeout as a
+credentials problem at the user face). The relay is code-shaped only
+(:func:`_seam_code`): free text from a seam that breaks its own
+contract is still flattened, so no message ever carries the prompt or a
+prompt fragment. This is the runtime-error posture, the fake's honest
 ``ValueError`` being the programmer-error one; the caller (the drive /
 the reading face) owns converting the exception into its Err / HTTP
-answer. No message ever carries the prompt or a prompt fragment.
+answer, and translates the code into an actionable sentence.
 
 Discipline: no ``sqlite3``, no transaction, no SQL, no clock — the
 module never touches the database (every call happens outside any
@@ -163,14 +189,22 @@ class TextCompletion(Protocol):
 class LlmProviderError(Exception):
     """A real provider's runtime failure, body-free and code-shaped.
 
-    ``reason`` is one short code: ``transport-error`` (the seam
-    answered an ``error`` value), ``no-output`` (an empty answer or a
-    missing ``text``), ``bad-payload`` (not a JSON object), ``bad-shape``
-    (a wrong type or an out-of-vocabulary word) or
-    ``missing-field:<name>`` (a required key absent; nested coordinates
-    read ``scenes[0].place`` — the Director schema's own language). The
-    message is the code alone: the prompt, and anything a transport
-    might have echoed, never rides through.
+    ``reason`` is one short code, from either of two families: the
+    **seam codes relayed** from the transport (V3-8f, §10.4 — the
+    persona adapter's own vocabulary: ``timeout`` / ``http-<status>`` /
+    ``missing-secret`` / ``not-configured`` / ``no-egress`` /
+    ``key-echo`` / ``cleartext-http`` / ``bad-json`` / ``bad-shape`` /
+    ``response-too-large``) or the **module's own** codes (``no-output``
+    for an empty answer, ``bad-payload`` for a non-object JSON answer,
+    ``bad-shape`` for a wrong type or an out-of-vocabulary word,
+    ``missing-field:<name>`` for a required key absent — nested
+    coordinates read ``scenes[0].place``, the Director schema's own
+    language). Flattening every seam failure into ``transport-error``
+    was the V3-8f bug the relay fixes: a timeout must reach the user
+    face as a timeout. The message is the code alone: the prompt, and
+    anything a transport might have echoed, never rides through — a
+    seam handing free text instead of a code is flattened to
+    ``transport-error`` (see :func:`_seam_code`).
     """
 
     def __init__(self, reason: str) -> None:
@@ -208,13 +242,37 @@ _REPLAN_SCOPE_WORDS: dict[str, ReplanScope] = {
 }
 
 
+#: The shape a relayed seam code must have (V3-8f): one short lowercase
+#: word — dashes and digits allowed, so ``timeout`` / ``http-401`` /
+#: ``missing-secret`` / ``no-egress`` / ``response-too-large`` all pass.
+#: A seam that hands free text instead (a bug, or a hostile double) is
+#: flattened to ``transport-error``: the prompt must never ride into a
+#: reason through the failure arm.
+_SEAM_CODE = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
+
+
+def _seam_code(error: str) -> str:
+    """The seam's ``error`` as the code to relay — or ``transport-error``.
+
+    The seam's own contract promises a short body-free reason (the
+    persona adapter's fixed vocabulary); this function relays exactly
+    that shape and nothing wider. The guard is the existing posture kept
+    intact: an error string that could echo a prompt (spaces, newlines,
+    case, length) never becomes a ``LlmProviderError`` reason.
+    """
+
+    return error if _SEAM_CODE.match(error) else "transport-error"
+
+
 def _complete_text(completion: TextCompletion, prompt: str) -> str:
-    """One seam call, the failure arms first: a seam ``error`` is the
-    body-free ``transport-error``; a missing ``text`` is ``no-output``."""
+    """One seam call, the failure arms first: a seam ``error`` is relayed
+    as the code it is (V3-8f: ``timeout`` / ``http-<status>`` /
+    ``missing-secret`` / … reach the user face instead of being flattened
+    to ``transport-error``); a missing ``text`` is ``no-output``."""
 
     outcome = completion.complete(prompt)
     if outcome.error is not None:
-        raise LlmProviderError("transport-error")
+        raise LlmProviderError(_seam_code(outcome.error))
     if outcome.text is None:
         raise LlmProviderError("no-output")
     return outcome.text
@@ -274,10 +332,25 @@ def _field(
 def _text(
     payload: Mapping[str, Any], name: str, *, coordinate: str = ""
 ) -> str:
+    """One text field, with the V3-8f tolerance arm: a JSON **array of
+    strings** is joined deterministically into the one string the
+    canonical type promises (``"\\n".join`` — the newline is the same
+    separator the ``must_hide`` fragment law splits on, so a model's
+    several-items-as-array answer lands in the shape the design means).
+    An empty array is the honest empty string (downstream faces keep
+    every deeper judgment). Anything else — a non-string item, a number,
+    an object — stays the strict ``bad-shape``: the tolerance is the one
+    direction real models were observed to overshoot in, never a second
+    schema."""
+
     value = _field(payload, name, coordinate=coordinate)
-    if not isinstance(value, str):
-        raise LlmProviderError("bad-shape")
-    return value
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list) and all(
+        isinstance(item, str) for item in value
+    ):
+        return "\n".join(value)
+    raise LlmProviderError("bad-shape")
 
 
 def _tick(
@@ -597,6 +670,39 @@ def _content_block(content: Mapping[str, Any] | None) -> str:
     )
 
 
+#: The value-type contract the JSON-answering arms state verbatim
+#: (V3-8f, the paradigm shift §10.4): every prose field is ONE JSON
+#: string — several items join into that one string separated by
+#: newlines (the same separator the ``must_hide`` fragment law splits
+#: on); arrays and integers are named as such per field. Without this
+#: contract a real model naturally answers a plural-meaning prose field
+#: as an array and the strict parser refuses ``bad-shape``. The Writer
+#: arm answers prose, not JSON, and does not carry it.
+_PROSE_TYPE_SENTENCE = (
+    "Value types: every prose (text) field is ONE JSON string — never an"
+    " array; when several items belong in one field, write them into"
+    " that one string separated by newlines. Arrays are JSON arrays of"
+    " exactly the items named, and ticks are JSON integers."
+)
+
+#: The identity-vocabulary contract the same three arms state verbatim
+#: (V3-8f's smoke run, the fifth face — same family as the type
+#: contract): the prompts render a participant as ``id (name)`` or
+#: ``id (role=…)``, and a real Resolver answered the rendered composite
+#: back (``cousin (Renn)``) into ``participants`` — the namespace check
+#: (the V3-3R freeze) refused it. The identity the fields promise is the
+#: bare id token the prompt lists, never the parenthesised render and
+#: never a display name. The Writer arm answers prose, not identities,
+#: and does not carry it.
+_IDENTITY_SENTENCE = (
+    "Identity strings: a participant identity (participants entries,"
+    " pov_actor_id) is the bare id token exactly as this prompt lists"
+    " it — the part before any parenthesis. Never answer the rendered"
+    " display form: where this prompt writes an id followed by a name"
+    " or role in parentheses, the identity string is the id alone."
+)
+
+
 def _writer_prompt(context: PovContext) -> str:
     """The Writer arm's prompt (see the class docstring): the POV-safe
     context is all this assembly may read — the compiled object is the
@@ -686,17 +792,23 @@ def _scene_plan_prompt(context: ScenePlanContext, *, replan: bool) -> str:
     lines = [
         *opening,
         "",
-        "The object's keys (all required; keys beyond them are ignored):",
-        '- "pov_actor_id": the scene\'s one point-of-view character — a',
-        "  participant identity string, and a member of the participants",
-        '- "participants": an array of participant identity strings',
-        '- "planned_start_tick": an integer story tick',
-        '- "place": where the scene happens',
-        '- "entry_goals": what the scene opens toward',
-        '- "exit_condition": the condition under which the scene closes',
-        '- "elasticity": how far the scene may stretch',
-        '- "revealable": what may be revealed, once it is earned',
-        '- "must_hide": the hard prohibitions — what must NOT be revealed',
+        "The object's keys (all required; keys beyond them are ignored).",
+        _PROSE_TYPE_SENTENCE,
+        _IDENTITY_SENTENCE,
+        '- "pov_actor_id": one JSON string — the scene\'s one point-of-view',
+        "  character, a participant identity string, and a member of the",
+        "  participants",
+        '- "participants": a JSON array of participant identity strings',
+        '- "planned_start_tick": one JSON integer — an integer story tick',
+        '- "place": one JSON string — where the scene happens',
+        '- "entry_goals": one JSON string — what the scene opens toward',
+        '- "exit_condition": one JSON string — the condition under which',
+        "  the scene closes",
+        '- "elasticity": one JSON string — how far the scene may stretch',
+        '- "revealable": one JSON string — what may be revealed, once it',
+        "  is earned",
+        '- "must_hide": one JSON string — the hard prohibitions, what must',
+        "  NOT be revealed",
         "",
         f"Scene: {context.scene_id} (world {context.world_id})",
         f"POV: {context.pov_actor_id}",
@@ -742,15 +854,23 @@ def _blueprint_prompt(context: DirectorPlanContext, *, replan: bool) -> str:
         "You are the world director of an interactive story world. Plan",
         "ONE chapter and answer with one JSON object and nothing else.",
         "",
-        "The object's chapter fields (all required):",
-        '- "goal": what the chapter sets out to reach',
-        '- "dramatic_question": the question the chapter presses',
-        '- "planned_start_tick" / "planned_end_tick": the planned story',
-        "  window (integers; the end never before the start)",
-        '- "closing_pressure": where the chapter presses at its close',
-        '- "desired_development": the development it works toward',
-        '- "soft_outcomes": the shape of an outcome it reaches toward',
-        '- "chapter_questions_to_advance": the questions it advances',
+        "The object's chapter fields (all required).",
+        _PROSE_TYPE_SENTENCE,
+        _IDENTITY_SENTENCE,
+        '- "goal": one JSON string — what the chapter sets out to reach',
+        '- "dramatic_question": one JSON string — the question the',
+        "  chapter presses",
+        '- "planned_start_tick" / "planned_end_tick": each one JSON',
+        "  integer — the planned story window; the end never before the",
+        "  start",
+        '- "closing_pressure": one JSON string — where the chapter',
+        "  presses at its close",
+        '- "desired_development": one JSON string — the development it',
+        "  works toward",
+        '- "soft_outcomes": one JSON string — the shape of an outcome it',
+        "  reaches toward",
+        '- "chapter_questions_to_advance": one JSON string — the',
+        "  questions it advances",
         '- "scenes": a non-empty array of scene elements',
         "The wording law: closing_pressure, desired_development,",
         "soft_outcomes and chapter_questions_to_advance say where the",
@@ -761,7 +881,12 @@ def _blueprint_prompt(context: DirectorPlanContext, *, replan: bool) -> str:
         "purpose, place, pov_actor_id, participants,",
         "planned_start_tick, entry_goals, exit_condition, elasticity,",
         "revealable, must_hide — with the POV among the participants",
-        "(one POV per scene).",
+        "(one POV per scene). Inside an element: purpose, place,",
+        "pov_actor_id, entry_goals, exit_condition, elasticity,",
+        "revealable and must_hide are each ONE JSON string (several",
+        "items join into that one string separated by newlines);",
+        "participants is a JSON array of participant identity strings;",
+        "planned_start_tick is one JSON integer.",
         "",
         "The world you plan for:",
         f"- world: {director_context.world_id}",
@@ -844,18 +969,24 @@ def _resolver_prompt(context: ResolverContext) -> str:
         "user has submitted an intent at a story stop, and you decide",
         "what actually happens — the world's one authoritative outcome.",
         "Answer with one JSON object and nothing else, carrying exactly",
-        "these keys:",
-        '- "interpretation": what the submission means in this world',
-        "  (a reading of the user's intent, never an invented intention)",
-        '- "outcome": what actually happens, as world fact',
-        '- "actual_action": the action that actually unfolds',
-        '- "consequences": what changes because of it',
-        '- "state_effects": an array of {"key": ..., "statement": ...}',
-        "  objects settling the changed world state (may be empty)",
-        '- "participants": an array of participant identity strings the',
-        "  outcome is about",
-        '- "replan_scope": "NONE" | "SCENE" | "CHAPTER" — whether the',
-        "  scene's plan or the chapter's plan must be revised",
+        "these keys.",
+        _PROSE_TYPE_SENTENCE,
+        _IDENTITY_SENTENCE,
+        '- "interpretation": one JSON string — what the submission means',
+        "  in this world (a reading of the user's intent, never an",
+        "  invented intention)",
+        '- "outcome": one JSON string — what actually happens, as world',
+        "  fact",
+        '- "actual_action": one JSON string — the action that actually',
+        "  unfolds",
+        '- "consequences": one JSON string — what changes because of it',
+        '- "state_effects": a JSON array of {"key": <one JSON string>,',
+        '  "statement": <one JSON string>} objects settling the changed',
+        "  world state (may be empty)",
+        '- "participants": a JSON array of participant identity strings',
+        "  the outcome is about",
+        '- "replan_scope": exactly one of "NONE" | "SCENE" | "CHAPTER" —',
+        "  whether the scene's plan or the chapter's plan must be revised",
         "",
         "Hard rules:",
         "- The submission is the user's intent, not a world fact: never",

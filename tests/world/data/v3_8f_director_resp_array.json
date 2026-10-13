@@ -1,0 +1,68 @@
+{
+  "goal": "Carry the Li household through the first morning after Father's pre-dawn ride, letting the red-sealed paper and the cousin's arrival press on Lia's account of what is normal.",
+  "dramatic_question": "What is the household not saying about the paper Mother carries, and how will that silence shape the first day without Father?",
+  "planned_start_tick": 0,
+  "planned_end_tick": 600,
+  "closing_pressure": "At the close, the breakfast table has gone quiet around the unopened question of the letter; Mother's clipped warmth and Renn's attentive strangeness press the household toward a day that feels unlikely to stay ordinary.",
+  "desired_development": "The chapter presses toward Lia moving from private noticing to public testing: she has seen the red seal, heard the evasions, and now carries the question of whether to press Mother before the day's work claims them.",
+  "soft_outcomes": "A quiet, charged morning in which routines mostly hold and secrets mostly hold; Lia's suspicion takes root; Renn arrives as witness and possible ally; Mother's silence becomes a presence at the table.",
+  "chapter_questions_to_advance": [
+    "What does the red-sealed letter ask of the Li household?",
+    "Why did Father take the capital road before dawn instead of the market?"
+  ],
+  "scenes": [
+    {
+      "purpose": "Establish the ordinary rhythm of the house before dawn and let Lia notice the folded paper at Mother's sleeve.",
+      "place": "the Li storehouse, lamplight and ledger dust",
+      "pov_actor_id": "lia",
+      "participants": [
+        "lia",
+        "mother"
+      ],
+      "planned_start_tick": 0,
+      "entry_goals": [
+        "Lia aims to finish the night's tally and keep the storehouse ready for the day's carts.",
+        "Mother aims to move through the yard without answering more than she must."
+      ],
+      "exit_condition": "The scene can close once the paper has been glimpsed and Mother has turned the talk back to candles and sacks.",
+      "elasticity": "medium: can linger on ledger details or tighten if Mother notices Lia's glance.",
+      "revealable": [
+        "A folded paper with a red seal sits at Mother's sleeve.",
+        "Mother is awake earlier than usual.",
+        "The household is stirring before first light."
+      ],
+      "must_hide": [
+        "The letter's contents.",
+        "That Mother has already read it and knows what it asks.",
+        "Why Father rides west."
+      ]
+    },
+    {
+      "purpose": "Let Lia register Father's absence at dawn and hear only the capital road as an answer.",
+      "place": "the walled yard and gate, grey dawn",
+      "pov_actor_id": "lia",
+      "participants": [
+        "lia",
+        "mother"
+      ],
+      "planned_start_tick": 300,
+      "entry_goals": [
+        "Lia aims to catch the cart before it clears the gate and get a straight account of the road.",
+        "Mother aims to keep the farewell brief and the yard moving."
+      ],
+      "exit_condition": "The scene can close once the cart is out of sight, Mother has given only the capital road as an answer, and the paper at her sleeve has been touched again.",
+      "elasticity": "tight: the dawn light and the cart's departure set a natural limit.",
+      "revealable": [
+        "Father took the capital road before full light.",
+        "He did not take the market route.",
+        "Mother is relieved and worried in the same breath.",
+        "The red-sealed paper is still on her."
+      ],
+      "must_hide": [
+        "What Father was asked to do.",
+        "What the letter says.",
+        "Whether he will return tonight or later."
+      ]
+    }
+  ]
+}

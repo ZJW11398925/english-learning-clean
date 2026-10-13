@@ -627,6 +627,18 @@ HISTORY_TURNS = 50
 #: never blocks on anything but the work itself).
 _WORKER_WAIT_SECONDS = 60.0
 
+#: The V3 reading face's write routes' own wait (V3-8f, the paradigm shift
+#: §10.4, "长驱动不误报"): one drive can carry **several** real model round
+#: trips — ``submit`` is the ruling + the auto-routed CHAPTER replan + the
+#: continuation, ≈ three calls — so the house 60s wait reported "the host
+#: worker did not answer in time" (a 500) while the story was still landing
+#: (the page's own poll showed the progress; the answer lied). The budget =
+#: the world egress's single-call ceiling
+#: (:data:`elc.narrative_web.WORLD_EGRESS_TIMEOUT_SECONDS`, 180s) × the
+#: drive's largest real call count (3) + headroom. Only the five V3 write
+#: routes pass it; every other host touch keeps :data:`_WORKER_WAIT_SECONDS`.
+_V3_DRIVE_WAIT_SECONDS = 600.0
+
 #: The card's Chinese readings of the moment lifecycle vocabulary (the
 #: canonical ``MomentState`` words, docs/STATE_MACHINES.md §1). Display only:
 #: a word outside the map passes through untranslated.
@@ -8667,16 +8679,23 @@ def _build_server(
                 return None
 
         def _run_host_write(
-            self, route: Callable[[], tuple[int, Any]]
+            self,
+            route: Callable[[], tuple[int, Any]],
+            wait: float | None = None,
         ) -> None:
             """(p-3) The write faces that answer their own status — the
             queue discipline of :meth:`_run_on_host_thread` (same box, same
             failure posture, same wait) with the route's ``(status,
             payload)`` sent verbatim: the CONFLICT arm answers 409, an
-            exception on the host thread is still a 500. A separate method
-            on purpose: the existing route arms keep their exact lines (the
-            byte-identical posture), and only the two new write faces ride
-            this one."""
+            exception on the host thread is still a 500.
+
+            ``wait`` is one caller's own override (``None`` = the house
+            :data:`_WORKER_WAIT_SECONDS`, so every caller that does not
+            pass one keeps its exact default): the five V3 write routes
+            pass :data:`_V3_DRIVE_WAIT_SECONDS` — a drive that carries
+            several real model round trips must not be answered with a
+            timeout while it is still landing (V3-8f, §10.4).
+            """
 
             box: dict[str, Any] = {}
             failure: list[str] = []
@@ -8691,7 +8710,8 @@ def _build_server(
                     done.set()
 
             work.put(job)
-            if not done.wait(timeout=_WORKER_WAIT_SECONDS):
+            timeout = _WORKER_WAIT_SECONDS if wait is None else wait
+            if not done.wait(timeout=timeout):
                 self._send_json(
                     500, {"error": "the host worker did not answer in time"}
                 )
@@ -9238,48 +9258,67 @@ def _build_server(
             if self.path == "/api/v3/start":
                 # V3-8e: the reading face's idempotent start (no body —
                 # the durable world itself is the request; a replay of
-                # either half is a zero-write no-op).
-                self._run_on_host_thread(face.narrative.start)
+                # either half is a zero-write no-op). V3-8f: the drive
+                # rides _V3_DRIVE_WAIT_SECONDS (a plan is a real model
+                # round trip; the house 60s wait was too short).
+                self._run_host_write(
+                    lambda: (200, face.narrative.start()),
+                    wait=_V3_DRIVE_WAIT_SECONDS,
+                )
                 return
             if self.path == "/api/v3/continue":
                 # V3-8e: drive the next step — one segment, or open the
                 # gate the story stops at. The grammar is fail-closed (an
                 # empty body or {"end_scene": <bool>}); the position is
-                # the durable walk's own.
+                # the durable walk's own. V3-8f: the drive wait is the
+                # reading face's own (_V3_DRIVE_WAIT_SECONDS).
                 cont_error, end_scene = v3_continue_request(
                     self._read_json_body()
                 )
                 if cont_error is not None:
                     self._send_json(400, {"error": cont_error})
                     return
-                self._run_on_host_thread(
-                    lambda: face.narrative.advance(end_scene)
+                self._run_host_write(
+                    lambda: (200, face.narrative.advance(end_scene)),
+                    wait=_V3_DRIVE_WAIT_SECONDS,
                 )
                 return
             if self.path == "/api/v3/submit":
                 # V3-8e: the user's own submission at a gate (or the
                 # durable re-drive of one already stored — see
                 # elc.narrative_web). The grammar is fail-closed; a
-                # runtime refusal rides 200 inside the payload.
+                # runtime refusal rides 200 inside the payload. V3-8f:
+                # this is the longest drive (ruling → replan →
+                # continuation ≈ three real calls) and rides the reading
+                # face's own wait.
                 sub_error, submission = v3_submit_request(
                     self._read_json_body()
                 )
                 if sub_error is not None or submission is None:
                     self._send_json(400, {"error": sub_error})
                     return
-                self._run_on_host_thread(
-                    lambda: face.narrative.submit(submission)
+                self._run_host_write(
+                    lambda: (200, face.narrative.submit(submission)),
+                    wait=_V3_DRIVE_WAIT_SECONDS,
                 )
                 return
             if self.path == "/api/v3/settle":
                 # V3-8e: end the chapter (no body — the durable rows are
                 # the request: the roster must be walked out first).
-                self._run_on_host_thread(face.narrative.settle)
+                # V3-8f: the drive wait is the reading face's own.
+                self._run_host_write(
+                    lambda: (200, face.narrative.settle()),
+                    wait=_V3_DRIVE_WAIT_SECONDS,
+                )
                 return
             if self.path == "/api/v3/next_chapter":
                 # V3-8e: plan the next chapter through the real Director
-                # provider (the latest chapter must be CLOSED).
-                self._run_on_host_thread(face.narrative.next_chapter)
+                # provider (the latest chapter must be CLOSED). V3-8f:
+                # the drive wait is the reading face's own.
+                self._run_host_write(
+                    lambda: (200, face.narrative.next_chapter()),
+                    wait=_V3_DRIVE_WAIT_SECONDS,
+                )
                 return
             if self.path == "/api/v3/ack":
                 # V3-8e: the render acknowledgement — the passage ids
