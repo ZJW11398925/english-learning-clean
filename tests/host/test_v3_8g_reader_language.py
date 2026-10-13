@@ -141,6 +141,27 @@ def test_the_language_route_is_fail_closed_and_the_state_carries_it(
         assert stack.state()["language"] == "en"
 
 
+def test_a_stored_word_outside_the_vocabulary_falls_back_to_the_default(
+    tmp_path: Path,
+) -> None:
+    """The stored row is the one face the route cannot police (a hand
+    edit, an older build): an out-of-vocabulary word falls back to the
+    default ``en`` on the read face — the review's F2 tooth (deleting
+    the fallback used to leave the whole family green)."""
+
+    app_db = tmp_path / "app.db"
+    with v3_stack(app_db) as stack:
+        connection = sqlite3.connect(app_db)
+        with connection:
+            connection.execute(
+                "INSERT INTO app_setting(key, value) VALUES (?, ?)",
+                ("v3_prose_language", "fr"),
+            )
+        connection.close()
+        assert _settings_row(app_db, "v3_prose_language") == "fr"
+        assert stack.state()["language"] == "en"
+
+
 def test_the_idempotent_replay_writes_nothing(tmp_path: Path) -> None:
     """The face-level witness for the replay: a counting proxy in front
     of the host's real ``app_settings`` records every ``set`` — the
