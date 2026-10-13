@@ -556,3 +556,23 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 9. **下一动 = 用户重启 8760（Ctrl+C 旧进程 → `python -m elc web --app-db ./app.db`）世界级亲验**（停点律一次驱动到真停点 + 章间方向输入；双门之二——亦为切仓前最后验证）；亲验过后：一级发布就绪差距审计 → 终末交接块（阶梯裁定+资产清单）→ 议切一级产品新仓。
 
 授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\elc-scratch\v38h\rev\` 已清，2026-10-14）+ 用户产品裁定（2026-10-13/14 对话）；本条目为收口留痕。
+
+### v1.7.16 — 2026-10-14 V3-8i 开工裁决（门的生产面+玩家角色锚定+无门兜底；授权：用户亲验实败「铸 V3-8i」）
+
+**结论**：用户亲验实败两症——「一直写个没完」（真实计划章 gold-empire-105-ch02 整章零门 user_gate 0 行、s01 一场连写 11 段〔当日 17:32–17:40 九段〕狂奔上限）与「用户是哪个角色？不用反应的吗」（玩家角色 cousin〔Renn/伦〕被写作者自主操偶——收拾行囊/提锤修门全由 AI 代演）。总控只读直读用户库+读码定案**三层根因（实现欠账非设计空白）**：①`_blueprint_prompt` 场景 schema 从未要求 beat/门点/用户在场（§2.2 已写条款——ch02 计划 payload 实证只有 dossier 十键）；②§2.5 停点律在真实计划路径零执行面（门型 beat 只存在于 gold 锚定剧本）；③`_writer_prompt` 的 no-puppet 句因 participants 裸名单无从锚定。暴露机制=8h 自动续写（此前一段一停掩盖）；**8h 真实验证盲区自认**（三场景全 gold 锚定场自证，未测真实计划场）。合同增量（总控亲写，`29c2c95`）：范式篇 **§10.6「门的生产面与玩家角色锚定」** + IP §20 镜像。
+
+授权：用户 2026-10-14「铸 V3-8i」；DMCP 开工裁决 `DEC-OPI-f55cd8c7-4423-4a4c-8f62-7f238a2b760c.17`（rev 844）；三件 = TASK `…19`（rev 845）/ VAL `…21`（rev 846；criterion=pytest_failures==0）。
+
+### v1.7.17 — 2026-10-14 V3-8i 独立评审处置与收口（ACCEPT-WITH-FINDINGS 无阻断；F1–F5 全登记；授权：评审结论转呈）
+
+**结论**：交付 `f951b6b`（9 文件 +2295/−53）+ **台账补提交 `6ca5995`**（执行者报告「树净」与实况不符——aoci/FRONTEND_SPEC 两件遗留工作树，总控取证代提交留痕）。面 A：blueprint 场景 schema 增 `required_beats`（段拍/门拍携 §2.5 停点理由+2–4 options、每场至少一门拍）+ `user_present`；`blueprint_gate_refusal`（**声明式作用域**——携增量键⇒全场受审，纯十键 None=canonical 冻结不动）+ `open_next_chapter(require_gates)` 零写入拒 + `plan_chapter` 重铸恰一次/再拒如实报；计划门拍→场景脚本派生（gold 作者场字节不动）→既有开门路径开门（零改）。面 B：`PovContext/ScenePlanContext` 尾字段 `player_character_id` + 三臂玩家锥定句 en/zh（纯新增行——participants 行与 no-puppet 句字节不动、无 id 逐字等义）。面 C：`V3_GATELESS_SEGMENT_FLOOR=4` 无门兜底（前方有门绝不触发）。
+
+1. **四门双路**：pytest **6330/0/0**（总控 707s + 评审 709s 双跑）/ ruff / mypy 205 / compileall / drift 22。
+2. **真实计划场五场景**（`D:\elc-scratch\v38h\v38i\real\`，真实 deepseek、用户 8760 零触碰）：①ch2 计划三场各携门拍+理由+4 选项+user_present；②一次驱动 2 段后**门开 s01-g01 携计划自己的 4 选项**（本刀核心证）；③三门开-裁-关至计划尽（289.9/172.5/129.6s）；④玩家锥定句 **18/18** 真 writer prompt（评审独立复数）；⑤构造开放场 4 段 `gateless_floor` 停、句逐字同形；全链零 500。
+3. **评审 ACCEPT-WITH-FINDINGS**：**作用域裁定独立复核接受**（真计划 prompt 必携新键⇒生产路径必受审；未声明旧形〔用户 ch02 s02/s03 即此形〕由地板兜住；十键冻结免 gold 基线重铸）；M-A（作用域拔除）/M-B（重铸拔除）均绿转红；旧钉随迁判**不弱化**；heredoc 修补件完整（13 钉全在、UTF-8 净、纯 LF）。
+4. **处置（全登记零代码改动）**：**F1**（非阻断）`scene_run_start` 死参——commit message「submit 链续段计入本场计数」与实现不符，**真行为=同场续跑地板宽松一段**（M-C 双证「未实现且未钉」；不 amend 纪律⑱，**本条即语义更正**；接线/删参归后刀）；**F2**（nit）证据书签（drive_log 中态探针 11/0/false vs evidence.json 18/18/true——以评审复数 18/18 为准）；**F3**（nit）脚本场末门后长尾可触地板句（后刀把豁免扩为「脚本还有未走拍」）；**F4**（nit）Planner/Resolver 臂逐字节等义钉仅负断言（后刀可选补齐）；**F5**（非阻断登记）CHAPTER replan 落位不裁门、SCENE replan 臂不携门律句——两臂靠 prompt+地板承担（入 revisit）。
+5. **纪律留痕**：执行者仓内 heredoc 修补一次（训诫级自报）+ 仓外 M2 heredoc 一次 + 台账遗留未提交（总控代提交 `6ca5995` 在案）。
+6. **盖章与收口**：VR `VR-OPI-f55cd8c7-…23`（PASS，盖于 `6ca5995`——**一投即中**，8h 刀 metric 名教训生效）；收口 DEC `DEC-OPI-f55cd8c7-…24`（rev 847）；design_sync REBUILD+CHECK = **SYNCED**（844 对象/rev 847）。
+7. **下一动 = 用户重启 8760（Ctrl+C 旧进程 → `python -m elc web --app-db ./app.db`）重跑亲验**——每个新计划章有门问玩家（2–4 自然行为选项+自由输入）、玩家角色不再被代演、既有 ch02 旧计划场走地板（4 段即停）；亲验同时是切仓前最后验证。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外 `D:\elc-scratch\v38h\v38i\rev\` 已清，2026-10-14）；本条目为收口留痕。
