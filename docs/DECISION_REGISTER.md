@@ -510,3 +510,27 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 6. **盖章与收口**：VR `VR-OPI-c0f4d9b4-…18`（PASS，盖于 `110b130`）；design_sync REBUILD+CHECK = **SYNCED**（830 对象/rev 833）；收口 DEC `…20`（rev 834；下一动=用户重启 8760 重跑「好玩」亲验，双门之二重新计时；双门通过前不切主 UI、不退役 Legacy V2）。
 
 授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\elc-scratch\v38f\review\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交 `110b130`，本条目为处置留痕（回退变异证齿副本 `D:\elc-scratch\v38f\review\repo`）。
+
+### v1.7.12 — 2026-10-13 V3-8g 开工裁决（阅读面体验与连续性——用户亲验反馈三件 + 实机新发现；授权：用户亲验反馈 + 总控实机取证）
+
+**结论**：用户亲验反馈三件（原话：「反应太慢，而且毫无进度提示」「选项完全无法正常选择，点击后毫无响应」「还是纯英文，改用中文测试」）+ 总控实机新发现（续段近逐字复述）合为一刀。**合同增量（总控亲写，提交 `5b11d2b`）**：范式篇 §10.4 增**第 5 条「等待可见与语言可切」**（驱动期间可见进行态：动效 / 已用时 / 阶段提示；忙碌期间任何点击必须明确反馈、绝不静默；正文语言随阅读面设置——默认 `en`、可切 `zh`；已入正史段落永不改写）与**第 6 条「正文连续律」**（事件列表 = 已发生且已被叙述的事实；新段必须推进、绝不复述；相邻段落不得近重复）+ `IMPLEMENTATION_PLAN` §20 镜像句。
+
+1. **实机取证（总控；真浏览器 + 只读直读用户库）**：(i) 用户那次选项点击**已成功提交**（gate CLOSED、user_action COMMITTED、续段已落）——「无响应」体感 = 忙碌期静默（busy 守卫直接 return、点击被无声吞掉）+ 无动效无计时，单步实测 234–266s；(ii) **续段近逐字复述**：s01 p0002↔p0003 同度量 ratio 0.95823（`autojunk=False` 0.99898；空白归一后 ratio=1.0——逐字复述）；根因 = 段事件叙述=整段正文而写作者 hard rule 未区分「已叙述 vs 新推进」；(iii) 语言硬编码（`llm_providers` 写作者臂 "in English"）；(iv) 冒烟副本三段各异 ⇒ 偶发型、必须真实验证。
+2. **范围（三面同刀）**：①连续律 prompt 合同句；②进度可见与忙碌反馈（纯前端：spinner / 1s 秒表 / 阶段句 / 忙碌反馈句；`if (busy) return;` 删除）；③正文语言可切（`v3_prose_language` 默认 en；`POST /api/v3/language` 幂等；`state.language`；四臂语言行参数化；新段 beat `language` 随 live 设置——执行者小扩展，评审接受）。
+3. **落实口径**：门卡选项为 Gold 作者脚本（英文）保持不动（登记）；既有段落永不改写（结构性：narrative_web 零 UPDATE/DELETE/INSERT）。
+
+授权：用户 2026-10-13 亲验反馈；DMCP 开工裁决 `DEC-OPI-c0f4d9b4-0f97-4507-9fa9-6f27152964d7.22`（rev 835）；三件 = TASK `…24`（rev 836）/ VAL `…26`（rev 837）。
+
+### v1.7.13 — 2026-10-13 V3-8g 独立评审处置（ACCEPT-WITH-FINDINGS 无阻断；F2 升格本刀修 + F1/F3–F7 留痕；授权：评审结论转呈）
+
+**结论**：V3-8g **维持推进**（不重开）；三面在码在册（§10.4 第 5/6 条逐句核）；**点名六组 + 自加十组变异记录**（含 M10 前缀语言回放 CONFLICT 有齿）；真实驱动读数评审独立复算一致；禁改面零触碰、零迁移零新依赖、既有 passage 零改写（结构性 + 语义性双重）。**交付** `2d75a6e`（11 文件 +1301/−62；真实验证：连续律同度量 0.95823→0.03827、切 zh 新段非 ASCII 0.9844、既有段 sha ALL-UNCHANGED、路由幂等）+ **处置** `feab75d`（F2 补钉）。
+
+1. **F2（LOW，升格本刀修）**：`prose_language_of` 词表外回落分支无钉（评审 M13 删回落全族仍绿）。修：新钉 `test_a_stored_word_outside_the_vocabulary_falls_back_to_the_default`（手插 `fr` 行 → `state.language==en`）；副本 M13 **回退即红**（处置提交 `feab75d`）。
+2. **F1（LOW，留痕）**：度量口径混用——同度量对比实为 0.95823→0.03827；修前空白归一 ratio=1.0（逐字复述）；台账以同度量引数为准。
+3. **F3（INFO，留痕）**：`summary.json` 的 zero_rewrite 块为首跑 buggy 算术产物（已知缺陷）；`witness_check.py` 重推 + 评审独立复算 = ALL-UNCHANGED 成立；台账以重推为准。
+4. **F4/F5（INFO，登记可选）**：reader.html 语言钮静态初态无 ink 选中态（首帧 JS 修正，可接受）；reader.js busy 逻辑仓内仅字面钉——评审以 Node 桩（`D:\elc-scratch\v38g\reader_js_check.js`，28/28）实测，可选把该 harness 入仓（现无 JS 测试设施，字面钉为 V3-8e 先例）。
+5. **F6（INFO，自报三项全接受）**：新段 beat `language` 随 live 词（最小、有钉、与 driver's seat docstring 一致）；三 JSON 臂 en 下显式英文行（旧行集合 ⊆ 新行集合实测；行为面零削弱）；键常量落 `narrative_web`（与「store 无词表」姿态一致）。
+6. **F7（纪律留痕）**：执行者自报一次 `python - <<'PY'` 内联 heredoc 形态（无文件落地、零仓内写入）——按历例（V3-8e 训诫对象为「heredoc **落盘写文件**」）至多训诫级；评审自报仓外副本一次 `printf >>` 追加变异（收尾 Edit 还原、归一字节比对全等）与只读内联探针，如实留痕。
+7. **盖章与收口**：VR `VR-OPI-c0f4d9b4-…28`（PASS，盖于 `feab75d`）；design_sync REBUILD+CHECK = SYNCED（834 对象/rev 837）；收口 DEC `…30`（rev 838）。**下一动 = 开 V3-8h（核心循环补完：停点律 + 章间作者层——用户亲验新反馈两条，引据范式篇 §1.1/§2.5/附录 A）**。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\elc-scratch\v38g\review\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交 `feab75d`，本条目为处置留痕。
