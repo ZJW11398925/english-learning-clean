@@ -74,13 +74,23 @@ join — canonical types and stored shapes are untouched (the library
 faces keep every deeper judgment; nothing else about the strictness
 moves: a non-string item, a number or an object in a text field is
 still ``bad-shape``). **A second contract rides the identity fields**
-(the V3-8f smoke's fifth face, same family as the type contract): the
-prompts state that a participant identity is the **bare id token** the
-prompt lists — the part before any parenthesised name or role — never
-the rendered composite (a real Resolver copied the prompt's own
-``cousin (Renn)`` form and the namespace check refused it, the V3-3R
-freeze doing its job); the refusal stays the strict backstop, and the
-contract is stated where the model reads it. The library faces
+(the V3-8f smoke's fifth face, same family as the type contract — and
+**strengthened on that smoke's second run**, the planner layer of the
+same face): the prompts state that a participant identity is the
+**bare id token** the prompt lists — the part before any parenthesised
+name or role — never the rendered composite (a real Resolver copied
+the prompt's own ``cousin (Renn)`` form and the namespace check
+refused it, the V3-3R freeze doing its job); that identity strings are
+taken **only from the ids the prompt itself lists**, written exactly
+as listed; that an id is never replaced by a character's display name
+and no identity outside that vocabulary is ever added; and that names
+appearing only in prose (cognition / memory / a ruling's text) are not
+identities — a character first met on the page exists in the prose
+alone, never in ``participants`` (the smoke's planner replan answered
+``renn`` — the display name of the id ``cousin`` — beside the
+prose-only newcomer ``carter``, and the continuation segment was
+refused). The refusal stays the strict backstop, and the contract is
+stated where the model reads it. The library faces
 downstream (the Director's
 schema, the ``_checked_fields`` family, ``commit_action``) keep every
 deeper judgment — the parser blesses a payload's *shape*, never its
@@ -687,19 +697,35 @@ _PROSE_TYPE_SENTENCE = (
 
 #: The identity-vocabulary contract the same three arms state verbatim
 #: (V3-8f's smoke run, the fifth face — same family as the type
-#: contract): the prompts render a participant as ``id (name)`` or
-#: ``id (role=…)``, and a real Resolver answered the rendered composite
-#: back (``cousin (Renn)``) into ``participants`` — the namespace check
-#: (the V3-3R freeze) refused it. The identity the fields promise is the
-#: bare id token the prompt lists, never the parenthesised render and
-#: never a display name. The Writer arm answers prose, not identities,
-#: and does not carry it.
+#: contract, and **strengthened on the smoke's second run**, the
+#: planner layer of the same face): the prompts render a participant as
+#: ``id (name)`` or ``id (role=…)``, and a real Resolver answered the
+#: rendered composite back (``cousin (Renn)``) into ``participants`` —
+#: the namespace check (the V3-3R freeze) refused it. The second run
+#: went one step further: the planner replan answered ``renn`` (the
+#: display name of the id ``cousin``) beside the prose-only newcomer
+#: ``carter``, and the continuation segment was refused. The contract
+#: therefore carries four clauses — identity strings come only from
+#: the ids this prompt itself lists (written exactly as listed, the
+#: bare id token); an id is never replaced by a character's display
+#: name; no identity outside the prompt's own vocabulary is ever
+#: added; and a name that appears only in prose (cognition, memory, a
+#: ruling's text) is not an identity — a character first met on the
+#: page stays in the prose. The Writer arm answers prose, not
+#: identities, and does not carry it.
 _IDENTITY_SENTENCE = (
-    "Identity strings: a participant identity (participants entries,"
-    " pov_actor_id) is the bare id token exactly as this prompt lists"
-    " it — the part before any parenthesis. Never answer the rendered"
-    " display form: where this prompt writes an id followed by a name"
-    " or role in parentheses, the identity string is the id alone."
+    "Identity strings: every identity string (participants entries,"
+    " pov_actor_id) must be taken from the ids this prompt itself"
+    " lists — written exactly as listed, the bare id token (the part"
+    " before any parenthesis where the id is rendered with a name or"
+    " role). Never answer the rendered display form: the identity"
+    " string is the id alone. Never replace an id with a character's"
+    " display name — a display name is not an identity, only the"
+    " listed id is — and never add an identity this prompt does not"
+    " list. A name that appears only in narrative prose (cognition,"
+    " memory, a ruling's text) is not an identity: a character first"
+    " met on the page stays in the prose and never enters"
+    " participants."
 )
 
 
@@ -799,6 +825,8 @@ def _scene_plan_prompt(context: ScenePlanContext, *, replan: bool) -> str:
         "  character, a participant identity string, and a member of the",
         "  participants",
         '- "participants": a JSON array of participant identity strings',
+        "  — the identity strings the current plan content already",
+        "  carries, written exactly as it lists them",
         '- "planned_start_tick": one JSON integer — an integer story tick',
         '- "place": one JSON string — where the scene happens',
         '- "entry_goals": one JSON string — what the scene opens toward',

@@ -30,19 +30,32 @@ strings (``chapter_questions_to_advance``, a scene's ``entry_goals`` /
    2026-10-13; ``tests/world/data/v3_8f_director_resp_*.json``): the
    array form parses through the tolerant join, the typed form passes
    strictly (every text field is a string in the fixture itself, so the
-   strict path is demonstrably the one taken).
+   strict path is demonstrably the one taken);
+5. the **strengthened identity contract** (the smoke's second run, the
+   planner layer of the same face) — the shared sentence now carries
+   four clauses (identity strings only from the ids the prompt itself
+   lists; never a display name where an id is listed; never an identity
+   outside that vocabulary; names appearing only in prose stay prose and
+   never enter ``participants``) and the Planner arm's ``participants``
+   field line points at the current plan content's own identity strings;
+   the replan pin fences the physical vocabulary the prompt hands the
+   model (the smoke-2 shape: the display name ``Renn`` and the
+   prose-only newcomer ``carter`` never become ids). Nothing semantic
+   moves: the parser still blesses a payload's shape only, and the
+   namespace refusal stays downstream (the V3-3R freeze).
 """
 
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from elc.world.action import ReplanScope
-from elc.world.cognition import V3CognitionView
+from elc.world.cognition import V3CognitionEvent, V3CognitionView
 from elc.world.director import DirectorCastInput, DirectorContext
 from elc.world.llm_providers import (
     _IDENTITY_SENTENCE,
@@ -304,10 +317,14 @@ def test_the_writer_arm_does_not_carry_the_json_type_contract() -> None:
 
 def test_the_three_json_arms_state_the_identity_vocabulary_contract() -> None:
     """The fifth face the V3-8f smoke run exposed (same family as the
-    type contract): the prompts render a participant as ``id (name)``,
-    and a real Resolver answered the rendered composite straight back.
-    The three JSON arms state the bare-id rule verbatim (once each); the
-    Writer arm does not carry it."""
+    type contract), strengthened by the smoke's second run (the planner
+    layer): first the prompts render a participant as ``id (name)`` and
+    a real Resolver answered the rendered composite straight back; then
+    the planner replan answered a display name (``renn`` for the id
+    ``cousin``) and a prose-only newcomer (``carter``). The three JSON
+    arms state the four-clause rule verbatim (once each — the original
+    two clauses kept, the two added clauses present); the Writer arm
+    does not carry it."""
 
     planner_stub = _ScriptedCompletion(_answer(_element_payload()))
     LlmPlannerProvider(planner_stub).plan_scene(_planner_context())
@@ -320,16 +337,187 @@ def test_the_three_json_arms_state_the_identity_vocabulary_contract() -> None:
         prompt = stub.prompts[0]
         assert prompt.count(_IDENTITY_SENTENCE) == 1
         for expected in (
+            # the fifth face's clauses, never weakened
             "bare id token",
             "the part before any parenthesis",
             "Never answer the rendered display form",
             "the identity string is the id alone",
+            # the second run's added clauses, one per point
+            "must be taken from the ids this prompt itself lists",
+            "written exactly as listed",
+            "Never replace an id with a character's display name",
+            "a display name is not an identity, only the listed id is",
+            "never add an identity this prompt does not list",
+            "A name that appears only in narrative prose (cognition,"
+            " memory, a ruling's text) is not an identity",
+            "stays in the prose and never enters participants",
         ):
             assert expected in prompt, (expected, prompt[:200])
 
     writer_stub = _ScriptedCompletion(CompletionOutcome(text="prose."))
     LlmWriterProvider(writer_stub).write_segment(_pov_context())
     assert _IDENTITY_SENTENCE not in writer_stub.prompts[0]
+
+
+def test_the_planner_participants_line_points_at_the_plan_content() -> None:
+    """The second run's planner-side pointer: the Planner arm's
+    ``participants`` field line names the current plan content's own
+    identity strings as the source (the arm that answers a replan is
+    the one that mistook a display name for an identity) — and the
+    Director / Resolver arms, whose ``participants`` line shares its
+    first half, do not carry the planner's pointer."""
+
+    planner_stub = _ScriptedCompletion(_answer(_element_payload()))
+    LlmPlannerProvider(planner_stub).plan_scene(_planner_context())
+    director_stub = _ScriptedCompletion(_answer(_blueprint_payload()))
+    LlmDirectorProvider(director_stub).draft_blueprint(_director_context())
+    resolver_stub = _ScriptedCompletion(_answer(_adjudication_payload()))
+    LlmResolverProvider(resolver_stub).adjudicate(_resolver_context())
+
+    pointer = (
+        '- "participants": a JSON array of participant identity strings'
+        "\n  — the identity strings the current plan content already"
+        "\n  carries, written exactly as it lists them"
+    )
+    planner_prompt = planner_stub.prompts[0]
+    assert pointer in planner_prompt
+    for other in (director_stub.prompts[0], resolver_stub.prompts[0]):
+        assert "the current plan content already" not in other
+    # the Resolver's line shares its first half and keeps its own
+    # wording — the pointer is the Planner arm's, not a global edit.
+    assert (
+        '- "participants": a JSON array of participant identity strings'
+        "\n  the outcome is about" in resolver_stub.prompts[0]
+    )
+
+
+def test_the_replan_prompt_hands_the_model_the_vocabulary_it_demands() -> None:
+    """The smoke's second run, pinned where it physically happened: the
+    SCENE replan answered ``renn`` (the display name of the id
+    ``cousin``) beside the prose-only newcomer ``carter``. The arm's
+    only lever is the prompt, so this pin walks the replan through a
+    completion that behaves like the model the contract asks for —
+    it reads the identity vocabulary out of the prompt it was handed
+    and copies it, nothing translated, nothing added — and fences what
+    the model reads: the current plan content carries the ids as bare
+    strings, the strengthened contract rides with it, and the display
+    name / the newcomer exist only as prose."""
+
+    element: dict[str, Any] = {
+        "pov_actor_id": ACTOR,
+        "participants": ["cousin", ACTOR, "mother"],
+        "planned_start_tick": 540,
+        "place": "the Li yard, frost on the cart ruts",
+        "entry_goals": "let the question land in the open yard",
+        "exit_condition": "the question is answered or refused",
+        "elasticity": "short",
+        "revealable": "why the carter has come",
+        "must_hide": "the priced tools",
+    }
+    context = ScenePlanContext(
+        world_id=TOWN,
+        scene_id=SCENE,
+        pov_actor_id=ACTOR,
+        current_tick=570,
+        element=element,
+        cognition=V3CognitionView(
+            viewer_id=ACTOR,
+            public=(),
+            witnessed=(
+                V3CognitionEvent(
+                    event_id="ev-yard-1",
+                    kind="EXPERIENCED",
+                    narration=(
+                        "Renn set his bundle down and asked after"
+                        " the road; the carter waited by his cart."
+                    ),
+                    participants=(ACTOR,),
+                    actual_start_tick=540,
+                    actual_end_tick=570,
+                ),
+            ),
+        ),
+        memory=V3MemoryView(viewer_id=ACTOR, memories=()),
+    )
+
+    class _CopyingCompletion:
+        """The compliant model: answers the plan content's own ids,
+        read out of the prompt it was handed — the behavior the
+        strengthened contract asks for."""
+
+        def __init__(self) -> None:
+            self.prompts: list[str] = []
+
+        def complete(self, prompt: str) -> CompletionOutcome:
+            self.prompts.append(prompt)
+            match = re.search(r'"participants":(\[[^\]]*\])', prompt)
+            assert match is not None, (
+                "the replan prompt must physically carry the identity"
+                " vocabulary the contract demands the answer copy"
+            )
+            payload = dict(element)
+            payload["participants"] = json.loads(match.group(1))
+            return _answer(payload)
+
+    stub = _CopyingCompletion()
+    parsed = LlmPlannerProvider(stub).replan_element(context)
+    prompt = stub.prompts[0]
+
+    # the vocabulary is physically there, as bare ids and nothing else.
+    match = re.search(r'"participants":(\[[^\]]*\])', prompt)
+    assert match is not None
+    assert json.loads(match.group(1)) == ["cousin", ACTOR, "mother"]
+    # the strengthened contract and the pointer ride with it, once.
+    assert prompt.count(_IDENTITY_SENTENCE) == 1
+    assert "the identity strings the current plan content already" in prompt
+    # the display name and the prose-only newcomer are prose, not ids:
+    # they appear in the narration the POV read, never in the identity
+    # list above.
+    assert "Renn" in prompt
+    assert "the carter" in prompt
+    assert "renn" not in match.group(1).lower()
+    assert "carter" not in match.group(1).lower()
+    # the compliant copy lands in the canonical shape byte-equal.
+    assert parsed["participants"] == ("cousin", ACTOR, "mother")
+    assert parsed["place"] == element["place"]
+
+
+def test_the_planner_arm_blesses_shape_only_and_the_refusal_stays_downstream() -> None:
+    """The honest boundary of the arm (the same posture the Resolver's
+    composite-identity pin documents): the parser blesses a payload's
+    shape, never its content — a shape-valid ``participants`` holding a
+    display name parses through, because the provider holds no cast
+    namespace by design; the refusal is the namespace check's (the
+    V3-3R freeze, the drive's own), which is why the fix lives in the
+    prompt. If a later cut adds content judgment here, this pin goes
+    red — a semantic move must be its own ruling."""
+
+    element: dict[str, Any] = {
+        "pov_actor_id": ACTOR,
+        "participants": ["cousin", ACTOR],
+        "planned_start_tick": 540,
+        "place": "the Li yard",
+        "entry_goals": "let the question land",
+        "exit_condition": "the question is answered",
+        "elasticity": "short",
+        "revealable": "why the carter has come",
+        "must_hide": "the priced tools",
+    }
+    context = ScenePlanContext(
+        world_id=TOWN,
+        scene_id=SCENE,
+        pov_actor_id=ACTOR,
+        current_tick=570,
+        element=element,
+        cognition=_empty_cognition(),
+        memory=_empty_memory(),
+    )
+    translated = dict(element)
+    translated["participants"] = ["renn", "carter"]
+    stub = _ScriptedCompletion(_answer(translated))
+    parsed = LlmPlannerProvider(stub).replan_element(context)
+    assert parsed["participants"] == ("renn", "carter")
+    assert _IDENTITY_SENTENCE in stub.prompts[0]
 
 
 def test_the_live_composite_identity_parses_but_the_prompt_warns() -> None:

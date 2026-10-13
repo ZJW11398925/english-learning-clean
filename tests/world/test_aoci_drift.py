@@ -1032,6 +1032,11 @@ def test_v3_8f_entries_carry_the_wiring_baseline_faces() -> None:
                 "_seam_code",
                 "bad-shape",
                 "ONE JSON string",
+                # the strengthened identity contract (smoke 2): the entry
+                # names the four clauses and the planner-side pointer.
+                "四要点",
+                "显示名",
+                "plan 内容已有的身份串",
             ),
         ),
         (
