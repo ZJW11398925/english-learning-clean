@@ -52,9 +52,12 @@ door's law is about the *presentation* faces, and it stays exactly as
 wide as its reason. The lexical ``must_hide`` guard in
 :class:`~elc.world.writer.PovWriter` stays the second, deterministic
 guard it honestly is (a semantic rewrite routes around a lexical guard
-by construction); the real LLM wiring — reusing the persona provider /
-validator / streaming basis (design §9.1) — is the explicit step before
-the user's "好玩" acceptance, and this door is its precondition.
+by construction); the real LLM wiring **landed in V3-8c**
+(``elc/world/llm_providers.py`` — the four faces over the
+``TextCompletion`` seam, with the persona BYOK egress adapting onto it
+at the assembly face; TASK-OPI-cddb517c…7), and this door was its
+precondition — the user's "好玩" acceptance still waits on the
+assembly-side wiring and the Gold Scenario's two doors.
 
 **The deterministic fake** (:class:`DeterministicFakeProvider`): one
 class satisfying all four Protocols structurally — the CI baseline's

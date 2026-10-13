@@ -78,10 +78,11 @@ in-process memory.
 content, the Blueprints and the verdicts come from the provider
 protocols (:mod:`elc.world.providers`) — scripted in CI. The
 orchestrator's value is the **drive order and the recovery routing**,
-not literary quality; the real LLM wiring (the persona provider /
-validator / streaming basis, design §9.1) replaces the fake behind the
-same Protocols as the explicit step before the user's "好玩"
-acceptance.
+not literary quality; the real LLM wiring **landed in V3-8c**
+(``elc/world/llm_providers.py`` — the four faces over the
+``TextCompletion`` seam; the persona BYOK egress adapts onto that seam
+at the assembly face) and the fake stays behind the same Protocols as
+the CI baseline.
 
 **The caller supplies what is the caller's**: the Beat script and the
 user's own submission, ``action_duration_ticks`` (the one calibration
