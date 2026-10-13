@@ -728,6 +728,66 @@ def test_a_planned_scene_does_not_block_the_settle(
     assert still == second
 
 
+def test_a_settled_chapter_opens_no_new_scene(
+    conn: sqlite3.Connection,
+    world_store: SqliteWorldStore,
+    cast_store: SqliteCastStore,
+    bible_store: SqliteBibleStore,
+    narrative: SqliteNarrativeStore,
+    director: Director,
+    planner: ScenePlanner,
+) -> None:
+    """The HIGH-1 family's flip-side door (the review's F1): the two-step
+    合成 — settle the chapter, then activate a remaining PLANNED scene —
+    must NOT construct the "chapter CLOSED / scene ACTIVE" state the
+    SETTLING precondition guards at the flip. ``activate_scene`` refuses
+    a SETTLING or CLOSED chapter ``VALIDATION_FAILED`` and the scene
+    stays PLANNED (zero state change)."""
+
+    _active_scene(
+        conn,
+        world_store,
+        cast_store,
+        bible_store,
+        director,
+        planner,
+        scenes=[_scene_draft(), _scene_draft(purpose="the ledger")],
+    )
+    committed = _commit(conn, narrative, world_store, is_last_segment=True)
+    assert isinstance(committed, Ok)
+    second = narrative.get_scene(SCENE2)
+    assert second is not None and second.status is SceneStatus.PLANNED
+
+    moved = narrative.settle_chapter(CH, now=LATER, expected_state_version=2)
+    assert isinstance(moved, Ok)
+    assert moved.value.status is ChapterStatus.SETTLING
+    # the flip-side door, on the SETTLING chapter: the remaining PLANNED
+    # scene refuses to activate.
+    refused = narrative.activate_scene(SCENE2, LATER, second.state_version)
+    assert isinstance(refused, Err)
+    assert refused.error.code == DomainErrorCode.VALIDATION_FAILED
+    assert "settling/closed chapter opens no new scene" in (
+        refused.error.message or ""
+    )
+    assert narrative.get_scene(SCENE2) == second
+
+    # and on the CLOSED chapter after NCP-4.
+    settled = settle_chapter(
+        conn,
+        narrative_store=narrative,
+        world_store=world_store,
+        chapter_id=CH,
+        now=LATER,
+    )
+    assert isinstance(settled, Ok)
+    chapter = narrative.get_chapter(CH)
+    assert chapter is not None and chapter.status is ChapterStatus.CLOSED
+    refused_closed = narrative.activate_scene(SCENE2, LATER, second.state_version)
+    assert isinstance(refused_closed, Err)
+    assert refused_closed.error.code == DomainErrorCode.VALIDATION_FAILED
+    assert narrative.get_scene(SCENE2) == second
+
+
 def test_the_settling_precondition_rides_the_flip_transaction() -> None:
     """The structural face of HIGH-1: the public ``settle_chapter``
     owns exactly one ``BEGIN IMMEDIATE`` … ``COMMIT`` and spells no SQL

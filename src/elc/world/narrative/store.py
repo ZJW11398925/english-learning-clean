@@ -688,6 +688,31 @@ class SqliteNarrativeStore:
                     ),
                 )
             )
+        # The V3-8b illegal-state closure (the review's F1 — the HIGH-1
+        # family): a chapter already settling or closed holds no new
+        # ACTIVE scene — the two-step合成 (settle the chapter, then
+        # activate a remaining PLANNED scene) would otherwise construct
+        # the "chapter CLOSED / scene ACTIVE" state the SETTLING
+        # precondition guards at the flip. The chapter-side read is the
+        # same posture the #4 dossier check keeps (unreachable race under
+        # Local V1's single-connection discipline).
+        chapter = self.get_chapter(row.chapter_id)
+        if chapter is not None and chapter.status in (
+            ChapterStatus.SETTLING,
+            ChapterStatus.CLOSED,
+        ):
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"scene {scene_id!r} not activated: chapter"
+                        f" {row.chapter_id!r} is {chapter.status.value!r}"
+                        " — a settling/closed chapter opens no new scene"
+                        " (STATE §21's SETTLING 前置律's flip-side door:"
+                        " no running story outlives its chapter)"
+                    ),
+                )
+            )
         if self.adopted_dossier(scene_id) is None:
             return Err(
                 DomainError(

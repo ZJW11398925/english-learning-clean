@@ -392,3 +392,15 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 6. **范围收紧与纪律**：**零迁移**（不改表——全是代码面与读面）；搬迁面 = aoci.code.txt 受影响模块条目 + 散文扫尾；**不开始 UI、不退役旧链**（外审明令）；真实 LLM 接线/最小阅读面/好玩亲验仍归 V3-8 本体（本刀修完后才进）。**禁改面**：behavioral_baselines/sealed 0029–0037/v3_cognition_view/v3_memory_view 行为/reader_exposure 写面/legacy V2 链/host.py legacy C1 不动。**门**：pytest（自 6182 起）/ruff/mypy（202 起）/compileall 全绿；新钉族 tests/world/test_v3_8b_*.py + 受影响既有钉族随迁。
 
 授权：外审（用户转呈，基于 HEAD 10b4489，2026-10-13）；DMCP 开工裁决 `DEC-OPI-06b954e0-…15`（rev 814）。**其后**：五面修完才进 V3-8 本体（真实 provider wiring → 固定 Gold Scenario → 结构验收 12 条 → 最小阅读面 → 用户亲验「好玩」）；结构 12 条与「好玩」双门通过前不切主 UI、不退役 Legacy V2。
+
+### v1.7.3 — 2026-10-13 V3-8b 独立评审处置（ACCEPT-WITH-FINDINGS 无 HIGH/MEDIUM 阻断；F1 MEDIUM-HIGH 升格本刀修；授权：评审结论转呈）
+
+**结论**：V3-8b **维持推进**（不重开）；五面逐项在码在册；**点名变异组全红**（SETTLING 三查/拒绝零状态改变/ResolverContext 各臂/resolver 不造 intent/CHAPTER replan 归 DirectorProvider/第七族/outcome_ref 强制/next_segment_seq 推导/hooks=\"\"）；V3-7/V3-8a 迁移钉族未弱化；F3（continuation obligation）清偿属实；吸收完整性确认；副本全量 6205/0/0 + 静态三门绿。F1（MEDIUM-HIGH，HIGH-1 同族旁门）**升格本刀修**；F2/F3/F4 INFO 留痕登记。
+
+1. **执行者中断与吸收（如实留痕，防坑㊲ 第二型，本程序第四例）**：执行者 600s 静默中断遗留半成品（10 文件），总控取证（新钉 22/22+受影响三族 73/73 绿、全量 6205/0/0、静态三门绿、零迁移、禁改面空、无残标、五面逐面在码）→ 裁「吸收+复核」→ 代提交 **`73f6fd7`**（10 文件 +2560/−291）。
+2. **F1（MEDIUM-HIGH，升格本刀修——P4-2「RA 明文要求级缺口不因自报免做」先例 + HIGH-1 同族）**：SETTLING 前置律钉在翻转面，但「章 CLOSED/场 ACTIVE」仍可经「结算后激活剩余 PLANNED 场」两步合成——`activate_scene`/`open_scene` 无章状态守卫。修：`SqliteNarrativeStore.activate_scene` 增章状态守卫（场所属章为 `SETTLING`/`CLOSED` ⇒ `VALIDATION_FAILED` 零状态改变，场仍 PLANNED）——「settling/closed chapter opens no new scene」；新钉 `test_a_settled_chapter_opens_no_new_scene`（SETTLING 与 CLOSED 两态各拒）。**现码已零此旁门**（评审实测两门均闭：翻转面 HIGH-1 闸 + 本守卫）。
+3. **F2（INFO，登记）**：「next_segment_seq 从 segment_commit durable rows 推导」无源表级钉——源表换成 `narrative_passage` 全绿（观测等价：两表每段同事务成对落行、ACTION_OUTCOME 行 seq 为 NULL）。非行为覆盖洞，登记为源文措辞未钉（如需字面钉归后刀）。
+4. **F3（INFO，维护须知）**：`test_the_settling_precondition_rides_the_flip_transaction` 只查事务常量与 SQL 字面，`if False and …` 型禁用可绕过——行为钉（M1–M4 全红）承担实质捕获，现役组合无洞。
+5. **F4（INFO，措辞歧义交 V3-8 接线前裁）**：DOMAIN §20.2「**玩家**的 knowledge/memory 用于判断『用户角色知道什么』」与交付的知识臂实为**场景 POV** 的 cognition/memory 之间的措辞歧义——RA §27 枚举面写「+ 当前 POV 面」故交付不违约；当场景 POV≠玩家角色时该臂并非「用户知道什么」。确定性基线下惰性，**真实 resolver 接线前合同澄清（POV 面即知识臂）或增读 player-view——归 V3-8 本体开工四查**。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v38b_review\` / `D:\v38b_mut\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交随本条目同刀。
