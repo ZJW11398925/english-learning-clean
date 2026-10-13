@@ -255,10 +255,13 @@ _REPLAN_SCOPE_WORDS: dict[str, ReplanScope] = {
 #: The shape a relayed seam code must have (V3-8f): one short lowercase
 #: word — dashes and digits allowed, so ``timeout`` / ``http-401`` /
 #: ``missing-secret`` / ``no-egress`` / ``response-too-large`` all pass.
-#: A seam that hands free text instead (a bug, or a hostile double) is
+#: The match is whole (``fullmatch``): a trailing newline is not part of
+#: any code, so ``"timeout\n"`` flattens like every other free-text
+#: shape (the review's F2 — an anchored ``$`` alone admitted one). A
+#: seam that hands free text instead (a bug, or a hostile double) is
 #: flattened to ``transport-error``: the prompt must never ride into a
 #: reason through the failure arm.
-_SEAM_CODE = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
+_SEAM_CODE = re.compile(r"[a-z][a-z0-9-]{0,63}")
 
 
 def _seam_code(error: str) -> str:
@@ -271,7 +274,7 @@ def _seam_code(error: str) -> str:
     case, length) never becomes a ``LlmProviderError`` reason.
     """
 
-    return error if _SEAM_CODE.match(error) else "transport-error"
+    return error if _SEAM_CODE.fullmatch(error) else "transport-error"
 
 
 def _complete_text(completion: TextCompletion, prompt: str) -> str:

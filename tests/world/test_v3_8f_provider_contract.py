@@ -25,9 +25,11 @@ strings (``chapter_questions_to_advance``, a scene's ``entry_goals`` /
    / ``missing-secret`` / …) and flattens free text (spaces, newlines,
    case, length) to ``transport-error``; the arm-level refusal carries
    the relayed code and never the prompt;
-4. the **real-model products** — two trimmed fixtures excerpted
-   verbatim from the V3-8f probe run (one real credential,
-   2026-10-13; ``tests/world/data/v3_8f_director_resp_*.json``): the
+4. the **real-model products** — two structurally trimmed fixtures from
+   the V3-8f probe run (one real credential, 2026-10-13;
+   ``tests/world/data/v3_8f_director_resp_*.json``): every retained
+   field is verbatim (one recorded trim: the array fixture's
+   ``chapter_questions_to_advance`` keeps its first two entries); the
    array form parses through the tolerant join, the typed form passes
    strictly (every text field is a string in the fixture itself, so the
    strict path is demonstrably the one taken);
@@ -695,6 +697,9 @@ def test_the_seam_code_relays_the_vocabulary_and_flattens_free_text() -> None:
         "http 500",
         "401",
         "http_500",
+        "timeout\n",
+        "timeout\r\n",
+        "response-too-large\n",
         "有中文",
     ):
         assert _seam_code(text) == "transport-error", text
@@ -733,7 +738,7 @@ def test_the_arm_refusal_carries_the_relayed_code_and_not_the_prompt() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4. the real-model products (trimmed verbatim fixtures)
+# 4. the real-model products (structurally trimmed; retained fields verbatim)
 # ---------------------------------------------------------------------------
 
 

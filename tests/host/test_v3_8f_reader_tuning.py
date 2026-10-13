@@ -290,11 +290,19 @@ def test_each_failure_code_family_gets_its_own_sentence() -> None:
         sentence = failure(code)
         assert code in sentence
         assert "密钥" in sentence and "设置" in sentence
+        # the family's own literals — the generic sentence carries none of
+        # them, so deleting the branch turns this red (V3-8f review F1:
+        # the generic text alone let a branch deletion slide through)
+        assert "没能通过这把密钥" in sentence
+        assert "BYOK" in sentence
 
     for code in ("not-configured", REASON_NO_EGRESS):
         sentence = failure(code)
         assert code in sentence
         assert "设置" in sentence
+        # the config family's own literals, same tooth as above
+        assert "没有可用的模型端点" in sentence
+        assert "--base-url" in sentence
 
     limited = failure("http-429")
     assert "429" in limited
@@ -304,10 +312,18 @@ def test_each_failure_code_family_gets_its_own_sentence() -> None:
     assert "transport-error" in generic
     assert "重试" in generic
 
-    # the families do not collapse into one another
+    # the families do not collapse into one another — nor into the generic
+    # sentence (review F1's tooth: a deleted branch falls back to generic
+    # and these equalities turn red)
     assert failure("timeout") != failure("http-401")
     assert failure("http-429") != failure("http-401")
     assert failure("transport-error") != failure("timeout")
+    assert failure("http-401") != generic
+    assert failure("missing-secret") != generic
+    assert failure("key-echo") != generic
+    assert failure("not-configured") != generic
+    assert failure(REASON_NO_EGRESS) != generic
+    assert failure("http-429") != generic
 
 
 # ---------------------------------------------------------------------------
