@@ -800,7 +800,7 @@ class _DurableReads:
                 prefix.append(
                     GateBeat(
                         gate_seq=beat.gate_seq,
-                        options=beat.options,
+                        options=gate.options,
                         submission_id=stored.submission_id,
                         intent_text=stored.intent_text,
                         selected_option=stored.selected_option,
@@ -1446,7 +1446,7 @@ class NarrativeWebFace:
                 )
             submission = GateBeat(
                 gate_seq=beat.gate_seq,
-                options=beat.options,
+                options=gate.options,
                 submission_id=str(request["submission_id"]),
                 intent_text=str(request["intent_text"]),
                 selected_option=request.get("selected_option"),
@@ -1464,7 +1464,7 @@ class NarrativeWebFace:
                     )
             submission = GateBeat(
                 gate_seq=beat.gate_seq,
-                options=beat.options,
+                options=gate.options,
                 submission_id=stored.submission_id,
                 intent_text=stored.intent_text,
                 selected_option=stored.selected_option,
@@ -1666,9 +1666,12 @@ def narrative_state_ro(app_db_path: str) -> dict[str, Any]:
             return _DurableReads(connection, fence).state()
         finally:
             connection.close()
-    except sqlite3.Error:
+    except Exception:
         # A poll that cannot read says so in one sentence — the page's
         # next tick retries, and the drive's own response re-renders.
+        # ``Exception`` (not ``sqlite3.Error``): the teaching poll's own
+        # except face (web.py) — an undecodable row must not take the
+        # poll's connection down with it.
         return {
             "ok": False,
             "did": None,

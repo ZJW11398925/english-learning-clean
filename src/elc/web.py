@@ -34,7 +34,9 @@ and nothing else. This is also the single-user serial assumption, made
 structural rather than hoped for: concurrent requests queue, and the host
 never interleaves two turns.
 
-**The one exception: ``/api/teaching/current`` never touches the host.**
+**The one exception: ``/api/teaching/current`` never touches the host** —
+and, since V3-8e, the reading face's ``/api/v3/state`` poll reads off the
+queue the same way (its own short read-only connection; the same posture).
 A turn's generation stalls the work queue for the whole model round trip
 (seconds on a real provider), and the teaching moment row is durable long
 before that — ``OPENING`` is committed at the CP2 open, before the persona
@@ -8806,8 +8808,9 @@ def _build_server(
                         lambda: face.target_footprint(asked)
                     )
             elif self.path == "/api/teaching/current":
-                # The one route served off the work queue (module docstring,
-                # "The one exception"): a read-only poll must not queue
+                # The teaching poll, off the work queue (module docstring,
+                # "The one exception" — the reading face's /api/v3/state
+                # poll keeps the same posture): a read-only poll must not queue
                 # behind a turn's generation, which occupies the worker for
                 # the whole model round trip. A poll that cannot read
                 # answers {"moment": None}, never a 500.

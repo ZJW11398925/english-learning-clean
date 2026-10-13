@@ -844,10 +844,42 @@ def test_the_position_survives_a_restart(tmp_path: Path) -> None:
         assert state["next"]["kind"] == "gate"
         opened = resumed.advance()[1]
         assert opened["did"]["kind"] == "gate_open"
-        # the prefix was re-presented to the orchestrator (the script law)
-        # but the model was asked for nothing: the replay providers
-        # answered the committed segments from canon — zero writer calls.
-        assert resumed.post.prompts("writer") == []
+        # Submit so the drive re-presents the whole prefix (the script
+        # law): the replay providers answer the committed segments from
+        # canon, so the model's single fresh writing is the continuation
+        # alone — the zero-regeneration teeth (a regenerating replay
+        # would show three writer prompts on this drive). The fixture's
+        # own submission id keeps the CHAPTER replan's scripted key.
+        status, landed = resumed.submit(
+            {
+                "submission_id": WEB_SUBMISSION_ID,
+                "intent_text": gold.GOLD_INTENT,
+            }
+        )
+        assert status == 200
+        assert landed["ok"] is True, landed.get("error")
+        assert len(resumed.post.prompts("writer")) == 1
+
+
+def test_the_state_poll_answers_a_corrupted_row(tmp_path: Path) -> None:
+    """A row that stops decoding must not take the poll down with it:
+    the off-queue read answers the honest unavailable shape (HTTP 200),
+    never a dropped connection — the ``/api/teaching/current`` posture's
+    own except face."""
+
+    app_db = tmp_path / "app.db"
+    with v3_stack(app_db) as stack:
+        _to_the_gate(stack)
+        connection = sqlite3.connect(app_db)
+        try:
+            connection.execute(
+                "UPDATE user_gate SET options_json = 'not-json'"
+            )
+            connection.commit()
+        finally:
+            connection.close()
+        state = stack.state()  # asserts HTTP 200 — never a dropped poll
+        assert state["ok"] is False
 
 
 def test_a_crashed_ruling_finishes_from_canon_alone(tmp_path: Path) -> None:

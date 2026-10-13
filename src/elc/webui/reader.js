@@ -168,8 +168,14 @@ function renderReadout(payload) {
 
 function render(payload) {
   if (!payload) return;
-  if (payload.ok === false && payload.error) setStatus(payload.error);
-  else setStatus((payload.next && payload.next.detail) || "");
+  if (payload.error && payload.ok !== true) {
+    // A transport-level answer (a 500 payload carries an error but no ok
+    // flag): say its sentence and keep the last good frame on screen —
+    // the durable world is untouched, and the next read re-renders.
+    setStatus(payload.error);
+    return;
+  }
+  setStatus((payload.next && payload.next.detail) || "");
   setWorld(payload);
   renderFlow(payload);
   renderGate(payload);
