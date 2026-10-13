@@ -662,6 +662,11 @@ def test_gate07_the_drive_follows_the_new_revision(
     dossier3 = drive.narrative.adopted_dossier(gold.S3)
     assert dossier3 is not None
     assert dossier3.place == gold.PLACE_MAP_ROOM
+    # the SCENE planner's LLM arm is not on this chain: the scene
+    # elements ride the Blueprint through ``ScenePlanner.open_scene`` by
+    # design (``plan_scene`` stays the protocol face a later cut wires),
+    # and the gold chain holds no SCENE replan.
+    assert drive.completion.prompts_for("planner") == ()
     # the actual order of the driven scenes is the new plan's own.
     assert drive.scene2.value.opening.dossier.scene_id == gold.S2
     assert drive.scene3.value.opening.dossier.scene_id == gold.S3
