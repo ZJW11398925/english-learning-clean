@@ -666,6 +666,7 @@ Blueprint(plan_revision ADOPTED) → PLANNED
 - `ACTIVE` 期间允许 Plan Revision（重规划**剩余**部分）；已 commit 的场景/段落不受影响。
 - `chapter_index` 单调 +1；chapter identity 稳定。
 - `SETTLING` 是短窗口：Settlement 产出全部落完才 `CLOSED`；崩溃于 `SETTLING` → recovery 重跑 Settlement（同章 summary 只落一版；重跑 = no-op 或显式新 revision）。
+- **SETTLING 前置律（V3-8b 外审 HIGH-1，起强制）**：章进入 `SETTLING` 前，其世界不得仍有**运行中的故事**——`ACTIVE` 场、`OPEN`/`ANSWERED`/`RESOLVING` gate、`COMMITTED` 未 `CLOSED` gate、`PENDING` `action_replan` 义务四者任一存在 ⇒ `ACTIVE → SETTLING` 拒 `VALIDATION_FAILED` 且零状态改变。**剩余未发生的 `PLANNED` 场可显式 `DISCARDED`/retired 后结束章节**——不得要求所有计划场都必须发生，但不得存在仍运行中的故事。「章 CLOSED 而场仍 ACTIVE」是非法状态（V3-7 的 `_settling_chapter` 夹具曾允许——本律反转之）。
 
 ## 22. Scene Lifecycle（Narrative V3）
 
@@ -803,6 +804,8 @@ COMMITTED 后重放            → 幂等 no-op；呈现层从 durable 状态重
 **不是提交事务、不是事实落地边界**——只压缩/收束已 commit 内容（N-INV-004；§25 两条提交的共同纪律同句）。
 
 **V3-7 落法（开工裁决 `DEC-OPI-d274a7fb-…6`）**：编排面 `settle_chapter`（Chapter Settlement 的编排，非 `SqliteNarrativeStore.settle_chapter` 的 ACTIVE→SETTLING 翻转——后者已在库）——一个短事务：①章须 `SETTLING`（`ACTIVE` 先经现役翻转面进入；`PLANNED`/`CLOSED` 拒 `VALIDATION_FAILED`）；②落 `chapter_settlement` **一章一版**行（`chapter_id` PK；summary/storyline_updates/hooks/resolved_lines/salience_notes/created_at_revision——确定性基线的保守拼接，见 DATA §26.2.1「V3-7 落表形」）；③同事务 `SETTLING → CLOSED` 复用现役 `close_chapter` 臂，`closed_at_tick` = 事务内读 `world.current_tick`（**tick 不推进**——结算无 duration，N-INV-007：只读不推）；**N-INV-004 存储面**——不写 `world_event`、不写 `world_state_fact`、不改 `actor_memory`、不推进 tick。**重跑 = no-op**：`chapter_id` 已存 ⇒ 同形返回存行（一章一版 PK 承载幂等；崩溃于 `SETTLING` ⇒ recovery 重跑 Settlement 落同一版，§21/§28 崩溃窗口句）；形状异 `CONFLICT`（一章一版，不重写）。
+
+**V3-8b 修订（外审 HIGH-1 + MEDIUM-HIGH；开工裁决 `DEC-OPI-06b954e0-…15`）**：① **SETTLING 前置律的闸门落在 `ACTIVE → SETTLING` 翻转面**（`SqliteNarrativeStore.settle_chapter`）——进入 `SETTLING` 前同事务校验四者：无 `ACTIVE` 场、无 `OPEN`/`ANSWERED`/`RESOLVING`/`COMMITTED`-未-`CLOSED` gate、无 `PENDING` `action_replan` 义务（任一存在 ⇒ `VALIDATION_FAILED` 且零状态改变）；剩余 `PLANNED` 场由调用方先显式 `DISCARDED`。② **hooks 不再自 Blueprint 升级（MEDIUM-HIGH）**——`chapter_settlement.hooks` 不得复制 `chapter_questions_to_advance`（Plan 内容不因结算自动升级为 Narrative Memory——防 Plan→Memory 软铁路回流）；确定性基线下无可靠 hook extraction ⇒ `hooks = ""`（空串诚实），`created_at_revision` 保留为 plan provenance（只溯源、不搬运内容）。真正的 hook extraction（来自已发生伏笔/已暴露问题/已建立未决悬念——Canon/Reader-visible 面）归后刀。
 
 ### 两条提交的共同纪律
 

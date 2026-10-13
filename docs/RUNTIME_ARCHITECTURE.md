@@ -863,6 +863,12 @@ R-INV-018 same-turn second DecisionCycle 不重复消费已提交 analysis。
 
 **原子创建服务（V3-8a 落法；清偿「world+initial Bible 真原子创建服务」后刀义务）**：`create_world_with_bible`（world 行 + 首版 `world_bible_revision` CURRENT + durable player character 种子 + AI cast 种子）——**一个短事务全或无**（世界与其初始权威同生同灭；半创建不留残骸）；幂等键 = world_id（重放同形 no-op、异形 CONFLICT）。这是编排器验收链的「创建世界 → 创建角色」两步的物理形。
 
+**V3-8b 修订（外审 HIGH-2 + HIGH-3 + HARD GATE；开工裁决见 REGISTER v1.7.2）**：
+
+- **Resolver 的权威输入（HIGH-2）**：`ResolverProvider.adjudicate` 的输入从 POV-limited 的 `AdjudicationContext` 升格为 **world-authoritative `ResolverContext`**——CURRENT World Bible/hard rules + relevant `world_state_fact` + player profile（abilities/limits）+ 当前 location/physical state + inventory/resource state + scene/environment canonical facts + relevant counterpart state + 用户提交（intent/option）+ 当前 POV 面。**玩家的 knowledge/memory 用于判断「用户角色知道什么」，不是 Resolver 自身的知识上限**；Resolver 知道真实世界规则与物理事实，但仍不得替用户发明 intent（N-INV-002 不松）。`User Intent → ResolverProvider(world authority + player state + knowledge) → Adjudication → NCP-2` 不变。
+- **CHAPTER replan 回归 World Director（HIGH-3）**：provider 分工重冻结——`PlannerProvider` 只管 **SCENE** 级（dossier 内容/SCENE replan，以 POV cognition/memory + 当前场景状态为主要输入）；**`DirectorProvider`（新）** 管**初次 Chapter Blueprint + CHAPTER replan**，输入基于 `DirectorContext` 全知面（Bible/current facts/full cast/active storylines/chapter settlements/current_tick）并携带触发本 replan 的 action/reason。`Director.apply_action_replan` 继续负责 validation/persistence，但 Blueprint 的**生产权**不由 POV-limited PlannerProvider 代替。
+- **committed action 的 continuation obligation（HARD GATE；结构验收第 12 条前置）**：recovery 必须识别 `gate=COMMITTED && 未 CLOSED && 尚无 continuation passage` 的窗口并恢复 `scene_id`/`gate_id`/committed `user_action_id`（outcome_ref）/`next_segment_seq`；Pipeline 能从 durable state 继续生成第一条 continuation passage，以该 `user_action_id` 为强制 `outcome_ref`，同事务 CLOSED gate——**不要求调用方依赖进程内记忆重供旧 GateBeat**。取消/降级外部 `first_segment_seq` 状态——Pipeline 从 `segment_commit` durable rows 推导下一 `segment_seq`。`recovery_scan` 增一族（第七族：`COMMITTED` 未 `CLOSED` gate 且其场无 outcome_ref 指向它的 passage）；`resume` 路由该族。
+
 ## 28. Narrative V3 Commit Points（NCP）
 
 与 legacy CP0–CP4 并列，V3 管线使用自己的提交点（物理可同库，authority 不合并）：

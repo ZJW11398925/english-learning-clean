@@ -954,7 +954,9 @@ Narrative (World) Domain
 | 读者看过什么 | Reader Exposure（记录面；**不写 actor cognition**） |
 | 世界当前时刻（actual） | commit 事务（唯一推进者）；Director/Scene 只写 planned |
 | 管线驱动顺序（谁在何时调用谁） | **编排器**（`elc/world/pipeline.py`；**零写权**——一切写入由被编排的库面在自己的短事务内落；RA §27 编排面，V3-8a 落法） |
-| Writer 正文 / Planner dossier 内容 / Resolver 裁定的**生产面** | provider 协议面（`elc/world/providers.py` 的 Protocol + deterministic fake；**Resolver 唯一裁定权不松**——协议只是裁定结果的来源；真实 LLM 接线是「好玩」亲验前的显式一步，V3-8a 落法） |
+| Writer 正文 / Planner（SCENE 级）dossier 内容的**生产面** | provider 协议面（`elc/world/providers.py` 的 Protocol + deterministic fake；真实 LLM 接线是「好玩」亲验前的显式一步，V3-8a 落法） |
+| **CHAPTER 级 Blueprint（初次规划与 CHAPTER replan）的生产面** | **World Director / DirectorProvider**（输入基于 `DirectorContext` 全知面——Bible/current facts/full cast/active storylines/chapter settlements/current_tick + 触发本 replan 的 action/reason；`Director.apply_action_replan` 仍负责 validation/persistence，但 Blueprint 的**生产权**不由 POV-limited PlannerProvider 代替——V3-8b 外审 HIGH-3 重冻结） |
+| **Resolver 裁定的权威输入** | **world-authoritative `ResolverContext`**（CURRENT World Bible/hard rules + relevant `world_state_fact` + player profile〔abilities/limits〕+ 当前 location/physical state + inventory/resource state + scene/environment canonical facts + relevant counterpart state；**玩家的 knowledge/memory 用于判断「用户角色知道什么」，不是 Resolver 自身的知识上限**；Resolver 不替用户发明 intent——V3-8b 外审 HIGH-2 重冻结） |
 | 世界 + 初始 Bible 的原子创建 | 原子创建服务（`create_world_with_bible`；一个短事务全或无；V3-8a 落法） |
 
 ### 20.3 七条硬边界（V3-1 冻结）
