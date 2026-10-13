@@ -796,4 +796,6 @@ massive content expansion
 
 **结构验收 12 条（V3-0R，与用户「好玩」门并列）**：① Director 产出完整 Blueprint ② Writer 正确保持莉亚 POV ③ 秘密没有提前泄漏 ④ User Gate 只在真实意志点触发 ⑤ 用户自由输入被 Resolver 裁定 ⑥ 一个用户选择真正让原计划失效 ⑦ Replan 后没有强行绕回旧计划 ⑧ Scene 3 能读取 Scene 2 已 commit 的事实 ⑨ 第一章实际结果与 Blueprint 可以明显不同 ⑩ Chapter Settlement 生成摘要 ⑪ Chapter 2 使用真实 Chapter 1 结果，而不是原计划 ⑫ 重启后能够从最新 narrative state 恢复。
 
+**V3-8f（2026-10-13 补写——真实模型接线基线）**：首次真实凭证亲验（V3-8e 收口后）显示阅读面「连流程都跑不通」：egress 时限 30s < 真实单次写作 43–72s；四臂 prompt 未写明 JSON 值类型 ⇒ 模型对复数语义字段输出数组、严格解析拒收（`bad-shape`）；seam 失败码被压平成 `transport-error`（用户面误导）；V3 写路由 60s host 等待截断长驱动。修复刀按范式篇 **§10.4「真实模型接线基线」** 执行（时限独立校准 180s ／ prompt 逐字段类型合同＋解析宽容刀口 ／ 失败码透传人话 ／ 长驱动等待覆盖驱动预算 600s）；门 = 四门全绿 + 新钉族 + **真实模型全链冒烟**（仓外副本、四臂覆盖）通过，随后用户重跑「好玩」亲验。双门纪律不变。
+
 **与既有 Phase 的关系**：Phase 0–10 runtime 面（conversation/persona/learning/teaching/runtime/……）全部不动；Narrative V3 是在其上新增的叙事域程序。真实 automatic-teaching rollout 维持 HOLD（SessionBudget 三分与内容补课为开闸前置）不变；P17 学习桥硬门转由叙事域的咬合面承接（触发条件改判须显式留痕）。
