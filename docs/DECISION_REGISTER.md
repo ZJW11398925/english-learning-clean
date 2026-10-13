@@ -489,3 +489,24 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 9. **处置后四门完整重跑（防坑㉞）**：pytest **6261/0/0**（702+1009+2186+2364 分段合计；+1 钉=corrupted-row）、ruff clean、mypy 205 files clean、compileall clean、drift 19/19、collect 6261。
 
 授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v38e_review\`／`D:\v38e_mut\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交 `23afd74`，本条目为处置留痕（双钉齿验证副本 `D:\v38e_probe\mut\`）。
+
+### v1.7.10 — 2026-10-13 V3-8f 开工裁决（真实模型可用性修复——用户亲验实败的四症取证；授权：用户亲验反馈 + V3-8e 收口「双门之二」在途）
+
+**结论**：V3-8e 收口后首次真实凭证亲验**实败**（用户原话「完全无法正常使用，连流程都跑不通」）——取证得**四症**并在同刀修复：①世界面 egress 时限沿用通用默认 30s，而真实单次写作 43–72s（reasoning token 占大头）⇒ 每次驱动必死（忠实复现 TimeoutError@30.6s；预验证：同 prompt timeout=120s 调用成功）；②四臂 prompt 未写明 JSON 值类型 ⇒ 模型对复数语义字段（`chapter_questions_to_advance`/`entry_goals`/`revealable`/`must_hide`）输出数组、严格解析拒收 `bad-shape`（预验证：prompt 补类型契约后真实模型输出完整可解析——4 场全过）；③`_complete_text` 把一切 seam 错误压平为 `transport-error` ⇒ 用户面把超时误说成凭据问题；④`_WORKER_WAIT_SECONDS=60` 截断长驱动（`submit`≈3 次真实往返）⇒ 路由 500 而故事仍推进（页面误报）。**合同增量（总控亲写，提交 `185d861`）**：范式篇新增 **§10.4「真实模型接线基线」**（时延预算与时限校准 / 值类型合同 / 失败码不得压平 / 长驱动不误报）+ IMPLEMENTATION_PLAN §20 镜像句——基准纪律③：问题面补写进同一套设计。
+
+修法（最小修复、不扩设计面）：世界面 egress 时限独立校准（装配层从 live egress 派生、仅覆盖 timeout，默认 180s；persona 仅**加性** `with_timeout`、保留注入 transport）；四臂 prompt 逐字段写明值类型（文本=单字符串、多条目换行并入）+ `_text` 对「全 str 数组」确定性连接（canonical 落库形态不变）；`_seam_code` 码透传（词表形才透传、自由文本压平）+ `_provider_failure` 分族人话（timeout/凭据族/端点族/429）；V3 写路由独立等待 600s（`_run_host_write(wait=)`，其余调用点默认逐字不变）+ `reader.js` busy 文案。
+
+授权：用户 2026-10-13 亲验反馈 + V3-8e 收口在途的「好玩」门；DMCP 开工裁决 `DEC-OPI-c0f4d9b4-0f97-4507-9fa9-6f27152964d7.10`（rev 830）；三件 = TASK `…12`（rev 831）/ VAL `…14`（rev 832，路径集=所触面）。
+
+### v1.7.11 — 2026-10-13 V3-8f 独立评审处置（ACCEPT-WITH-FINDINGS 无阻断；F1 升格本刀修 + F2/F3 顺笔；授权：评审结论转呈）
+
+**结论**：V3-8f **维持推进**（不重开）；四基线（§10.4）与身份合同两面逐条在码在册；**15 组变异（点名六组全红）**、真实链库证与副本全量三重证据；禁改面零触碰、零迁移零依赖。**执行者中断两例如实留痕**（遗留先例同族）：executor-pro 余额中断留五文件半成品 → 总控取证（ruff/mypy/全量 6261/0/0、diff 逐面核、禁改面零触碰）裁「吸收+复核」→ executor-flash 承接交付 `4c75be6`（四修复+第五面身份合同+钉族）/ `ddd6027`（第六面：planner 身份四要点，授权=追补裁决 `DEC-…16`，rev 833）。
+
+1. **F1（HIGH 非阻断，升格本刀修）**：`test_each_failure_code_family_gets_its_own_sentence` 的凭据/配置族断言**空转**（评审变异 G6/G7 删分支仍全绿——generic 句恰含「密钥/设置/code」）。修：族内独有字面（「没能通过这把密钥」/「BYOK」/「没有可用的模型端点」/「--base-url」）+ 与泛句不等式；**副本回退变异 G6/G7 各自证红**（处置提交 `110b130`）。
+2. **F2（LOW，顺笔）**：`_SEAM_CODE` 锚定 `$` 放行尾随单个换行（`"timeout\n"` 穿越）——改 `fullmatch` + 尾随换行钉×3。
+3. **F3（LOW，顺笔）**：夹具 docstring「excerpted verbatim」与 array 夹具 `chapter_questions_to_advance` 截取（2/4）不符——改「结构性裁剪、保留字段逐字（一处记录在案的裁剪）」措辞。
+4. **真实模型冒烟两轮（决定性证据）**：**smoke1** = 四修复生效链（start 50.4s／continue 22.0s·6.4s／门开；submit re-drive **234.4s** 越旧 60s 界、裁定 COMMITTED；续段被 namespace 诚实拒 `participant 'renn'…`——planner 身份面证据）；**smoke2** = 全链至 **next_chapter**（start 45.8s／continue×2 12.0/7.7s／submit **265.6s**〔resolver+SCENE replan+续段，d2 participants=plan 词表照抄，'renn'/'carter' 未入〕／continue×3 28.0/45.5/27.0s／settle 0.004s／next_chapter 56.2s→ch2 `bp-r1` 三场在册；HTTP 全程 200、零 `ok:false`、零失败标记）。日志与响应全文：`D:\elc-scratch\v38f\`（smoke*.log / resp*.json / app_copy*.db——**读取须 mode=ro**，WAL 未 checkpoint）。
+5. **登记后刀（不动本刀）**：replan 采纳面是否前置校验参与者身份（library face 裁定面）；显示名→id 确定性归一（启发式风险）；planner 上下文词表（追补裁决 revisit 条件所指——触 POV-safe 边界，须自己的开工四查）；smoke2 观察 d2 participants 不含玩家角色 `cousin`（初始 plan 即如此、p0003 散文正常呈现，非缺陷）；`wait=` 计数文本钉刚性（未来他路由加 wait 会误红——维护须知）；`4c75be6` 提交信息首拒字面措辞 nit（首拒为 `'renn'`，不 amend 纪律⑱）。
+6. **盖章与收口**：VR `VR-OPI-c0f4d9b4-…18`（PASS，盖于 `110b130`）；design_sync REBUILD+CHECK = **SYNCED**（830 对象/rev 833）；收口 DEC `…20`（rev 834；下一动=用户重启 8760 重跑「好玩」亲验，双门之二重新计时；双门通过前不切主 UI、不退役 Legacy V2）。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\elc-scratch\v38f\review\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交 `110b130`，本条目为处置留痕（回退变异证齿副本 `D:\elc-scratch\v38f\review\repo`）。
