@@ -129,10 +129,17 @@ class _GoldPost:
     ``release`` turns the first writer call into a blocking one (the poll
     pin): the transport sets ``blocked`` and waits for ``release`` — no
     sleep anywhere, the test decides when the drive may finish.
+    ``script`` overrides the fixture's own completion (the open-scene pin
+    extends the screenplay with the two yard passages; the fixture's
+    documented key law is "扩场景需扩键").
     """
 
-    def __init__(self, release: threading.Event | None = None) -> None:
-        self.script = gold.gold_completion()
+    def __init__(
+        self,
+        release: threading.Event | None = None,
+        script: gold.GoldScriptedCompletion | None = None,
+    ) -> None:
+        self.script = script if script is not None else gold.gold_completion()
         self.calls: list[tuple[str, str]] = []
         self.blocked = threading.Event()
         self.release = release
@@ -677,6 +684,88 @@ def test_settle_and_next_chapter_close_and_reopen_the_story(
         assert failed["ok"] is False
         assert "这一次写作没有完成（transport-error）" in failed["error"]
         assert len(failed["passages"]) == before
+
+
+def test_the_open_scene_default_policy_drives_and_closes(
+    tmp_path: Path,
+) -> None:
+    """The **non-anchor** arm (a scene a real replan created — chapter
+    two's own): one continue = one segment (the face's default: one tick,
+    language ``en``), and the reader's 「结束本场」 drives the closing
+    segment with ``is_last_segment=True`` — the two defaults the module
+    docstring states once. The screenplay is extended the fixture's own
+    documented way (its writer arm keys on ``(place, segment_seq)``)."""
+
+    def _script() -> gold.GoldScriptedCompletion:
+        prose = dict(gold.GOLD_PROSE)
+        prose[(gold.PLACE_CH2_YARD, 1)] = "The yard is cold; the cart waits."
+        prose[(gold.PLACE_CH2_YARD, 2)] = "The pack goes up; the gate shuts."
+        return gold.GoldScriptedCompletion(
+            prose=prose,
+            adjudications={gold.GOLD_INTENT: gold.GOLD_ADJUDICATION_PAYLOAD},
+            blueprints=(
+                (gold.CH1, gold.CH2_BLUEPRINT),
+                (None, gold.CH1_BLUEPRINT),
+            ),
+            replan_blueprints={
+                gold.REPLAN_REQUEST_ID: gold.CH1_REPLAN_BLUEPRINT
+            },
+            elements={},
+        )
+
+    app_db = tmp_path / "app.db"
+    with v3_stack(app_db, post=_GoldPost(script=_script())) as stack:
+        assert stack.start()["ok"] is True
+        for _ in range(3):
+            assert stack.advance()[1]["ok"] is True
+        assert stack.submit(
+            {
+                "submission_id": WEB_SUBMISSION_ID,
+                "intent_text": gold.GOLD_INTENT,
+            }
+        )[1]["ok"] is True
+        for _ in range(3):
+            assert stack.advance()[1]["ok"] is True
+        assert _post_empty(stack.port, "/api/v3/settle")[1]["ok"] is True
+        assert _post_empty(stack.port, "/api/v3/next_chapter")[1]["ok"] is True
+        # chapter two: the plan's two scenes are fresh anchors (open).
+        opened = stack.state()
+        assert opened["chapter"]["chapter_index"] == 2
+        assert opened["plan"]["scene_count"] == 2
+        assert all(row["anchored"] is False for row in opened["roster"])
+        first_scene = opened["roster"][0]["scene_id"]
+        tick_before = opened["world"]["current_tick"]
+        # the open-scene default: one segment, one tick.
+        driven = stack.advance()[1]
+        assert driven["ok"] is True, driven["error"]
+        assert driven["did"]["passage_ids"] == [f"{first_scene}-p0001"]
+        assert driven["scene"]["status"] == "ACTIVE"
+        assert driven["scene"]["place"] == gold.PLACE_CH2_YARD
+        assert driven["world"]["current_tick"] == tick_before + 1
+        assert driven["controls"]["can_end_scene"] is True
+        # 「结束本场」 closes it with the terminal segment.
+        closed = stack.advance(end_scene=True)[1]
+        assert closed["ok"] is True, closed["error"]
+        assert closed["did"]["passage_ids"] == [f"{first_scene}-p0002"]
+        assert closed["world"]["current_tick"] == tick_before + 2
+        assert [row["scene_id"] for row in closed["roster"]] != []
+        assert closed["roster"][0]["scene_id"] != first_scene
+        assert _read(
+            app_db,
+            "SELECT is_last_segment FROM segment_commit WHERE scene_id = ?"
+            " AND segment_seq = 2",
+            (first_scene,),
+        ) == (1,)
+        # one real writing per fresh segment — the replayed prefix never
+        # re-generates (both yard passages were fresh).
+        yard = [
+            prompt
+            for prompt in stack.post.prompts("writer")
+            if f"- place: {gold.PLACE_CH2_YARD}" in prompt
+        ]
+        assert len(yard) == 2
+        assert "- segment_seq: 1" in yard[0]
+        assert "- segment_seq: 2" in yard[1]
 
 
 def test_ack_records_exposure_only(tmp_path: Path) -> None:
