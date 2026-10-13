@@ -1244,19 +1244,30 @@ Narrative V3 故事线（Gold Scenario）的最小试读面——「好玩」亲
   短连接——驱动占工作队列整轮模型往返时，轮询仍秒答且绝不 500，与
   `/api/teaching/current` 同一例外姿态）；`POST
   /api/v3/start|continue|submit|settle|next_chapter|ack`（handler 只做
-  fail-closed 语法 400，服务面全在 `elc/narrative_web.py`；一次驱动 =
-  一段/一步，位置全自 durable 行推导——重开页面从故事当下续跑）；
-  V3-8g 增 `POST /api/v3/language`（正文语言 en|zh——语法 fail-closed
-  400、写面走 host 队列写 `app_setting`、幂等重放零写；state 增
-  `language` 字段随行）。
+  fail-closed 语法 400，服务面全在 `elc/narrative_web.py`；位置全自
+  durable 行推导——重开页面从故事当下续跑）；V3-8g 增 `POST
+  /api/v3/language`（正文语言 en|zh——语法 fail-closed 400、写面走
+  host 队列写 `app_setting`、幂等重放零写；state 增 `language` 字段
+  随行）；**V3-8h 驱动语义（范式篇 §10.5）**：continue/submit 一次调用
+  **跑到下一个真停点**——①User Gate 打开 ②章内计划尽（停在「结束本章」
+  前）③单次驱动段数上限（`V3_DRIVE_SEGMENT_CEILING`=12；触顶=有故之停，
+  说明句「本次已连写 N 段……点「继续」接上」入返回值 `did.note` 与
+  `app_setting` 键 `v3_drive_note`，state 的 `note` 字段随轮询持续
+  携带）；段间/场间自动续写、一次驱动不跨章、单步失败停在原地（已落段
+  不丢不重写）；`next_chapter` 增可选 body `{"direction": "…"}`（空体/
+  空对象=让世界自行发展——旧义兼容逐字等义；非法体 400 人话），方向作
+  **软期望**入 Director 初始计划（只影响计划面、不写正史）。
 - 组件：**零新增组件**——复用 #1 link-btn（开始/继续/结束本场/结束本章/
   下一章/提交/选项/语言两钮——现语言钮用 ink 变体、另一姿用 faint
   变体 + `aria-pressed`）、#2 pen（自由输入）、#3 note-paper（门的卡）、
   #4 letter 的 `.say`（段落正文排印）、#9 meter-row（计划/结算读数）、
-  #12 system-line（一行状态句）。库表 ③ 不加行（无新组件 ⇒ 无登记
-  义务；`test_fg1_architecture.py` 的 COMPONENTS 不动）。V3-8g 的
-  忙碌行/spinner/语言行皆 `.reader-*` 页级骨架（reader.css 唯一定义
-  处），非组件类。
+  #12 system-line（一行状态句）、**#16 field（V3-8h 增复用：章间方向
+  输入行——`label.field > span.fieldname + input`，fieldname
+  「下一章方向」、placeholder 全句「给下一章一个方向（可留空=让世界
+  自行发展）」**）。库表 ③ 不加行（无新组件 ⇒ 无登记义务；
+  `test_fg1_architecture.py` 的 COMPONENTS 不动）。V3-8g 的忙碌行/
+  spinner/语言行与 V3-8h 的 `.reader-author`（方向行整行落位）皆
+  `.reader-*` 页级骨架（reader.css 唯一定义处），非组件类。
 - 页级骨架 = `.reader-*`（reader.css 唯一定义处；不定义/不覆写组件类、
   不造第二套滚动条语汇、只用文档流滚动）。V3-8g：`.reader-busyline`
   （spinner + 已用时/阶段注记；`[hidden]` 显式 display:none）、
@@ -1272,7 +1283,12 @@ Narrative V3 故事线（Gold Scenario）的最小试读面——「好玩」亲
   有反馈**（drive/submit 的忙碌臂答「上一步还在进行中（已用 N 秒）——
   等它跑完再点」，绝不静默）。**正文语言选择器**：标「正文语言」，
   en/中文 两钮，切换即 POST 后重读 state 渲染；已写下的段落永不改写
-  （只影响此后新写段落，确认句在页面上说明）。
+  （只影响此后新写段落，确认句在页面上说明）。**V3-8h 停点说明句与
+  章间方向输入**：状态行优先显示 state 的 `note`（有故之停的说明句，
+  轮询不丢），无 note 回退 `next.detail`；「下一章」钮同区（controls
+  带内整行）的方向输入框——留空=不带 body（让世界自行发展），非空=
+  携 `{direction}`（软期望），成功后清空输入框；多段驱动中进度面照旧
+  逐段更新（轮询的 passages 增长观察）。
 - 文案：中文界面；段落正文即模型原文（不译、不裁）；门卡选项 = 世界的
   自然举动原文；正文语言随设置（默认 en；Gold 作者脚本的门卡选项恒
   英文——已登记）。
