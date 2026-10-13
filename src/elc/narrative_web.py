@@ -113,6 +113,37 @@ replan arm never reads it). The direction writes **no canon row of its
 own**: the author layer touches the plan face only, never the story's
 ledger (zero migration).
 
+**The gate-production face (V3-8i, the paradigm shift §10.6 item 1).**
+The reading face plans every chapter through a ``require_plan_gates``
+pipeline — a drafted Blueprint that **declares the gate-production
+shape** (``required_beats`` / ``user_present``) without carrying the
+reader's own will in every scene is refused and re-drafted once, and a
+second refusal is reported honestly (the judge's scope is the declared
+shape: a plan in the pure legacy ten-key shape is bounded at runtime by
+the floor below, never refused here). And **the plan's gate beats
+become the scene's script**: a scene whose adopted plan element carries
+a gate-bearing ``required_beats`` is driven on that derived script
+(segment beats as segments, gate beats as the gate stops — the same
+walk and the same ``_open_gate_for`` path the author scripts always
+had; a gold-anchored scene's own author script still wins, byte for
+byte unchanged), so a real plan chapter stops at its planned will
+points instead of running on. The derivation is a read-face law, stated
+once: beats ride in plan order, ``gate_seq`` numbers the gate beats
+1..k, segment beats ride the open-scene tick calibration, and the
+script **closes with a segment** (the last beat is marked terminal — a
+script ending on a gate gets one closing segment appended), mirroring
+the author scripts' own shape.
+
+**The gateless floor (V3-8i, the paradigm shift §10.6 item 3).** The
+drive's stop law gains a defensive layer beneath the gates: when the
+current scene has accumulated :data:`V3_GATELESS_SEGMENT_FLOOR` fresh
+segments in this drive and **no gate beat lies ahead** in its script
+(an open scene a replan created, or a plan that slipped a gateless
+scene through), the drive stops with a reasoned sentence («这一幕还没
+轮到你……») riding ``did.note`` and ``v3_drive_note`` — the ceiling's
+own mechanism. A gate ahead is never preempted: the floor only fires
+where no stop was ever planned.
+
 Two recovery steps ride the same durable reads: a chapter left
 ``SETTLING`` (a crashed settlement) is finished by ``advance`` (the next
 step *is* its settlement), and ``next_chapter`` refuses until the latest
@@ -241,6 +272,7 @@ __all__ = [
     "READER_ID",
     "V3_DRIVE_NOTE_KEY",
     "V3_DRIVE_SEGMENT_CEILING",
+    "V3_GATELESS_SEGMENT_FLOOR",
     "V3_LANGUAGE_GRAMMAR",
     "V3_NEXT_CHAPTER_GRAMMAR",
     "V3_PROSE_LANGUAGE_KEY",
@@ -339,6 +371,23 @@ OPEN_SCENE_SEGMENT_TICKS = 1
 #: inside the routes' 1800s host wait, and an open scene — which no
 #: script ever closes on its own — still answers the reader regularly.
 V3_DRIVE_SEGMENT_CEILING = 12
+
+#: The gateless floor (V3-8i, the paradigm shift §10.6 item 3): the
+#: drive's defensive stop beneath the gates. When the current scene has
+#: accumulated this many fresh segments in the one drive and **no gate
+#: beat lies ahead** in its script — a replan-created open scene (no
+#: script), or a gateless scene that slipped through — the drive stops
+#: with a reasoned sentence (the ceiling's own mechanism:
+#: «有故之停，不得无解释之停»). Four is calibrated against the user's
+#: own field report that started this cut: a real plan chapter ran
+#: eleven segments with zero gates before anything paused — four keeps
+#: a gateless scene from ever approaching that runaway while still
+#: giving the world room to build toward a beat; the plan-level gate
+#: production (the §10.6 item 1 seat) is the primary face, and the
+#: floor is the safety net beneath it, never a substitute. A gate
+#: lying ahead is never preempted: the floor fires only where no stop
+#: was ever planned.
+V3_GATELESS_SEGMENT_FLOOR = 4
 
 #: The last drive's stop-note seat in the host's generic ``app_setting``
 #: table (V3-8h): the ceiling stop's sentence is written here (any new
@@ -549,6 +598,22 @@ def _ceiling_sentence(written: int, ceiling: int) -> str:
     return (
         f"本次已连写 {written} 段（一次驱动最多 {ceiling} 段）——"
         "点「继续」接上。"
+    )
+
+
+def _gateless_sentence(written: int, floor: int) -> str:
+    """The gateless floor's own sentence (V3-8i, the paradigm shift
+    §10.6 item 3: the reasoned stop — «这一幕还没轮到你……»). It rides
+    the drive's ``did`` and the state's ``note`` like the ceiling's
+    does, so the page and every later poll both say why the story
+    paused: this scene has no stop planned for the reader (an open
+    scene, or a plan that slipped a gate), and the reader chooses —
+    close the scene, or let it run one more stretch."""
+
+    return (
+        "这一幕还没轮到你——可「结束本场」收束，或点「继续」再走一段"
+        f"（本幕已连写 {written} 段仍未遇到为你安排的门；一次兜底为 "
+        f"{floor} 段）。"
     )
 
 
@@ -787,6 +852,102 @@ def _fresh_passage_ids(
     ]
 
 
+def _plan_script_beats(
+    element: Mapping[str, Any],
+) -> tuple[SegmentBeat | GateBeat, ...] | None:
+    """One adopted plan element's derived script, or ``None`` — the
+    V3-8i read-face law (the module docstring): the element's
+    ``required_beats`` list becomes the scene's beats, **a gate-bearing
+    list only** (a scene whose beats plan no gate — or that carries no
+    beat list at all — stays an open scene, the floor's own domain).
+    Segment beats ride the open-scene tick calibration; gate beats ride
+    their plan order as ``gate_seq`` 1..k with the planned options; a
+    malformed beat entry is simply not a beat (the plan-level judge
+    refuses such plans; the derivation degrades honestly, never
+    guesses). The script **closes with a segment**: the last beat is
+    marked terminal, and a script ending on a gate gets one closing
+    segment appended — the author scripts' own shape (the ruling's
+    continuation lands, then the scene commits)."""
+
+    beats = element.get("required_beats")
+    if not isinstance(beats, list) or not beats:
+        return None
+    script: list[SegmentBeat | GateBeat] = []
+    gate_seq = 0
+    for beat in beats:
+        if not isinstance(beat, Mapping):
+            continue
+        kind = beat.get("kind")
+        if kind == "gate":
+            options = beat.get("options")
+            if not (
+                isinstance(options, list)
+                and options
+                and all(
+                    isinstance(option, str) and option.strip()
+                    for option in options
+                )
+            ):
+                continue
+            gate_seq += 1
+            script.append(
+                GateBeat(
+                    gate_seq=gate_seq,
+                    options=tuple(options),
+                    submission_id="",
+                    intent_text="",
+                )
+            )
+        elif kind == "segment":
+            script.append(
+                SegmentBeat(duration_ticks=OPEN_SCENE_SEGMENT_TICKS)
+            )
+    if gate_seq == 0 or not script:
+        return None
+    if isinstance(script[-1], GateBeat):
+        script.append(
+            SegmentBeat(
+                duration_ticks=OPEN_SCENE_SEGMENT_TICKS, is_last_segment=True
+            )
+        )
+    else:
+        script[-1] = replace(script[-1], is_last_segment=True)
+    return tuple(script)
+
+
+def _plan_scripts_of(
+    plan: WorldChapterPlanRecord,
+    scenes: tuple[WorldSceneRecord, ...],
+) -> dict[str, tuple[SegmentBeat | GateBeat, ...]]:
+    """The adopted plan's derived scripts, keyed by the anchors the
+    elements claim — the roster's own identity law (``scene_ref``, else
+    the burned ``scene_id``, else the anchor at the element's array
+    ordinal): the same resolution the roster reads, so a script can
+    never attach to a scene the plan does not claim. Elements whose
+    beats plan no gate contribute nothing (open scenes, the floor's
+    domain)."""
+
+    by_index = {scene.scene_index: scene for scene in scenes}
+    by_id = {scene.scene_id: scene for scene in scenes}
+    scripts: dict[str, tuple[SegmentBeat | GateBeat, ...]] = {}
+    for ordinal, element in enumerate(plan.scenes, start=1):
+        beats = _plan_script_beats(element)
+        if beats is None:
+            continue
+        ref = element.get("scene_ref")
+        burned = element.get("scene_id")
+        if isinstance(ref, int) and not isinstance(ref, bool):
+            row = by_index.get(int(ref))
+        elif isinstance(burned, str) and burned in by_id:
+            row = by_id[burned]
+        else:
+            row = by_index.get(ordinal)
+        if row is None:
+            continue
+        scripts[row.scene_id] = beats
+    return scripts
+
+
 class _DurableReads:
     """The reading face's read half — every method a pure read over one
     connection (the stores it builds over that connection hold their
@@ -811,8 +972,71 @@ class _DurableReads:
         self._anchored: dict[str, tuple[SegmentBeat | GateBeat, ...]] = (
             gold_beats_by_scene()
         )
+        #: The plan-derived scripts (V3-8i), memoized per adopted plan
+        #: revision — a replan bumps the revision, the key changes, the
+        #: derivation re-reads (a mid-drive CHAPTER replan is never
+        #: served a stale script).
+        self._plan_script_cache: dict[
+            tuple[str, int], dict[str, tuple[SegmentBeat | GateBeat, ...]]
+        ] = {}
 
     # -- the durable reads ---------------------------------------------------
+
+    def _script_of(
+        self, scene_id: str, chapter_id: str
+    ) -> tuple[SegmentBeat | GateBeat, ...] | None:
+        """One scene's driving script: the author script when the scene
+        is gold-anchored (byte for byte unchanged — the V3-8i law), else
+        the adopted plan's derived script (``None`` = an open scene)."""
+
+        anchored = self._anchored.get(scene_id)
+        if anchored is not None:
+            return anchored
+        return self._plan_scripts_for(chapter_id).get(scene_id)
+
+    def _is_anchored(self, scene_id: str, chapter_id: str) -> bool:
+        """Whether the scene drives on a script at all (the author's or
+        the plan's) — the 「结束本场」 seat's own law: a scripted scene's
+        closing is the script's, never the reader's button."""
+
+        return self._script_of(scene_id, chapter_id) is not None
+
+    def _plan_scripts_for(
+        self, chapter_id: str
+    ) -> dict[str, tuple[SegmentBeat | GateBeat, ...]]:
+        """One chapter's plan-derived scripts, memoized per adopted plan
+        revision (see ``__init__``)."""
+
+        plan = self._narrative.adopted_plan(chapter_id)
+        if plan is None:
+            return {}
+        key = (chapter_id, plan.plan_revision)
+        cached = self._plan_script_cache.get(key)
+        if cached is None:
+            cached = _plan_scripts_of(plan, self._chapter_scenes(chapter_id))
+            self._plan_script_cache[key] = cached
+        return cached
+
+    def _gate_ahead(self, scene_id: str, chapter_id: str) -> bool:
+        """Whether an un-passed gate beat still lies ahead in the
+        scene's script — the floor's own exception («前方有门拍时正常
+        停在门、不触发兜底»). An open scene answers ``False`` (no
+        script, no planned stop); a scripted scene's passed gates (a
+        ``CLOSED`` row with its durable submission) are skipped, so the
+        answer is about the beats the drive has still to reach."""
+
+        script = self._script_of(scene_id, chapter_id)
+        if script is None:
+            return False
+        for beat in script:
+            if isinstance(beat, SegmentBeat):
+                continue
+            gate = self._gate_of(scene_id, beat.gate_seq)
+            if gate is None or gate.status is not GateStatus.CLOSED:
+                return True
+            if self._stored_submission(gate) is None:
+                return True
+        return False
 
     def _current_chapter(self) -> WorldChapterRecord | None:
         chapters = self._narrative.chapters_of(WORLD_ID)
@@ -972,13 +1196,19 @@ class _DurableReads:
 
     # -- the durable-position walk -------------------------------------------
 
-    def walk(self, scene_id: str) -> _Walk:
+    def walk(
+        self, scene_id: str, chapter_id: str
+    ) -> _Walk:
         """Position one scene's next step from the durable rows (the
         module docstring's law). A ``PLANNED`` scene walks the same — its
-        first beat is the action point and the drive opens it."""
+        first beat is the action point and the drive opens it. The
+        script is the scene's own (``_script_of``: the author's for a
+        gold-anchored scene, the adopted plan's derived one since
+        V3-8i); a scene with neither is the open scene — one segment per
+        step, the reader's 「结束本场」 its only close."""
 
         committed = self._committed_segments(scene_id)
-        script = self._anchored.get(scene_id)
+        script = self._script_of(scene_id, chapter_id)
         if script is None:
             # An open scene (a real replan's own): one segment per
             # continue; the closing beat is the reader's 「结束本场」.
@@ -1052,13 +1282,13 @@ class _DurableReads:
         )
 
     def continuation_after(
-        self, scene_id: str, gate_seq: int
+        self, scene_id: str, chapter_id: str, gate_seq: int
     ) -> SegmentBeat | None:
         """The script beat after one gate — the segment that will carry
-        the ruling's ``outcome_ref`` (the author script's own order;
-        ``None`` when the script holds none, answered honestly)."""
+        the ruling's ``outcome_ref`` (the script's own order; ``None``
+        when the script holds none, answered honestly)."""
 
-        script = self._anchored.get(scene_id)
+        script = self._script_of(scene_id, chapter_id)
         if script is None:
             return None
         seen = False
@@ -1171,7 +1401,12 @@ class _DurableReads:
                 "scene_id": scene_id,
                 "scene_index": scene.scene_index,
                 "status": scene.status.value,
-                "anchored": scene_id in self._anchored,
+                # V3-8i: "anchored" is the script-driven truth — the
+                # author's script or the plan's derived one; an open
+                # scene is the floor's domain.
+                "anchored": self._is_anchored(
+                    scene_id, chapter.chapter_id
+                ),
             }
             for scene_id, scene in roster
         ]
@@ -1275,10 +1510,10 @@ class _DurableReads:
                 None,
             )
         scene_id, scene = current
-        walk = self.walk(scene_id)
+        walk = self.walk(scene_id, chapter.chapter_id)
         if walk.kind == "segment":
             controls["can_continue"] = True
-            if scene_id not in self._anchored:
+            if not self._is_anchored(scene_id, chapter.chapter_id):
                 controls["can_end_scene"] = True
             return (
                 {
@@ -1550,6 +1785,12 @@ class NarrativeWebFace:
                 LlmResolverProvider(self._completion, language=language),
             ),
             action_duration_ticks=ACTION_DURATION_TICKS,
+            # V3-8i (the paradigm shift §10.6 item 1): the reading face
+            # plans through the gate-production promise — a drafted
+            # chapter that declares the gate shape without carrying the
+            # reader's own will in every scene is re-drafted once and,
+            # refused again, reported honestly.
+            require_plan_gates=True,
         )
 
     def _drive(
@@ -1657,23 +1898,31 @@ class NarrativeWebFace:
         did_kind: str = "drive",
         chain_gate_id: str | None = None,
         closed_gates: list[str] | None = None,
+        scene_fresh: int = 0,
     ) -> dict[str, Any]:
-        """The drive loop's body (V3-8h) — the three-stop law in one
-        place. From the durable position it performs one single-step
-        drive after another (each with its own reconstructed prefix and
+        """The drive loop's body (V3-8h) — the stop law in one place.
+        From the durable position it performs one single-step drive
+        after another (each with its own reconstructed prefix and
         per-step language seat) until a real stop: a User Gate opened
         or awaiting the reader's submission, the chapter's plan
-        exhausted, or the segment ceiling. ``written`` / ``fresh_ids``
-        carry what earlier steps of this same call already landed (the
-        submit route enters with its gate chain's harvest); ``first``
-        marks the call's entry position, where the historical refusals
-        keep their refusal shape — a bare click with nothing to drive
-        is a refusal, byte for byte yesterday's sentence, while the
-        same positions met mid-drive are honest stops that report what
-        the drive already wrote. ``end_scene`` is the open-scene
-        closing flag, spent by the loop's first segment."""
+        exhausted, or a reasoned stop — the segment ceiling, or (V3-8i)
+        the gateless floor (the current scene's fresh-segment count
+        reaching :data:`V3_GATELESS_SEGMENT_FLOOR` with no gate beat
+        ahead). ``written`` / ``fresh_ids`` carry what earlier steps of
+        this same call already landed (the submit route enters with its
+        gate chain's harvest); ``scene_fresh`` counts the same harvest's
+        share in the scene the loop is about to drive (the gate chain's
+        own continuation lands in the gate's scene — counted there, so
+        the floor reads the scene's true run); ``first`` marks the
+        call's entry position, where the historical refusals keep their
+        refusal shape — a bare click with nothing to drive is a
+        refusal, byte for byte yesterday's sentence, while the same
+        positions met mid-drive are honest stops that report what the
+        drive already wrote. ``end_scene`` is the open-scene closing
+        flag, spent by the loop's first segment."""
 
         assert self._reads is not None
+        counted_scene: str | None = None
         while True:
             chapter = self._reads._current_chapter()
             if chapter is None:
@@ -1700,12 +1949,21 @@ class NarrativeWebFace:
             if current is None:
                 return self._refuse("计划里没有可驱动的场。")
             scene_id, scene = current
-            walk = self._reads.walk(scene_id)
-            if first and end_scene and scene_id in self._reads._anchored:
-                return self._refuse(
-                    "这一幕的收束由作者脚本定席（它的最后一段自带终场）——"
-                    "「结束本场」只对重规划新建的场有效。"
-                )
+            if scene_id != counted_scene:
+                counted_scene = scene_id
+                scene_fresh = 0
+            walk = self._reads.walk(scene_id, chapter.chapter_id)
+            if first and end_scene:
+                if scene_id in self._reads._anchored:
+                    return self._refuse(
+                        "这一幕的收束由作者脚本定席（它的最后一段自带终场）——"
+                        "「结束本场」只对重规划新建的场有效。"
+                    )
+                if self._reads._is_anchored(scene_id, chapter.chapter_id):
+                    return self._refuse(
+                        "这一幕的收束由计划的门拍定席（它的最后一段自带"
+                        "终场）——「结束本场」只对无脚本的新建场有效。"
+                    )
             if walk.kind == "gate_submit":
                 sentence = (
                     "这个门已经有一个提交在库里（durable 面优先）——"
@@ -1804,6 +2062,7 @@ class NarrativeWebFace:
             step_ids = _fresh_passage_ids(walk.prefix, driven)
             written += len(step_ids)
             fresh_ids = (*fresh_ids, *step_ids)
+            scene_fresh += len(step_ids)
             first = False
             end_scene = False
             if written >= V3_DRIVE_SEGMENT_CEILING:
@@ -1813,6 +2072,31 @@ class NarrativeWebFace:
                     written=written,
                     fresh_ids=fresh_ids,
                     stopped_on="ceiling",
+                    note=note,
+                    scene_id=scene_id,
+                    gate_id=chain_gate_id,
+                    did_kind=did_kind,
+                    closed_gates=closed_gates,
+                )
+            # V3-8i, the gateless floor: the scene's own run reached the
+            # floor with no gate beat still ahead of it — a reasoned
+            # stop (the ceiling's mechanism: the sentence rides the
+            # did and the stored note). A gate ahead is never
+            # preempted; the drive walks on to it and stops there.
+            if (
+                scene_fresh >= V3_GATELESS_SEGMENT_FLOOR
+                and not self._reads._gate_ahead(
+                    scene_id, chapter.chapter_id
+                )
+            ):
+                note = _gateless_sentence(
+                    scene_fresh, V3_GATELESS_SEGMENT_FLOOR
+                )
+                self._write_drive_note(note)
+                return self._drive_stopped(
+                    written=written,
+                    fresh_ids=fresh_ids,
+                    stopped_on="gateless_floor",
                     note=note,
                     scene_id=scene_id,
                     gate_id=chain_gate_id,
@@ -1919,7 +2203,8 @@ class NarrativeWebFace:
         if current is None:
             return self._refuse("此刻没有等你提交的门。")
         scene_id, scene = current
-        walk = self._reads.walk(scene_id)
+        assert chapter is not None
+        walk = self._reads.walk(scene_id, chapter.chapter_id)
         if walk.kind not in ("gate_open", "gate_submit"):
             return self._refuse("此刻没有等你提交的门——先让故事走到那里。")
         beat = walk.beat
@@ -1971,7 +2256,7 @@ class NarrativeWebFace:
             )
         beats: list[SegmentBeat | GateBeat] = [*walk.prefix, submission]
         continuation = self._reads.continuation_after(
-            scene_id, beat.gate_seq
+            scene_id, chapter.chapter_id, beat.gate_seq
         )
         if continuation is not None:
             # V3-8g: the continuation is fresh prose under the live
@@ -1993,6 +2278,13 @@ class NarrativeWebFace:
         harvested = _fresh_passage_ids(walk.prefix, driven)
         # V3-8h: the ruling is not a stop — the same call presses on
         # through the chapter's remaining scenes to the next real stop.
+        # V3-8i: the gate chain's own fresh segments belong to this
+        # scene's run (the floor reads the scene's true count) — unless
+        # the continuation committed the scene, in which case the loop's
+        # position is the next scene and the count starts clean.
+        scene_run_start = 0 if driven.segments and (
+            driven.segments[-1].scene_committed
+        ) else len(harvested)
         return self._press_on(
             written=len(harvested),
             fresh_ids=harvested,
@@ -2000,6 +2292,7 @@ class NarrativeWebFace:
             did_kind="submit",
             chain_gate_id=gate.gate_id,
             closed_gates=closed,
+            scene_fresh=scene_run_start,
         )
 
     def settle(self) -> dict[str, Any]:

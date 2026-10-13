@@ -10,6 +10,13 @@ way (its writer arm keys on ``(place, segment_seq)``). The ceiling
 exercised here is the **production constant** (12): chapter two's open
 scene is scripted for exactly twelve passages, so one plain continue
 runs into the reasoned stop on the true arm — no patched constants.
+(V3-8i amendment, stated once: the gateless floor
+``V3_GATELESS_SEGMENT_FLOOR`` now layers beneath the ceiling as the
+open scene's own reasoned stop — §10.6 item 3 — so these pins ride the
+suite family's documented patching posture with the floor patched above
+the script, keeping the ceiling's arm on its true arm; the floor's own
+production-constant pins live in the V3-8i family,
+``tests/host/test_v3_8i_reader_floor.py``.)
 
 Pinned here:
 
@@ -24,7 +31,7 @@ Pinned here:
    them from canon (one fresh writing per fresh segment — the failed
    beat is attempted again, the written ones never re-generated);
 3. the author layer's route wiring — ``POST /api/v3/next_chapter`` with
-   ``{"direction": …}``` rides the real Director prompt (the direction
+   ``{"direction": …}`` rides the real Director prompt (the direction
    quoted, the soft-expectation law in it), a bad body is the 400
    人话, and the written plan stays the only face the direction
    touches;
@@ -40,6 +47,9 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+import pytest
+
+import elc.narrative_web as narrative_web_module
 from elc.world import gold
 from tests.host.test_v3_8e_reader import (
     WEBUI,
@@ -55,6 +65,11 @@ from tests.host.test_v3_8e_reader import (
 REPO = Path(__file__).resolve().parents[2]
 
 _DIRECTION = "让莉亚主动追查信件"
+
+#: The V3-8i floor patched above every script these pins drive — the
+#: ceiling's and the failure arm's own precondition (see the module
+#: docstring's amendment note).
+_FLOOR_ABOVE_SCRIPT = 99
 
 
 def _ch2_script(yard_keys: tuple[int, ...]) -> gold.GoldScriptedCompletion:
@@ -119,13 +134,18 @@ def _to_chapter_two(stack: Any) -> dict[str, Any]:
 
 
 def test_one_drive_presses_through_twelve_segments_and_stops_reasoned(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """One continue runs the open scene's twelve scripted segments and
     stops at the ceiling — the sentence rides ``did.note`` and the
     state's ``note`` (the polls keep it), the tick moved twelve steps,
-    and each segment cost exactly one real writing."""
+    and each segment cost exactly one real writing. (V3-8i: the floor
+    patched above the script — the ceiling's arm keeps its true arm;
+    see the module docstring's amendment note.)"""
 
+    monkeypatch.setattr(
+        narrative_web_module, "V3_GATELESS_SEGMENT_FLOOR", _FLOOR_ABOVE_SCRIPT
+    )
     app_db = tmp_path / "app.db"
     with v3_stack(
         app_db, post=_GoldPost(script=_ch2_script(tuple(range(1, 13))))
@@ -180,14 +200,19 @@ def test_one_drive_presses_through_twelve_segments_and_stops_reasoned(
 
 
 def test_a_mid_drive_failure_stops_and_the_landed_segments_stand(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A scripted gap inside the loop (segment seven is missing) stops
     the drive after six written segments: the answer counts them
     (「本次已先写下 6 段，已落库不丢」) and names them; the retry replays
     the six from canon — no re-generation, only the failed beat is
-    attempted again — and lands nothing new."""
+    attempted again — and lands nothing new. (V3-8i: the floor patched
+    above the script — the failure arm keeps its true arm; see the
+    module docstring's amendment note.)"""
 
+    monkeypatch.setattr(
+        narrative_web_module, "V3_GATELESS_SEGMENT_FLOOR", _FLOOR_ABOVE_SCRIPT
+    )
     app_db = tmp_path / "app.db"
     with v3_stack(
         app_db, post=_GoldPost(script=_ch2_script(tuple(range(1, 7))))
@@ -333,13 +358,20 @@ def test_the_page_carries_the_author_layer_and_the_note_face() -> None:
     assert "下一章方向" not in index and "下一章方向" not in app_js
 
 
-def test_the_state_note_reads_from_the_durable_seat(tmp_path: Path) -> None:
+def test_the_state_note_reads_from_the_durable_seat(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The note's seat is the host's generic settings table: the drive
     writes it, the off-queue poll reads it (the same derivation the
-    drive answer used), and no narrative table carries it."""
+    drive answer used), and no narrative table carries it. (V3-8i: the
+    floor patched above the script — the ceiling's arm keeps its true
+    arm; see the module docstring's amendment note.)"""
 
     from elc.narrative_web import V3_DRIVE_NOTE_KEY, narrative_state_ro
 
+    monkeypatch.setattr(
+        narrative_web_module, "V3_GATELESS_SEGMENT_FLOOR", _FLOOR_ABOVE_SCRIPT
+    )
     app_db = tmp_path / "app.db"
     with v3_stack(
         app_db, post=_GoldPost(script=_ch2_script(tuple(range(1, 13))))

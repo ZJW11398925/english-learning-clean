@@ -126,6 +126,25 @@ the segment carries the story past it. The line's voice is the
 instruction frame's (English at every language word: it governs the
 prose, not the prose itself).
 
+**The gate-production and player-anchoring faces (V3-8i, the paradigm
+shift §10.6).** The Director prompt's scene schema now carries the
+plan-level seat of §2.5's stop law (:data:`_GATE_BEATS_SENTENCE`):
+every scene plans the reader's own will — a ``required_beats`` list of
+beat objects (segment beats and gate beats; a gate beat names its §2.5
+stop ``reason`` and 2–4 natural behaviour ``options``) with **at least
+one gate beat per scene**, plus a ``user_present`` boolean. The parser
+carries both verbatim when the answer declares them (shape-checked;
+absent keys parse exactly as before) and the library judge
+(``elc.world.director.blueprint_gate_refusal``) keeps the deeper
+refusal. The three arms that render a participant list anchor the
+no-puppet rule to the concrete name (:data:`_WRITER_PLAYER_SENTENCE` /
+:data:`_PLANNER_PLAYER_SENTENCE` / :data:`_RESOLVER_PLAYER_SENTENCE`):
+the player character's id rides the compiled contexts
+(``player_character_id`` — the pipeline passes it from the durable
+cast; a context without it renders today's prompt byte for byte), and
+the anchor lines are additive — the existing participants lines stay
+byte for byte (the prompt pins ride them).
+
 **Failure semantics** — the V3 Protocol face (``providers.py``, sealed)
 has no Result channel, so a real provider's runtime failure escapes as
 :class:`LlmProviderError` (a module-owned ``Exception`` carrying a
@@ -427,7 +446,16 @@ def _parse_scene_element(
     """One scene element in the dossier's own shape — the nine keys
     :func:`elc.world.pipeline._element_mapping_of` renders, validated
     key by key (the Planner arm's payload; the Blueprint's scene table
-    carries ``purpose`` beside them)."""
+    carries ``purpose`` beside them).
+
+    The V3-8i gate face rides beside them: a ``required_beats`` list of
+    beat objects and a ``user_present`` boolean are carried **when the
+    answer declares them** (shape-checked — a non-list or a non-object
+    beat entry is ``bad-shape``; the deeper judgment stays the library
+    judge's) and ride verbatim into the plan payload; an answer without
+    them parses exactly as before (the deterministic fakes' ten-key
+    payloads keep parsing — the production prompt demands the keys, the
+    plan-level judge refuses a plan that lacks them)."""
 
     element: dict[str, Any] = {
         "pov_actor_id": _text(payload, "pov_actor_id", coordinate=coordinate),
@@ -440,6 +468,20 @@ def _parse_scene_element(
     }
     for key in _PLAN_ELEMENT_TEXT_KEYS:
         element[key] = _text(payload, key, coordinate=coordinate)
+    if "required_beats" in payload:
+        beats = payload["required_beats"]
+        if (
+            isinstance(beats, (str, bytes))
+            or not isinstance(beats, list)
+            or not all(isinstance(beat, dict) for beat in beats)
+        ):
+            raise LlmProviderError("bad-shape")
+        element["required_beats"] = [dict(beat) for beat in beats]
+    if "user_present" in payload:
+        marker = payload["user_present"]
+        if not isinstance(marker, bool):
+            raise LlmProviderError("bad-shape")
+        element["user_present"] = marker
     return element
 
 
@@ -810,6 +852,101 @@ _CONTINUITY_SENTENCE = (
     " lists end."
 )
 
+#: The gate-production law's sentence per word (V3-8i, the paradigm
+#: shift §10.6 item 1): every planned scene must plan the reader's own
+#: will — a ``required_beats`` list of beat objects with **at least one
+#: gate beat** per scene (the §2.5 criteria: where deciding for the
+#: reader might be something they would mind) and a ``user_present``
+#: boolean. The ch02 field failure this face fixes was a real chapter
+#: planned with zero gates and an eleven-segment runaway — the beats
+#: and the marker are the plan-level seat of §2.5's stop law. The JSON
+#: keys and the beat shape are never language; the law's sentence is.
+_GATE_BEATS_SENTENCE = {
+    "en": (
+        "Every scene must also plan the reader's own will: each scene"
+        ' element carries "required_beats" — a JSON array of beat'
+        ' objects, each {"kind": "segment"} for one planned segment or'
+        ' {"kind": "gate", "reason": <one JSON string>, "options": <a'
+        " JSON array of 2-4 short natural actions>} — with AT LEAST ONE"
+        " gate beat in every scene: a gate beat marks where the story"
+        " MUST stop for the reader's own meaningful act of will (what"
+        " to say, whether to agree or refuse, whether to attack or"
+        " confess, a secret told, a bond changed — any moment where"
+        " deciding for the reader might be something they would mind);"
+        " the reason names that stop in one sentence, and the options"
+        " are 2-4 natural behaviours the reader's character could take"
+        " (never plot outlines). Each scene element also carries"
+        ' "user_present": one JSON boolean — whether the reader\'s'
+        " character takes part in the scene."
+    ),
+    "zh": (
+        "每场还必须为读者自己的意志做规划：每个场景元素都携带"
+        ' "required_beats"——一个 JSON 数组，元素是拍对象：段拍为'
+        ' {"kind": "segment"}，门拍为 {"kind": "gate", "reason":'
+        " <一个 JSON 字符串>, \"options\": <2–4 个简短自然举动的 JSON"
+        " 数组>}——每场至少一个门拍：门拍标记故事必须停下来等读者自己"
+        "做出有意义意志行为的位置（说什么 / 是否答应或拒绝 / 是否攻击"
+        "或表白 / 说出秘密 / 关系改变——凡是替读者决定、读者可能会介意"
+        "的时刻）；reason 用一句话写明这个停点，options 是该读者的角色"
+        "可以采取的 2–4 个自然行为选项（绝不是剧情纲要）。每个场景元素"
+        '还携带 "user_present"：一个 JSON 布尔值——读者的角色是否在场。'
+    ),
+}
+
+#: The player-character anchor sentence per word, Writer arm (V3-8i,
+#: the paradigm shift §10.6 item 2): the no-puppet rule anchored to the
+#: concrete name — the ch02 field failure had the writer autonomously
+#: puppeting the player character because the participants list was a
+#: bare id list the rule could not bind to. The line is ADDITIVE (the
+#: existing participants line stays byte for byte) and rides only when
+#: the compiled context carries the player character's id (the
+#: pipeline passes it; a context without it renders today's prompt
+#: byte for byte).
+_WRITER_PLAYER_SENTENCE = {
+    "en": (
+        "- the player character: {player} — the reader's own character;"
+        " never make decisions, speak or act with intent for them:"
+        " their significant acts of will enter the story only through"
+        " a User Gate."
+    ),
+    "zh": (
+        "- 玩家角色：{player}——读者自己的角色；绝不替他们做决定、说话"
+        "或行动：他们显著的意志行为只会经用户意志门（User Gate）进入"
+        "故事。"
+    ),
+}
+
+#: The same anchor, Scene Planner arm (V3-8i): the plan never writes
+#: the player's choices — their significant acts of will are the
+#: scene's gate beats, nothing else.
+_PLANNER_PLAYER_SENTENCE = {
+    "en": (
+        "- the player character: {player} — the reader's own character;"
+        " the plan never writes their choices: their significant acts"
+        " of will are the scene's User Gate beats, nothing else."
+    ),
+    "zh": (
+        "- 玩家角色：{player}——读者自己的角色；计划绝不替他们写定选择："
+        "他们显著的意志行为只落为本场的用户意志门（User Gate）拍，"
+        "别无其他。"
+    ),
+}
+
+#: The same anchor, Resolver arm (V3-8i): the player's will rides the
+#: durable submission alone — never an invention of the resolver's.
+_RESOLVER_PLAYER_SENTENCE = {
+    "en": (
+        "- the player character: {player} — the reader's own character;"
+        " their will rides the submission below, never an invention of"
+        " yours."
+    ),
+    "zh": (
+        "- 玩家角色：{player}——读者自己的角色；他们的意志只来自下方那份"
+        "提交本身，绝不由你发明。"
+    ),
+}
+
+
 #: The author layer's soft-expectation sentence per word (V3-8h, the
 #: paradigm shift §10.5 item 2): the reader's between-chapters
 #: direction is quoted into the **initial** chapter plan prompt with
@@ -897,6 +1034,18 @@ def _writer_prompt(
             f"- segment_seq: {context.segment_seq}",
             f"- current_tick: {context.current_tick}",
             f"- participants: {', '.join(context.participants)}",
+            # V3-8i: the no-puppet rule anchored to the concrete name —
+            # the additive player line (the participants line stays byte
+            # for byte); absent when the context carries no player id.
+            *(
+                []
+                if context.player_character_id is None
+                else [
+                    _WRITER_PLAYER_SENTENCE[
+                        _prose_language_word(language)
+                    ].format(player=context.player_character_id)
+                ]
+            ),
             "",
             f"{context.pov_actor_id}'s own cognition (what they know as",
             "common knowledge, and what they witnessed):",
@@ -979,6 +1128,17 @@ def _scene_plan_prompt(
         f"Scene: {context.scene_id} (world {context.world_id})",
         f"POV: {context.pov_actor_id}",
         f"current_tick: {context.current_tick}",
+        # V3-8i: the additive player anchor (see the writer arm) — the
+        # plan never writes the player's choices; absent without an id.
+        *(
+            []
+            if context.player_character_id is None
+            else [
+                _PLANNER_PLAYER_SENTENCE[
+                    _prose_language_word(language)
+                ].format(player=context.player_character_id)
+            ]
+        ),
         "",
         "The scene's current plan content:",
         _content_block(context.element),
@@ -1082,6 +1242,10 @@ def _blueprint_prompt(
         "items join into that one string separated by newlines);",
         "participants is a JSON array of participant identity strings;",
         "planned_start_tick is one JSON integer.",
+        # V3-8i (the paradigm shift §10.6 item 1): the gate-production
+        # law — every scene plans the reader's own will (the beat list
+        # with at least one gate beat) and marks the reader's presence.
+        _GATE_BEATS_SENTENCE[_prose_language_word(language)],
         "",
         # V3-8h: the author layer's soft expectation — the initial arm
         # only (a CHAPTER replan's reason is the committed ruling, and
@@ -1214,6 +1378,20 @@ def _resolver_prompt(
         _render_facts(context.current_facts),
         f"- place: {context.place}",
         f"- participants: {', '.join(context.participants)}",
+        # V3-8i: the additive player anchor (the participants line stays
+        # byte for byte) — the player's will rides the submission, never
+        # an invention of the resolver's; absent with no player row.
+        *(
+            []
+            if context.player_character is None
+            else [
+                _RESOLVER_PLAYER_SENTENCE[
+                    _prose_language_word(language)
+                ].format(
+                    player=context.player_character.player_character_id
+                )
+            ]
+        ),
         "- the player character (abilities / limits):",
         f"  {player_block}",
         "- the scene's counterpart profiles:",

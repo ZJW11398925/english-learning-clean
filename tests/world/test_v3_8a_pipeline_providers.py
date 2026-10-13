@@ -908,7 +908,11 @@ def test_the_pov_context_refuses_a_mis_addressed_inner_view(
 def test_the_pov_context_field_set_is_frozen() -> None:
     """The shape pin: the compiled context carries exactly the POV's own
     faces — no field for a profile, a private context or another
-    participant's read exists to leak from."""
+    participant's read exists to leak from. (V3-8i rides one appended
+    public identity: ``player_character_id`` — the reader's own
+    character's bare id, the cast namespace's public word the Writer
+    prompt anchors its no-puppet rule to; not another participant's
+    private face, and ``None`` on every pre-V3-8i construction.)"""
 
     names = tuple(field.name for field in dataclasses.fields(PovContext))
     assert names == (
@@ -924,6 +928,7 @@ def test_the_pov_context_field_set_is_frozen() -> None:
         "current_tick",
         "cognition",
         "memory",
+        "player_character_id",
     )
     assert "private" not in " ".join(names)
 

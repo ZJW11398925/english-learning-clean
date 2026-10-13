@@ -131,6 +131,15 @@ class PovContext:
     field for another participant's memory, profile, card or private
     context: a semantic rewrite cannot leak from an input the object
     cannot carry.
+
+    ``player_character_id`` (V3-8i, the paradigm shift §10.6 item 2) is
+    the one **cast-level public identity** the door carries beside them
+    — the reader's own durable character, named so the Writer prompt can
+    anchor its no-puppet rule to a concrete name (the bare id is not
+    another participant's private face; it is the V3-3 namespace's own
+    public word). ``None`` — the default, every pre-V3-8i construction —
+    renders no anchor line at all: the prompt stays byte for byte
+    yesterday's.
     """
 
     scene_id: str
@@ -145,6 +154,7 @@ class PovContext:
     current_tick: int
     cognition: V3CognitionView
     memory: V3MemoryView
+    player_character_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -243,6 +253,12 @@ class ScenePlanContext:
     no element at hand — a recovery-driven replan lets the provider
     answer from its own plan state, the LLM cut's shape). ``cognition``
     / ``memory`` are the POV's own reads again.
+
+    ``player_character_id`` (V3-8i, the paradigm shift §10.6 item 2) is
+    the same cast-level public identity the Writer's context carries —
+    the anchor for "the plan never writes the player's choices".
+    ``None`` — the default, every pre-V3-8i construction — renders no
+    anchor line at all.
     """
 
     world_id: str
@@ -252,6 +268,7 @@ class ScenePlanContext:
     element: Mapping[str, Any] | None
     cognition: V3CognitionView
     memory: V3MemoryView
+    player_character_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -396,6 +413,7 @@ def pov_context_of(
     dossier: WorldSceneDossierRecord,
     context: SceneContext,
     segment_seq: int,
+    player_character_id: str | None = None,
 ) -> PovContext:
     """Compile one segment's POV-safe provider input — **the hard door's
     physical form**.
@@ -410,6 +428,13 @@ def pov_context_of(
     dossier's input — the honest programmer-error arm, the
     :func:`elc.world.director.build_director_context` posture), never a
     silently mis-addressed context.
+
+    ``player_character_id`` (V3-8i) widens the door by one **cast-level
+    public identity** — the reader's own durable character's bare id,
+    which is no participant's private face but the namespace's own
+    public word (V3-3); the Writer prompt anchors its no-puppet rule to
+    it. The default ``None`` keeps every pre-V3-8i call site's door
+    exactly as wide as it was.
     """
 
     if context.pov_actor_id != dossier.pov_actor_id:
@@ -451,6 +476,7 @@ def pov_context_of(
         current_tick=context.current_tick,
         cognition=context.cognition,
         memory=context.memory,
+        player_character_id=player_character_id,
     )
 
 

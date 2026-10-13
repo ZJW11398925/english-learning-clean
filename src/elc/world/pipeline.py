@@ -134,7 +134,11 @@ from elc.world.action import (
 from elc.world.bible import SqliteBibleStore
 from elc.world.cast import SqliteCastStore
 from elc.world.cognition import v3_cognition_view
-from elc.world.director import ChapterOpening, Director
+from elc.world.director import (
+    ChapterOpening,
+    Director,
+    blueprint_gate_refusal,
+)
 from elc.world.memory import v3_memory_view
 from elc.world.narrative.store import SqliteNarrativeStore
 from elc.world.narrative.types import (
@@ -258,6 +262,22 @@ class Pipeline:
     the LLM faces themselves landed in V3-8c). One value for the
     instance keeps a crash retry's replay shape equal — the ruling's
     ``duration_ticks`` rides the replay comparison.
+
+    ``require_plan_gates`` (V3-8i, the paradigm shift §10.6 item 1) is
+    the production planning promise: a ``True`` instance runs
+    :func:`~elc.world.director.blueprint_gate_refusal` over every
+    drafted Blueprint before it can land — a plan that **declares the
+    gate-production shape** but does not carry the reader's own will
+    in every scene (a User Gate beat + ``user_present``) is
+    **re-drafted once** (the §10.6 bounded re-cast, the same context)
+    and, refused again, answered as the honest ``VALIDATION_FAILED``
+    (never a third try); the seat itself is invoked with
+    ``require_gates=True`` so the same refusal guards direct landings.
+    A draft in the pure legacy ten-key shape declines the judge's
+    scope (the deterministic baselines ride unchanged, single draft
+    included; the drive's gateless floor bounds what such a plan can
+    do at runtime). The default ``False`` keeps every library call
+    byte for byte.
     """
 
     def __init__(
@@ -273,6 +293,7 @@ class Pipeline:
         director_provider: DirectorProvider,
         resolver_provider: ResolverProvider,
         action_duration_ticks: int,
+        require_plan_gates: bool = False,
     ) -> None:
         self._conn = conn
         self._worlds = world_store
@@ -284,6 +305,7 @@ class Pipeline:
         self._director_provider = director_provider
         self._resolver_provider = resolver_provider
         self._action_duration_ticks = action_duration_ticks
+        self._require_plan_gates = require_plan_gates
         self._director = Director(
             conn,
             world_store=world_store,
@@ -344,17 +366,41 @@ class Pipeline:
         tick = read_current_tick(self._conn, world_id)
         if isinstance(tick, Err):
             return Err(tick.error)
-        payload = self._director_provider.draft_blueprint(
-            DirectorPlanContext(
-                director_context=self._director.context(world_id),
-                chapter_id=None,
-                replan_request_id=None,
-                trigger=None,
-                blueprint=None,
-                author_direction=author_direction,
-            )
+        context = DirectorPlanContext(
+            director_context=self._director.context(world_id),
+            chapter_id=None,
+            replan_request_id=None,
+            trigger=None,
+            blueprint=None,
+            author_direction=author_direction,
         )
-        return self._director.open_next_chapter(world_id, payload, now)
+        payload = self._director_provider.draft_blueprint(context)
+        if self._require_plan_gates:
+            # V3-8i (the paradigm shift §10.6 item 1): the drafted plan
+            # must plan the reader's own will. A gateless draft is
+            # re-drafted ONCE (the bounded re-cast — the same context,
+            # one more call, never a hard retry loop); refused again,
+            # the honest VALIDATION_FAILED rides out (the answer and
+            # the state both say why, never a silent halt).
+            reason = blueprint_gate_refusal(payload)
+            if reason is not None:
+                payload = self._director_provider.draft_blueprint(context)
+                reason = blueprint_gate_refusal(payload)
+                if reason is not None:
+                    return Err(
+                        DomainError(
+                            code=DomainErrorCode.VALIDATION_FAILED,
+                            message=(
+                                f"{reason} — the plan was re-drafted once"
+                                " and refused again (the §10.6 one"
+                                " bounded re-cast); reported as it"
+                                " stands"
+                            ),
+                        )
+                    )
+        return self._director.open_next_chapter(
+            world_id, payload, now, require_gates=self._require_plan_gates
+        )
 
     # -- the scene arm -------------------------------------------------------
 
@@ -768,8 +814,17 @@ class Pipeline:
         context = self._scene_context_of(chapter.value, dossier)
         if isinstance(context, Err):
             return Err(context.error)
+        # V3-8i: the writer's no-puppet anchor needs the concrete name —
+        # the durable cast's own player row (a world without one passes
+        # None, and the prompt stays byte for byte yesterday's).
+        player = self._cast.player_character(chapter.value.world_id)
         pov = pov_context_of(
-            dossier=dossier, context=context.value, segment_seq=segment_seq
+            dossier=dossier,
+            context=context.value,
+            segment_seq=segment_seq,
+            player_character_id=(
+                None if player is None else player.player_character_id
+            ),
         )
         body = self._writer_provider.write_segment(pov)
         return self._writer.write_segment(
@@ -935,6 +990,9 @@ class Pipeline:
         if isinstance(context, Err):
             return Err(context.error)
         if obligation.scope is ReplanScope.SCENE:
+            # V3-8i: the planner's player anchor rides the same durable
+            # cast read (see _drive_segment).
+            player = self._cast.player_character(chapter.value.world_id)
             element = self._planner_provider.replan_element(
                 ScenePlanContext(
                     world_id=chapter.value.world_id,
@@ -944,6 +1002,11 @@ class Pipeline:
                     element=_element_mapping_of(dossier),
                     cognition=context.value.cognition,
                     memory=context.value.memory,
+                    player_character_id=(
+                        None
+                        if player is None
+                        else player.player_character_id
+                    ),
                 )
             )
             replanned = self._planner.replan_scene(

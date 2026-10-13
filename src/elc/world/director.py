@@ -225,6 +225,7 @@ __all__ = [
     "DirectorCastMember",
     "DirectorContext",
     "DirectorPlayerCharacter",
+    "blueprint_gate_refusal",
     "build_cast_input",
     "build_director_context",
     "chapter_id_for",
@@ -900,6 +901,108 @@ def _scene_refusal(
     return None
 
 
+def _gate_beat_ok(beat: Any) -> bool:
+    """One ``required_beats`` entry is a well-formed **gate beat**: a
+    mapping carrying ``kind == "gate"``, a non-empty ``reason`` string
+    (the §2.5 stop's own sentence) and a non-empty ``options`` list of
+    non-empty strings (the §2.5 presentation's natural actions; the
+    2–4 count is the prompt's contract, the judge's floor is
+    non-empty). A malformed beat is simply not a gate — the plan it
+    rides in is refused by the scene-level count, never guessed at."""
+
+    if not isinstance(beat, Mapping) or beat.get("kind") != "gate":
+        return False
+    reason = beat.get("reason")
+    options = beat.get("options")
+    return (
+        isinstance(reason, str)
+        and bool(reason.strip())
+        and isinstance(options, list)
+        and bool(options)
+        and all(
+            isinstance(option, str) and bool(option.strip())
+            for option in options
+        )
+    )
+
+
+def _scene_has_gate(element: Mapping[str, Any]) -> bool:
+    """One scene element declares **the reader's own will**: a
+    ``required_beats`` list carrying at least one well-formed gate beat
+    (:func:`_gate_beat_ok`) **and** a boolean ``user_present`` (the §2.2
+    marker; ``True`` and ``False`` are both honest — the marker says
+    whether the reader's character takes part, the gate says where the
+    story must stop for their will either way)."""
+
+    beats = element.get("required_beats")
+    if not isinstance(beats, list) or not any(
+        _gate_beat_ok(beat) for beat in beats
+    ):
+        return False
+    return isinstance(element.get("user_present"), bool)
+
+
+def blueprint_gate_refusal(payload: Mapping[str, Any]) -> str | None:
+    """The V3-8i gate-face judge (the paradigm shift §10.6 item 1) —
+    the plan-level seat of §2.5's stop law, pure over the drafted
+    payload: a plan that invokes the gate-production shape must carry
+    the reader's own will in **every** scene (at least one gate beat in
+    ``required_beats`` — where deciding for the reader might be
+    something they would mind — plus the ``user_present`` marker). The
+    first scene that does not names itself in a human sentence; a
+    compliant payload answers ``None``.
+
+    **The judge's scope is the declared shape.** A payload whose scenes
+    carry none of the V3-8i keys — no ``required_beats``, no
+    ``user_present`` anywhere — answers ``None``: the canonical
+    ten-key freeze is untouched (``BLUEPRINT_SCENE_KEYS``'s own words:
+    beats and gate hints pass through unjudged — *unjudged by the
+    canonical schema*), the deterministic baselines' ten-key plans ride
+    unchanged, and a plan that declines the shape outright is bounded
+    at runtime by the reading face's gateless floor instead. A payload
+    that declares the shape **anywhere** is judged **everywhere**: a
+    plan that plans the reader's will in one scene and leaves them
+    nothing to decide in the next is the ch02 failure in miniature,
+    and it is refused — that refusal is the seat
+    (``Director.open_next_chapter`` at ``require_gates``) and the
+    production planner (``Pipeline.plan_chapter`` at
+    ``require_plan_gates``) both enforce, the planner re-casting once
+    against it. Malformed payloads (not a mapping, ``scenes`` not a
+    sequence) answer ``None`` — the canonical schema owns those
+    refusals, and this face judges only payloads that cleared it."""
+
+    if not isinstance(payload, Mapping):
+        return None
+    scenes = payload.get("scenes")
+    if isinstance(scenes, (str, bytes)) or not isinstance(
+        scenes, (list, tuple)
+    ):
+        return None
+    declared = any(
+        isinstance(element, Mapping)
+        and ("required_beats" in element or "user_present" in element)
+        for element in scenes
+    )
+    if not declared:
+        return None
+    for ordinal, element in enumerate(scenes, start=1):
+        if not isinstance(element, Mapping):
+            continue  # the canonical schema's own refusal arms answer these
+        if not _scene_has_gate(element):
+            return (
+                f"scenes[{ordinal}] plans no User Gate for the reader"
+                " (the §10.6 gate-production law): every scene's"
+                " required_beats must carry at least one gate beat —"
+                ' a {"kind": "gate", "reason": …, "options": [2-4'
+                " natural actions]} object naming where the story must"
+                " stop for the reader's own meaningful act of will —"
+                " and a boolean user_present; a chapter with no such"
+                " stop leaves the reader nothing to decide, and this"
+                " plan is refused for it"
+            )
+    return None
+
+
 def validate_blueprint(
     payload: Mapping[str, Any],
     *,
@@ -1340,8 +1443,23 @@ class Director:
         world_id: str,
         blueprint_payload: Mapping[str, Any],
         now: str,
+        *,
+        require_gates: bool = False,
     ) -> Result[ChapterOpening]:
         """Plan the world's next chapter — a Plan-face act only.
+
+        ``require_gates`` (V3-8i, the paradigm shift §10.6 item 1) is
+        the seat's gate-production promise: a ``True`` call runs
+        :func:`blueprint_gate_refusal` over the payload after the
+        canonical schema has cleared it — a plan that **declares the
+        gate-production shape** (``required_beats`` / ``user_present``)
+        but does not carry the reader's own will in every scene is
+        refused ``VALIDATION_FAILED`` with the judge's human sentence,
+        before a single row is written (the refusal the production
+        planner re-casts once against). A plan in the pure legacy
+        ten-key shape is not this judge's to refuse (the declared-shape
+        scope; the runtime floor bounds it) — the default ``False``
+        keeps every pre-V3-8i call's semantics byte for byte.
 
         The chapter index is the world's existing maximum plus one (the
         first chapter is 1; §21's monotone ``+1``) — **except when a
@@ -1374,8 +1492,9 @@ class Director:
         Refusals: the world does not exist — ``NOT_FOUND``; the world
         holds no ``CURRENT`` Bible revision — ``NOT_FOUND`` (the
         fail-closed law: without world authority there is no Director;
-        DATA §26.2.1's block); the payload fails the schema or its
-        identity references do not resolve — ``VALIDATION_FAILED``
+        DATA §26.2.1's fail-closed block); the payload fails the schema,
+        or — at ``require_gates`` — plans no User Gate, or its identity
+        references do not resolve — ``VALIDATION_FAILED``
         (nothing is written); any store refusal rides out unchanged.
         """
 
@@ -1404,6 +1523,15 @@ class Director:
         validated = self.validate_blueprint(world_id, blueprint_payload)
         if isinstance(validated, Err):
             return Err(validated.error)
+        if require_gates:
+            reason = blueprint_gate_refusal(blueprint_payload)
+            if reason is not None:
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.VALIDATION_FAILED,
+                        message=reason,
+                    )
+                )
         blueprint = validated.value
         residue = self._residue_chapter(world_id)
         if residue is not None:
