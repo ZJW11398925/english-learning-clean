@@ -473,3 +473,19 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 8. **门**：pytest（自 6243 起，分段亲跑）/ruff/mypy（204→205 files）/compileall 全绿；drift 钉（`tests/world/test_aoci_drift.py`）全绿；禁改面零触碰（git diff 核）。
 
 授权：V3-8d 收口 `DEC-OPI-cddb517c-…29`（rev 825「下一动 = V3-8e」）；DMCP 开工裁决 `DEC-OPI-cddb517c-dafb-4a64-a99e-0a691394156e.31`（rev 826）；三件 = TASK `…33`（rev 827）/ VAL `…35`（rev 828，路径集=所触面）。
+
+### v1.7.9 — 2026-10-13 V3-8e 独立评审处置（ACCEPT-WITH-FINDINGS 无 HIGH/MEDIUM 阻断；F1–F4 升格本刀修 + F5–F7 顺笔；§7.1 裁定接受；授权：评审结论转呈）
+
+**结论**：V3-8e **维持推进**（不重开）；egress 适配器（失败全族值语义映射、prompt/密钥零回带、坐标每次读现役 live provider、测试零真实网络）/回放 provider（durable 前缀零重生成、裁定零二次）/脱队 state 读/路由只增不改（web.py +103/−0）/页面（零新组件、主 UI 零触碰）/台账逐项在码在册；**禁改面零触碰、零迁移、零依赖**。评审自加 6 组相邻面变异全按预期（M-A 位置律 6 红／M-B 回放重生成 3 红〔暴露 F2〕／M-C ack 写记忆 1 红／M-D 既有路由行为 1 红／M-E egress 改 raise 4 红／M-F 修复形无钉覆盖〔佐证 F1〕）。**执行者三处自报（§7.1/§7.2/§7.3）经评审独立复核全部成立**（§7.2 的 lore_refs 炸链逐环复现）。**通道违规如实留痕**（执行者一次 heredoc 落盘——本刀第 1 次＝训诫；字节面复核：工作树 CRLF/blob LF 归一、status 干净、无其他未披露写入）。
+
+1. **§7.1 裁定：接受脱队读**——`narrative_state_ro` 与 `web.py` 既有 `/api/teaching/current` 例外同姿态（自开 `?mode=ro` 短连接、`timeout=2.0`、handler 线程答完即关、零写、所读表无 `write_epoch` fence、WAL 并发实测不阻塞）；轮询不得排在 10–60s 驱动之后的理由与既有例外同源。
+2. **F1（LOW，修）**：except 面窄于既有例外（`sqlite3.Error` vs `except Exception`）——不可解码行（corrupted options_json）会让轮询连接被断（线上 `RemoteDisconnected`）。修：`except Exception`（与既有例外字面一致）；新钉 `test_the_state_poll_answers_a_corrupted_row`（回退变异证红：副本内改回 `sqlite3.Error` 则该钉 RED、continue 500）。
+3. **F2（LOW，修）**：重开栈钉的「writer 零调用」断言空转（重开后点击落 gate_open 臂不经前缀；M-B 下该钉仍绿）。修：补强为「重开 → advance（门开）→ 以夹具授权 submission 提交 → 前缀重演下 writer 恰 1 次（续段）= 零重生成有齿」；副本内 M-B 变异下该钉**由绿转红**（齿证实）。修正首版曾用非授权 submission_id 触发未编剧 replan 键（探针定位后改用 `gold.SUBMISSION_ID`）。
+4. **F3（LOW，修）**：`reader.js` 对 transport 级失败（500 payload 无 `ok` 旗）渲染成空态并丢错误句。修：`render` 对 `payload.error && payload.ok !== true` 显示错误句并保留上一帧。
+5. **F4（LOW，修）**：前缀/提交重建的门选项三处取自脚本 `beat.options`（durable 优先法自定法的局部不一致；脚本与行漂移即 CONFLICT）。修：改取 durable 行 `gate.options`（三处）。
+6. **F5–F7（INFO，顺笔）**：web.py 文档「The one exception」两处随 v3 state 同步（现为两处脱队读）；`FRONTEND_SPEC` 8.2.13 提交钮绑定改述（`busy`）；aoci `gold.py[GD8T]` 括注更正（REGISTER v1.7.8 + 提交 `c465b54`）。
+7. **F8（INFO，留档）**：gold lore_refs 修复为前向式（`INSERT OR IGNORE` 不重开既有坏行）——无生产路径曾以 `''` 种 gold（V3-8e 是首个卡表整读调用面），实际不可达。
+8. **F9（INFO，留档）**：回放比对含「现行 adopted dossier 的 participants」——真实模型若裁 SCENE 重规划阵地，多段门后脚本的再续可能 CONFLICT（现夹具=CHAPTER+门后恰一段故不可达）；真实 rollout 开放 SCENE 裁定路径时显式裁。
+9. **处置后四门完整重跑（防坑㉞）**：pytest **6261/0/0**（702+1009+2186+2364 分段合计；+1 钉=corrupted-row）、ruff clean、mypy 205 files clean、compileall clean、drift 19/19、collect 6261。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v38e_review\`／`D:\v38e_mut\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交 `23afd74`，本条目为处置留痕（双钉齿验证副本 `D:\v38e_probe\mut\`）。
