@@ -444,3 +444,17 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 5. **范围与纪律**：**零迁移**（不新增表）；零新依赖（stdlib only；`pyproject.toml` 不动）；**c revisit（`DEC-OPI-cddb517c-…17` 的 revisit 条件）**：场景驱动若暴露 `llm_providers` 的 prompt/解析真需求 ⇒ 本刀内修（改动面限 `llm_providers.py`/`gold.py`，**不得改 `providers.py` 协议语义**）；无需求则报告明写并列出核过面。**禁改面**：`behavioral_baselines/**` 一字节不改；`migrations/0029–0037` sealed 不改；`v3_cognition_view`/`v3_memory_view` 行为不破；`reader_exposure` 写面语义不动；legacy V2 链与现役 UI（`web.py` 既有路由、`webui/**`）不动；`src/elc/persona/**` 不改；`host.py` legacy C1 不动；**`providers.py` 协议面语义不改**。**门**：pytest（自 6226 起）/ruff/mypy（203→204 files）/compileall 亲跑全绿；新钉族 `tests/world/test_v3_8_gold_gates.py` + drift 钉（`tests/world/test_aoci_drift.py`）全绿；台账随迁（`aoci.code.txt` 新 `gold.py[GD8T]` 条目）。
 
 授权：V3-8c 收口 `DEC-OPI-cddb517c-…17`（rev 821「下一动 = V3-8d」）；DMCP 开工裁决 `DEC-OPI-cddb517c-dafb-4a64-a99e-0a691394156e.19`（rev 822）；三件 = TASK `…21`（rev 823）/ VAL `…23`（rev 824，路径集=所触面）。
+
+### v1.7.7 — 2026-10-13 V3-8d 独立评审处置（ACCEPT-WITH-FINDINGS 无 HIGH/MEDIUM 阻断；F1/F2 升格本刀修；授权：评审结论转呈）
+
+**结论**：V3-8d **维持推进**（不重开）；固定要素 **11/11 保真**（§10.2/PLAN §20 逐条核，无违背；命名级细节诚实分级）；**12 条结构门全为行为钉**（真驱动链 + durable 面；无 `if False` 型可绕过钉）；**c revisit 证实成立**（`git diff c4756ba..HEAD -- src/elc/world/llm_providers.py` 空；四臂覆盖经记录 prompt 逐字核过、planner 臂不在本链有结构证据 + gate07 钉）；禁改面零触碰；零迁移。**点名变异全红**（执行者 M1–M6 评审抽验一致〔M1/M3 等价重建，M2/M4/M5/M6 日志签名核对〕+ 评审自加 6 组相邻面变异：A ⑩⑪／B 全链 12 红／C ⑥⑦⑨／**D 幸存→分工结论**〔viewer 过滤由 V3-7 隔离钉承重，Gold 族不重复〕／E 全链／F ⑫）。四族亲跑 105/0 + collect 6243 + 静态三门绿；总控亲跑全量 6243/0/0。F1/F2（LOW）**升格本刀修**（总控亲写，提交 `cccae95`）；F3/F4/F5（INFO）登记。
+
+1. **F1（LOW，修）**：`gold.py` `GOLD_PROSE` 注释的「post-gate continuation takes the (gate, 2) entry」失实——**两窗都取 `(gate, 3)`**：全驱＝段 1–2＋门后段 3；崩溃续窗 ordinal＝`max(segment_seq)+1`＝3（ACTION_OUTCOME 行 seq 为 NULL）。评审探针实证（`p0003 seq=3`）＋MUT-F 拒绝消息互证。改为两窗同键的键定律措辞（V3-8e 复用照读）。
+2. **F2（LOW，修）**：`gold.py` `MOTHER_PRIVATE` 注释「rides the Director's and the Resolver's prompts」中 Resolver 半句失实——本夹具 Resolver counterparts＝裁定场 participants−玩家＝仅 Lia，Mother 非任何场景参与者 ⇒ Resolver prompt 不载之（评审探针：`arm=resolver MOTHER_PRIVATE_in=[]`）；Director 载（3 prompt 全命）/Writer 不载（0 命中）为真。②钉的组件对照只主张 Director 面（与实测一致，无测试受骗）。
+3. **F3（INFO，登记）**：viewer 过滤面在 Gold 族不可观测（变异 D 幸存）——分工：V3-7 隔离钉承重（同变异下该族红）；无需动作（未来若愿 Gold 族自守可加一条参与者私有记忆行）。
+4. **F4（INFO，登记）**：④无负控面（「无 GateBeat 则零门」型未断言；库面 `open_gate` 自拒 <2 选项为次级见证）——后刀可选加，不阻断。
+5. **F5（INFO，登记）**：执行者变异 M1–M6 的操作脚本未随日志留档、时间戳早于最终提交（补钉不在其路径上、最终树已全绿）——**后续刀纪律提示：变异操作随日志留档**。
+6. **遗留观察（非缺陷）**：`GoldScriptError` 经缝以异常外逸（无 Result 通道的既定姿态）——V3-8e 在装配层承接该姿态（转 Err/HTTP）；脚本 completion 的匹配依赖（place 唯一 / intent 唯一 / director 首中标记）在 gold 场景内成立，扩场景需扩键。
+7. **处置后四门完整重跑（防坑㉞）**：pytest 6243/0/0（702+1017+2653+1871 分段合计）、ruff clean、mypy 204 files clean、compileall clean、drift 19/19。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v38d_review\`／`D:\v38d_mut2\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交 `cccae95`，本条目为处置留痕。
