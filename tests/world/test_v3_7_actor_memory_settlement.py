@@ -1088,12 +1088,19 @@ def _settling_chapter(
     planner: ScenePlanner,
 ) -> None:
     """The full chain up to a ``SETTLING`` chapter with one committed
-    segment (tick 3)."""
+    terminal segment (tick 3, the scene ``COMMITTED``).
+
+    **Migrated by V3-8b's HIGH-1**: this fixture used to settle with the
+    scene still ``ACTIVE`` — the illegal state the SETTLING precondition
+    now closes. The committed segment is the scene's last
+    (``is_last_segment=True``), so the SCENE COMMIT alias flips it
+    ``ACTIVE → COMMITTED`` before the chapter's own flip: a chapter ends
+    only with no running story."""
 
     _active_scene(
         conn, world_store, cast_store, bible_store, narrative, director, planner
     )
-    committed = _commit(conn, narrative, world_store)
+    committed = _commit(conn, narrative, world_store, is_last_segment=True)
     assert isinstance(committed, Ok)
     settled = narrative.settle_chapter(CH, now=LATER, expected_state_version=2)
     assert isinstance(settled, Ok)
@@ -1139,7 +1146,10 @@ def test_ncp4_settles_in_one_transaction_and_replays_as_a_no_op(
         f"sg:{SCENE}:0001: the two meet at the bindery steps"
     )
     assert record.storyline_updates == ""  # no active lines seeded
-    assert record.hooks == "who is the letter from?"
+    # V3-8b's MEDIUM-HIGH: the Blueprint's chapter_questions_to_advance
+    # ("who is the letter from?") does NOT auto-upgrade into Narrative
+    # Memory — hooks is the honest empty string.
+    assert record.hooks == ""
     assert record.resolved_lines == ""
     assert "salience" in record.salience_notes
     assert record.created_at_revision == 1
@@ -1261,7 +1271,21 @@ def test_ncp4_refuses_the_planned_active_and_settlementless_closed_chapters(
     assert active.error.code == DomainErrorCode.VALIDATION_FAILED
     assert _count(conn, "chapter_settlement") == 0
 
-    # CLOSED through the store's own flip faces, without NCP-4.
+    # CLOSED through the store's own flip faces, without NCP-4. The
+    # scene's last segment (the SCENE COMMIT alias) closes the story
+    # first — V3-8b's SETTLING precondition refuses a flip under a
+    # running scene (its own pin lives in the V3-8b suite).
+    closed_beat = _commit(
+        conn,
+        narrative,
+        world_store,
+        segment_seq=2,
+        body="She closes the ledger.",
+        narration="the ledger closes",
+        is_last_segment=True,
+        now=LATER,
+    )
+    assert isinstance(closed_beat, Ok)
     moved = narrative.settle_chapter(CH, now=LATER, expected_state_version=2)
     assert isinstance(moved, Ok)
     closed = narrative.close_chapter(
@@ -1361,14 +1385,21 @@ def test_chapter_settlements_of_orders_two_chapters_by_index(
     assert isinstance(first, Ok)
 
     # the second chapter: open it (ch01 now CLOSED, so the overlap ban is
-    # satisfied), open its default first scene, commit one segment, then
-    # settle it through both faces.
+    # satisfied), open its default first scene, commit one terminal
+    # segment (the scene closes first — V3-8b's SETTLING precondition),
+    # then settle it through both faces.
     opened = director.open_next_chapter(TOWN, _blueprint(), LATER)
     assert isinstance(opened, Ok)
     assert opened.value.chapter.chapter_id == "world-town-ch02"
     scene2 = planner.open_scene("world-town-ch02-s01", LATER)
     assert isinstance(scene2, Ok)
-    committed2 = _commit(conn, narrative, world_store, scene_id="world-town-ch02-s01")
+    committed2 = _commit(
+        conn,
+        narrative,
+        world_store,
+        scene_id="world-town-ch02-s01",
+        is_last_segment=True,
+    )
     assert isinstance(committed2, Ok)
     moved = narrative.settle_chapter(
         "world-town-ch02", now=LATER, expected_state_version=2
@@ -1460,12 +1491,14 @@ def test_recovery_scan_surfaces_the_settling_family(
     # the pre-existing family is untouched: the same chapter, both views.
     assert [c.chapter_id for c in scan.value.chapters] == [CH]
     assert [c.status for c in scan.value.chapters] == [ChapterStatus.SETTLING]
-    assert [
-        s.scene_id for s in scan.value.scenes
-    ] == [SCENE]
+    # the scene is COMMITTED, not ACTIVE — V3-8b's SETTLING
+    # precondition left this fixture with no running story (the scene
+    # family reads ACTIVE scenes only).
+    assert scan.value.scenes == ()
     assert scan.value.gates == ()
     assert scan.value.actions == ()
     assert scan.value.replans == ()
+    assert scan.value.continuations == ()
 
     # after NCP-4 the chapter is CLOSED: neither family lists it.
     settled = settle_chapter(
@@ -1751,7 +1784,9 @@ def test_the_settled_scene_rows_survive_the_settlement(
     assert isinstance(settled, Ok)
     scene_after = narrative.get_scene(SCENE)
     assert scene_after == scene_before
-    assert scene_after.status is SceneStatus.ACTIVE
+    # the scene closed before the chapter did (its last segment was the
+    # SCENE COMMIT alias — the V3-8b SETTLING precondition's own shape).
+    assert scene_after.status is SceneStatus.COMMITTED
     assert scene_after.actual_start_tick == 0
     assert scene_after.actual_end_tick == 3
     assert (

@@ -25,7 +25,13 @@ STATE §26's two-caller law; **since V3-7** (TASK-OPI-d274a7fb…8)
 ``_close_chapter_tx`` is the chapter-closing arm the NCP-4 settlement
 orchestration (:func:`elc.world.settlement.settle_chapter`) calls
 inside its own short atomic group — the settlement row and the
-``SETTLING → CLOSED`` flip land together or not at all).
+``SETTLING → CLOSED`` flip land together or not at all); **since
+V3-8b** (TASK-OPI-06b954e0…16 / DEC-OPI-06b954e0…15, the external
+review's HIGH-1) :meth:`settle_chapter` runs its own one short
+transaction and judges the ``SETTLING`` precondition — no ``ACTIVE``
+scene, no gate outside ``CLOSED``, no ``PENDING`` replan obligation —
+inside it, before the ``ACTIVE → SETTLING`` flip (STATE §21's
+「SETTLING 前置律」: a chapter ends only with no running story).
 
 Discipline (the house store law, :mod:`elc.world.store`'s posture):
 
@@ -296,10 +302,77 @@ class SqliteNarrativeStore:
         """Begin the end-of-chapter settlement: ``ACTIVE → SETTLING``
         (§21 — the short window between the closing determination and
         the settlement's outputs landing). Legal only from ``ACTIVE``;
-        a crash inside ``SETTLING`` is the recovery face's problem (a
-        later cut's — re-running the settlement lands the same summary
-        once), not this flip's.
+        a crash inside ``SETTLING`` is the recovery face's problem (the
+        ``SETTLING`` family of RA §29 re-runs the settlement, whose
+        one-version PK lands the same summary once), not this flip's.
+
+        **The SETTLING precondition law (V3-8b, the external review's
+        HIGH-1; STATE §21's 「SETTLING 前置律」, TASK-OPI-06b954e0…16 /
+        DEC-OPI-06b954e0…15)** — a chapter enters ``SETTLING`` only when
+        its world holds **no running story**, judged inside this face's
+        own one short ``BEGIN IMMEDIATE`` transaction (the checks and
+        the CAS flip land together or not at all):
+
+        - no ``ACTIVE`` scene of this chapter (a scene mid-writing is a
+          running story; a ``PLANNED`` scene does **not** block — the
+          caller discards it explicitly, or leaves it as the plan's own
+          history, before the chapter ends);
+        - no gate of this chapter's scenes outside ``CLOSED`` — which
+          covers ``OPEN`` / ``ANSWERED`` / ``RESOLVING`` (a story
+          stopped at a User Gate) and ``COMMITTED``-not-``CLOSED`` (a
+          ruling nobody resumed past: the continuation passage that
+          closes it has not landed);
+        - no ``PENDING`` ``action_replan`` obligation chained to this
+          chapter's actions (the ruling's plan change is not consumed
+          yet).
+
+        Any of the four present ⇒ ``VALIDATION_FAILED`` naming the
+        offender, **zero state change** (the chapter stays ``ACTIVE``
+        at the same ``state_version`` — the whole transaction rolls
+        back). This closes the illegal state the V3-7 fixture family
+        once allowed ("章 CLOSED 而场仍 ACTIVE": a settled chapter with
+        a scene still writing) — a chapter's end is a story stop, not
+        an amputation.
         """
+
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            outcome = self._settle_chapter_tx(
+                chapter_id, now, expected_state_version
+            )
+            if isinstance(outcome, Err):
+                self._conn.execute("ROLLBACK")
+                began = False
+                return Err(outcome.error)
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"chapter {chapter_id!r} not moved: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
+        updated = self.get_chapter(chapter_id)
+        assert updated is not None  # the UPDATE above just touched it
+        return Ok(updated)
+
+    def _settle_chapter_tx(
+        self,
+        chapter_id: str,
+        now: str,
+        expected_state_version: int,
+    ) -> Result[None]:
+        """The ``ACTIVE → SETTLING`` move's body, inside the caller's
+        transaction (the arm/owner split the module's other faces
+        keep): the running-story precondition (V3-8b, HIGH-1) and the
+        CAS flip — one atomic group."""
 
         row = self.get_chapter(chapter_id)
         if row is None:
@@ -314,20 +387,84 @@ class SqliteNarrativeStore:
                     ),
                 )
             )
-        moved = self._cas_status(
-            "world_chapter",
-            "chapter_id",
-            chapter_id,
-            ChapterStatus.SETTLING,
-            now,
-            expected_state_version,
-            "chapter",
+        blocker = self._running_story_blocker(chapter_id)
+        if blocker is not None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"chapter {chapter_id!r} not settled: {blocker} —"
+                        " the chapter stays ACTIVE and nothing was written"
+                        " (STATE §21: a chapter ends only with no running"
+                        " story)"
+                    ),
+                )
+            )
+        cursor = self._conn.execute(
+            "UPDATE world_chapter SET status = ?,"
+            " state_version = state_version + 1, updated_at = ?"
+            " WHERE chapter_id = ? AND state_version = ?",
+            (
+                ChapterStatus.SETTLING.value,
+                now,
+                chapter_id,
+                expected_state_version,
+            ),
         )
-        if isinstance(moved, Err):
-            return Err(moved.error)
-        updated = self.get_chapter(chapter_id)
-        assert updated is not None  # the UPDATE above just touched it
-        return Ok(updated)
+        if cursor.rowcount != 1:
+            return self._cas_miss("world_chapter", chapter_id)
+        return Ok(None)
+
+    def _running_story_blocker(self, chapter_id: str) -> str | None:
+        """The first running story this chapter still holds, as a human
+        sentence naming it — or ``None`` when the chapter's world is at
+        rest (V3-8b's SETTLING precondition: STATE §21's four checks,
+        in the canonical order — scene, gate, obligation). The reads
+        are this transaction's own (the caller's ``BEGIN IMMEDIATE``
+        already holds the write lock), so no window lets a story start
+        between the check and the flip."""
+
+        scene_row = self._conn.execute(
+            "SELECT scene_id FROM world_scene WHERE chapter_id = ?"
+            " AND status = 'ACTIVE' ORDER BY scene_index ASC",
+            (chapter_id,),
+        ).fetchone()
+        if scene_row is not None:
+            return (
+                f"scene {str(scene_row[0])!r} is still ACTIVE — the"
+                " chapter's story is still being written (commit its"
+                " last segment or discard it first)"
+            )
+        gate_row = self._conn.execute(
+            "SELECT g.gate_id, g.status FROM user_gate g"
+            " JOIN world_scene s ON s.scene_id = g.scene_id"
+            " WHERE s.chapter_id = ? AND g.status != 'CLOSED'"
+            " ORDER BY g.gate_id ASC",
+            (chapter_id,),
+        ).fetchone()
+        if gate_row is not None:
+            return (
+                f"gate {str(gate_row[0])!r} is {str(gate_row[1])!r} — a"
+                " gate nobody closed still stands in this chapter's"
+                " scenes (a COMMITTED one is closed by the continuation"
+                " passage that resumes it)"
+            )
+        replan_row = self._conn.execute(
+            "SELECT r.replan_request_id FROM action_replan r"
+            " JOIN user_action a ON a.user_action_id = r.user_action_id"
+            " JOIN user_gate g ON g.gate_id = a.gate_id"
+            " JOIN world_scene s ON s.scene_id = g.scene_id"
+            " WHERE s.chapter_id = ? AND r.status = 'PENDING'"
+            " ORDER BY r.replan_request_id ASC",
+            (chapter_id,),
+        ).fetchone()
+        if replan_row is not None:
+            return (
+                f"replan obligation {str(replan_row[0])!r} is PENDING —"
+                " the ruling's plan change is not consumed yet (a"
+                " chapter does not settle under an unfinished replan)"
+            )
+        return None
 
     def close_chapter(
         self,

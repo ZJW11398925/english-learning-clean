@@ -1213,18 +1213,22 @@ def settle_chapter(
       the settle (``line_id: theme`` per line, the store's own
       two-layer read); the structural advancement (opening / closing /
       settling lines) is a later cut's;
-    - ``hooks`` — the chapter's latest plan revision's
-      ``chapter_questions_to_advance`` verbatim: the durable Plan-face
-      record of the chapter's open questions is this cut's conservative
-      snapshot of the unredeemed hook queue (no hooks store exists
-      yet);
+    - ``hooks`` — the honest empty family this cut (**V3-8b, the
+      external review's MEDIUM-HIGH**: the field no longer copies the
+      Blueprint's ``chapter_questions_to_advance`` — Plan content does
+      not auto-upgrade into Narrative Memory at the settlement; the
+      reliable hook extraction, from already-happened foreshadowing /
+      exposed questions / established open suspense〔Canon /
+      Reader-visible faces〕, is a later cut's);
     - ``resolved_lines`` — the honest empty family this cut (the
       structural half is registered with the storyline work);
     - ``salience_notes`` — the fixed conservative placeholder
       (significance is a later cut's judgement);
     - ``created_at_revision`` — the chapter's latest ``plan_revision``
       (a chapter in ``SETTLING`` holds a plan by the #4 prerequisite; a
-      state without one is answered honestly, refused).
+      state without one is answered honestly, refused) — **plan
+      provenance: it names the plan the settlement stood beside, and
+      copies none of its content** (V3-8b).
 
     **Replay = no-op** (the one-version PK carries the idempotence): a
     chapter already settled answers its stored row when the freshly
@@ -1412,11 +1416,13 @@ def _settlement_draft(
 ) -> Result[tuple[str, str, str, str, str, int]]:
     """The deterministic baseline's conservative assembly (see
     :func:`settle_chapter` for what each field is): purely derived from
-    already-committed faces and the Plan face's own text, so a replay
-    re-derives the same shape byte for byte. A chapter holding no plan
-    revision is refused honestly — the #4 door admitted only chapters
-    with an ``ADOPTED`` Blueprint, so this is a corrupted state and it
-    is named, never guessed."""
+    already-committed faces — never from the Plan face's content
+    (**V3-8b**: the Blueprint's own text does not auto-upgrade into
+    Narrative Memory; the latest ``plan_revision`` rides only as the
+    provenance number) — so a replay re-derives the same shape byte for
+    byte. A chapter holding no plan revision is refused honestly — the
+    #4 door admitted only chapters with an ``ADOPTED`` Blueprint, so
+    this is a corrupted state and it is named, never guessed."""
 
     lineage = conn.execute(
         "SELECT c.commit_id, e.narration FROM segment_commit c"
@@ -1452,7 +1458,9 @@ def _settlement_draft(
         (
             summary,
             storyline_updates,
-            latest.chapter_questions_to_advance,
+            "",  # hooks — the honest empty family (V3-8b: Plan content
+            # does not auto-upgrade into Narrative Memory; the reliable
+            # hook extraction is a later cut's — see the docstring)
             "",  # resolved_lines — the honest empty family this cut
             _SETTLEMENT_SALIENCE_PLACEHOLDER,
             latest.plan_revision,

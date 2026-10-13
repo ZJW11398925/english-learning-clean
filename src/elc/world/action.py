@@ -97,17 +97,24 @@ chain (obligation → action → gate → scene) for the two consumers.
 - :func:`recovery_scan` — RA §29's scan face for this cut's families,
   plainly read: gates ``ANSWERED`` / ``RESOLVING``, actions
   ``RESOLVING``, scenes ``ACTIVE``, chapters ``ACTIVE`` / ``SETTLING``,
-  **replan obligations ``PENDING``** (the V3-6R fifth family) and —
-  since V3-7 (TASK-OPI-d274a7fb…8, RA §29's "V3-7 落法") — the
+  **replan obligations ``PENDING``** (the V3-6R fifth family), — since
+  V3-7 (TASK-OPI-d274a7fb…8, RA §29's "V3-7 落法") — the
   **``settling_chapters``** sixth family: the ``SETTLING`` subset of the
   chapter scan, distinctly named (NCP-4's crash anchor — the recovery
   face re-runs :func:`elc.world.settlement.settle_chapter`, which
-  converges to ``CLOSED`` with the same one-version settlement row);
-  each family deterministically ordered. The automatic resume 编排
-  belongs to the pipeline cut; this face is the durable survey, and the
-  semantics it carries are the contract's: after NCP-1 an interruption
-  re-adjudicates with the **same ``submission_id``** (the unique
-  outcome), and a replayed ``commit_action`` is a whole-group no-op.
+  converges to ``CLOSED`` with the same one-version settlement row),
+  and — since V3-8b (TASK-OPI-06b954e0…16 / ``DEC-OPI-06b954e0-…15``,
+  the external review's HARD GATE) — the **``continuations``** seventh
+  family: ``COMMITTED`` gates whose scene holds no passage carrying
+  their action as its ``outcome_ref`` (:class:`ContinuationObligation`
+  — the ruling nobody resumed past, with the continuation's
+  ``next_segment_seq`` derived from the durable ``segment_commit``
+  rows); each family deterministically ordered. The automatic resume
+  编排 belongs to the pipeline cut; this face is the durable survey, and
+  the semantics it carries are the contract's: after NCP-1 an
+  interruption re-adjudicates with the **same ``submission_id``** (the
+  unique outcome), and a replayed ``commit_action`` is a whole-group
+  no-op.
 
 **The adjudication is the only writer of the action's canon** (§2.6 /
 DOMAIN §20.3-1): :class:`Adjudication` is the design's output shape
@@ -228,12 +235,14 @@ __all__ = [
     "ActionReplanRecord",
     "ActionStatus",
     "Adjudication",
+    "ContinuationObligation",
     "GateStatus",
     "RecoveryScan",
     "ReplanScope",
     "ReplanStatus",
     "UserActionRecord",
     "UserGateRecord",
+    "action_by_id",
     "action_of",
     "begin_resolving",
     "claim_replan_target",
@@ -455,6 +464,29 @@ class ActionOutcome:
 
 
 @dataclass(frozen=True)
+class ContinuationObligation:
+    """One committed-unclosed gate's continuation obligation — RA §29's
+    **seventh family** (V3-8b, TASK-OPI-06b954e0…16 /
+    ``DEC-OPI-06b954e0-…15``, the external review's HARD GATE).
+
+    A gate that reached ``COMMITTED`` but has not been resumed past
+    (``CLOSED``) is a ruling whose continuation passage never landed —
+    the crash window ``NCP-2 后崩溃`` at its most precise reading. The
+    family restores exactly what a driver needs and nothing it would
+    have to remember: ``scene_id`` (where the passage lands),
+    ``gate_id`` (the story point), ``user_action_id`` (the committed
+    ruling — the forced ``outcome_ref``) and ``next_segment_seq`` (the
+    sequence the passage takes, **derived from the durable
+    ``segment_commit`` rows**: ``max(segment_seq) + 1`` for the scene,
+    the first segment's ``1`` — never a caller-supplied counter)."""
+
+    scene_id: str
+    gate_id: str
+    user_action_id: str
+    next_segment_seq: int
+
+
+@dataclass(frozen=True)
 class RecoveryScan:
     """RA §29's scan answer for this cut's families: gates
     ``ANSWERED`` / ``RESOLVING`` (not ``COMMITTED``), actions
@@ -467,14 +499,18 @@ class RecoveryScan:
     scan, surfaced as its own recovery semantic (NCP-4's crash anchor —
     a chapter interrupted inside the settlement re-runs
     :func:`elc.world.settlement.settle_chapter`, and the one-version-per-
-    chapter PK makes the re-run a no-op; RA §29's "V3-7 落法"). Each
-    tuple is deterministically ordered (``gate_id`` /
-    ``user_action_id`` / ``(chapter_id, scene_index)`` /
+    chapter PK makes the re-run a no-op; RA §29's "V3-7 落法"), and —
+    since V3-8b — the ``continuations`` family: ``COMMITTED`` gates
+    whose scene holds no passage carrying their action as its
+    ``outcome_ref`` (:class:`ContinuationObligation`; the HARD GATE's
+    durable-read face). Each tuple is deterministically ordered
+    (``gate_id`` / ``user_action_id`` / ``(chapter_id, scene_index)`` /
     ``(world_id, chapter_index)`` / ``gate_id`` for the obligations /
-    ``(world_id, chapter_index)`` for the settling family), so a
-    recovery walk replays the same survey byte for byte. ``chapters``
-    keeps its ``ACTIVE`` / ``SETTLING`` rows intact — the sixth family
-    is a distinctly-named subset, not a replacement.
+    ``(world_id, chapter_index)`` for the settling family / ``gate_id``
+    for the continuations), so a recovery walk replays the same survey
+    byte for byte. ``chapters`` keeps its ``ACTIVE`` / ``SETTLING``
+    rows intact — the sixth family is a distinctly-named subset, not a
+    replacement.
     """
 
     gates: tuple[UserGateRecord, ...]
@@ -483,6 +519,7 @@ class RecoveryScan:
     chapters: tuple[WorldChapterRecord, ...]
     settling_chapters: tuple[WorldChapterRecord, ...]
     replans: tuple[ActionReplanRecord, ...]
+    continuations: tuple[ContinuationObligation, ...]
 
 
 def open_gate(
@@ -1696,6 +1733,19 @@ def action_of(
     return _action_row(conn, f"{gate_id}-a")
 
 
+def action_by_id(
+    conn: sqlite3.Connection, user_action_id: str
+) -> UserActionRecord | None:
+    """One action row by its own id, or ``None`` — the pure column read
+    (a missing id is an answer, not an error). The V3-8b sibling of
+    :func:`action_of`: a consumer holding the ruling's identity directly
+    (the replan obligation names its ``user_action_id``; the CHAPTER
+    replan's trigger reads it through this face) need not re-derive it
+    from a gate id."""
+
+    return _action_row(conn, user_action_id)
+
+
 # ---------------------------------------------------------------------------
 # the replan obligation — the V3-6R HIGH-1's read faces and the
 # claim → work → complete protocol (self-managed short transactions, the
@@ -2012,16 +2062,22 @@ def recovery_scan(
     ``RESOLVING``, scenes ``ACTIVE``, chapters ``ACTIVE`` /
     ``SETTLING``, — since V3-6R — replan obligations ``PENDING`` (the
     fifth family; the claim's ``target_ref`` is written before the
-    work, so a retry converges on the same revision), and — since V3-7 —
+    work, so a retry converges on the same revision), — since V3-7 —
     the sixth family ``settling_chapters``: the ``SETTLING`` subset of
     the chapter scan, distinctly named and deterministically ordered
     (RA §29's "V3-7 落法": the chapter interrupted inside NCP-4 re-runs
     :func:`elc.world.settlement.settle_chapter`, whose one-version PK
-    carries the no-op). The story's resume 编排 belongs to the
-    pipeline cut; the semantics this face carries are the contract's
-    own: after NCP-1 an interruption re-adjudicates with the same
-    ``submission_id`` (the unique outcome), and the scan's rows are the
-    durable survey of a crashed pipeline, not an error.
+    carries the no-op), and — since V3-8b (the HARD GATE) — the
+    **seventh family** ``continuations``: ``COMMITTED`` gates whose
+    scene holds no ``narrative_passage`` carrying their action as its
+    ``outcome_ref`` — a ruling nobody resumed past, with the
+    continuation's own ``next_segment_seq`` derived from the durable
+    ``segment_commit`` rows (RA §29's V3-8b 修订). The story's resume
+    编排 belongs to the pipeline cut; the semantics this face carries
+    are the contract's own: after NCP-1 an interruption re-adjudicates
+    with the same ``submission_id`` (the unique outcome), and the
+    scan's rows are the durable survey of a crashed pipeline, not an
+    error.
     """
 
     gate_rows = conn.execute(
@@ -2076,6 +2132,32 @@ def recovery_scan(
         if chapter is not None
     )
     replans = pending_replans(conn)
+    # The seventh family (V3-8b's HARD GATE): a COMMITTED gate with no
+    # passage resuming it, and the continuation's own sequence — derived
+    # here, from the durable lineage rows (max committed seq + 1; the
+    # first segment's 1), never from a caller's counter.
+    continuation_rows = conn.execute(
+        "SELECT g.gate_id, g.scene_id, a.user_action_id,"
+        " COALESCE((SELECT MAX(c.segment_seq) FROM segment_commit c"
+        " WHERE c.scene_id = g.scene_id), 0) + 1"
+        " FROM user_gate g"
+        " JOIN user_action a ON a.gate_id = g.gate_id"
+        " WHERE g.status = 'COMMITTED'"
+        " AND NOT EXISTS ("
+        " SELECT 1 FROM narrative_passage p"
+        " WHERE p.scene_id = g.scene_id"
+        " AND p.outcome_ref = a.user_action_id)"
+        " ORDER BY g.gate_id ASC"
+    ).fetchall()
+    continuations = tuple(
+        ContinuationObligation(
+            scene_id=str(row[1]),
+            gate_id=str(row[0]),
+            user_action_id=str(row[2]),
+            next_segment_seq=int(row[3]),
+        )
+        for row in continuation_rows
+    )
     return Ok(
         RecoveryScan(
             gates=gates,
@@ -2084,6 +2166,7 @@ def recovery_scan(
             chapters=chapters,
             settling_chapters=settling_chapters,
             replans=replans,
+            continuations=continuations,
         )
     )
 

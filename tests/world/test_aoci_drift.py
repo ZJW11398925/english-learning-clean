@@ -899,3 +899,102 @@ def test_v3_7_entries_carry_the_memory_and_settlement_faces() -> None:
     store_entry = _entry_line_in_section(narrative_section, "store.py[PD9T]")
     for keyword in ("_close_chapter_tx", "V3-7"):
         assert keyword in store_entry, keyword
+
+
+# ---------------------------------------------------------------------------
+# V3-8b (TASK-OPI-06b954e0…16 / the opening ruling …15, the external
+# review's 3 HIGH + 1 HARD GATE + 1 MEDIUM-HIGH): the re-touched entries
+# ---------------------------------------------------------------------------
+
+
+def test_v3_8b_entries_carry_the_correction_faces() -> None:
+    """V3-8b's ledger faces ride their entries: the narrative
+    ``store.py`` (the SETTLING precondition gate on the
+    ``ACTIVE → SETTLING`` flip — HIGH-1), ``providers.py`` (the
+    world-authoritative ``ResolverContext`` — HIGH-2 — and the
+    ``DirectorProvider`` — HIGH-3), ``pipeline.py`` (the Director path,
+    the continuation drive and the dropped ``first_segment_seq``),
+    ``action.py`` (the recovery scan's seventh family) and
+    ``settlement.py`` (the ``hooks`` clause — MEDIUM-HIGH). Zero
+    migration: no migration entry moves, and the coverage law above
+    keeps every existing one present."""
+
+    world_section = "===D:/english-learning-clean/src/elc/world/==="
+    for tag, keywords in (
+        (
+            "pipeline.py[PL8T]",
+            (
+                "DirectorProvider",
+                "continuations",
+                "next_segment_seq",
+                "first_segment_seq",
+                "V3-8b",
+            ),
+        ),
+        (
+            "providers.py[PV8T]",
+            (
+                "ResolverContext",
+                "DirectorPlanContext",
+                "DirectorProvider",
+                "world-authoritative",
+                "V3-8b",
+            ),
+        ),
+        (
+            "settlement.py[ST5C]",
+            (
+                "chapter_questions_to_advance",
+                "空串",
+                "V3-8b",
+            ),
+        ),
+        (
+            "action.py[AC6T]",
+            (
+                "ContinuationObligation",
+                "action_by_id",
+                "next_segment_seq",
+                "V3-8b",
+            ),
+        ),
+    ):
+        entry = _entry_line_in_section(world_section, tag)
+        for keyword in keywords:
+            assert keyword in entry, (tag, keyword)
+
+    narrative_section = (
+        "===D:/english-learning-clean/src/elc/world/narrative/==="
+    )
+    store_entry = _entry_line_in_section(narrative_section, "store.py[PD9T]")
+    for keyword in ("_settle_chapter_tx", "_running_story_blocker", "V3-8b"):
+        assert keyword in store_entry, keyword
+
+    # coherence: the tool-visible faces the entries name are the live
+    # module's own — renaming one side alone reddens here.
+    action_source = (
+        REPO / "src" / "elc" / "world" / "action.py"
+    ).read_text(encoding="utf-8")
+    for symbol in (
+        "class ContinuationObligation",
+        "def action_by_id",
+        "continuations: tuple[ContinuationObligation, ...]",
+    ):
+        assert symbol in action_source, symbol
+    store_source = (
+        REPO / "src" / "elc" / "world" / "narrative" / "store.py"
+    ).read_text(encoding="utf-8")
+    for symbol in (
+        "def _settle_chapter_tx",
+        "def _running_story_blocker",
+    ):
+        assert symbol in store_source, symbol
+    providers_source = (
+        REPO / "src" / "elc" / "world" / "providers.py"
+    ).read_text(encoding="utf-8")
+    for symbol in (
+        "class ResolverContext",
+        "class DirectorPlanContext",
+        "class DirectorProvider",
+    ):
+        assert symbol in providers_source, symbol

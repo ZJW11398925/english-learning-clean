@@ -1,7 +1,11 @@
 """The Narrative V3 pipeline orchestrator (V3-8a, TASK-OPI-06b954e0…4 /
 the opening ruling ``DEC-OPI-06b954e0-…2``; RA §27's "编排面" paragraph;
-DOMAIN §20.2's first row) — the deterministic drive of the chapter /
-scene / settlement loop, calling the library faces in the RA §27 order.
+DOMAIN §20.2's first row; **V3-8b**: the CHAPTER arm's production
+returns to the Director provider (HIGH-3), the continuation obligation
+of a committed-unclosed gate is driven from durable state (the HARD
+GATE) and the external starting-sequence state is gone). — the
+deterministic drive of the chapter / scene / settlement loop, calling
+the library faces in the RA §27 order.
 
 **Zero write power, no transaction of its own** (the contract's
 sentence: 编排器是「谁在何时调用谁」的驱动器，不是第二个 authority):
@@ -19,7 +23,11 @@ replay, not a second story (the replay arms answer first — the same
 
 **The drive order** (RA §27's diagram, executable):
 
-- :meth:`Pipeline.open_chapter` — the Director's Plan-face act;
+- :meth:`Pipeline.open_chapter` — the Director's Plan-face act on the
+  caller's Blueprint payload; :meth:`Pipeline.plan_chapter` — the same
+  act with the payload **produced by the DirectorProvider** from the
+  full ``DirectorContext`` (V3-8b's initial arm; the chapter-level plan
+  is the world's, never a POV-limited planner's);
 - :meth:`Pipeline.run_scene` — ``open_scene`` (dossier rev 1 from the
   adopted Blueprint element, scene ``ACTIVE``; an ``ACTIVE`` scene is
   continued from its durable rows — the crash mid-drive replays its
@@ -37,36 +45,50 @@ replay, not a second story (the replay arms answer first — the same
   ``outcome_ref`` (the V3-6R chain — the orchestrator names the ruling
   the continuation resumes, never the caller);
 - :meth:`Pipeline.settle` — the store's ``ACTIVE → SETTLING`` flip
-  (when the chapter is still ``ACTIVE``) then NCP-4's
+  (when the chapter is still ``ACTIVE``; the flip itself judges the
+  SETTLING precondition — no ``ACTIVE`` scene, no open gate, no
+  ``PENDING`` obligation, V3-8b's HIGH-1) then NCP-4's
   ``settle_chapter``;
 - :meth:`Pipeline.resume` — **the crash-resume face**: read
-  ``recovery_scan``'s six families, filter them to the named world and
+  ``recovery_scan``'s seven families, filter them to the named world and
   route — ``ANSWERED`` / ``RESOLVING`` gates re-adjudicate with the
   **same ``submission_id``** (the durable anchor: one outcome, never
   two), ``PENDING`` obligations consume through their scope's face,
-  ``SETTLING`` chapters settle to ``CLOSED``. This discharge closes the
-  registered "replan 消费的自动路由归管线刀" obligation (RA §29's
-  V3-6 落法 sentence). ``ACTIVE`` scenes are read and reported, not
-  routed — an interrupted scene's next beats are the caller's to
-  drive, and nothing durable is broken by waiting.
+  ``COMMITTED``-unclosed gates with no continuation passage get their
+  **first continuation segment driven from durable state** (V3-8b's
+  HARD GATE: the sequence derives from the ``segment_commit`` rows, the
+  committed action rides as the forced ``outcome_ref`` and the gate
+  closes in that same commit — the caller re-supplies nothing),
+  ``SETTLING`` chapters settle to ``CLOSED``. ``ACTIVE`` scenes are read
+  and reported, not routed — a scene the continuation above did not
+  touch is the caller's to drive, and nothing durable is broken by
+  waiting.
+
+**The script law (V3-8b)**: a drive's beats are the scene's own script
+— the i-th :class:`SegmentBeat` is the scene's i-th segment — so a
+re-drive of the same script replays its committed segments positionally
+and no externally-supplied starting sequence exists: the V3-8a
+``first_segment_seq`` state is gone (the contract's 「取消/降级外部
+``first_segment_seq`` 状态」). A mid-scene continuation derives its
+``segment_seq`` from the durable ``segment_commit`` rows — the recovery
+scan's own derivation, consumed by :meth:`Pipeline.resume` — never from
+in-process memory.
 
 **The deterministic baseline, stated honestly**: the prose, the plan
-content and the verdicts come from the provider protocols
-(:mod:`elc.world.providers`) — scripted in CI. The orchestrator's value
-is the **drive order and the recovery routing**, not literary quality;
-the real LLM wiring (the persona provider / validator / streaming
-basis, design §9.1) replaces the fake behind the same Protocols as the
-explicit step before the user's "好玩" acceptance.
+content, the Blueprints and the verdicts come from the provider
+protocols (:mod:`elc.world.providers`) — scripted in CI. The
+orchestrator's value is the **drive order and the recovery routing**,
+not literary quality; the real LLM wiring (the persona provider /
+validator / streaming basis, design §9.1) replaces the fake behind the
+same Protocols as the explicit step before the user's "好玩"
+acceptance.
 
-**The caller supplies what is the caller's**: the Blueprint payload,
-the beats (lengths, terminality, where a gate falls, the user's own
-submission), ``first_segment_seq`` (a scene's committed sequences + 1 —
-the deterministic baseline has no public read face for a scene's
-committed sequence numbers) and ``action_duration_ticks`` (the one
-calibration the ruling's story-time cost rides until the LLM resolver
-judges it — one value for this pipeline instance, so a crash retry
-replays the ruling's shape byte for byte). ``now`` is the caller's on
-every call (no hidden clock).
+**The caller supplies what is the caller's**: the Beat script and the
+user's own submission, ``action_duration_ticks`` (the one calibration
+the ruling's story-time cost rides until the LLM resolver judges it —
+one value for this pipeline instance, so a crash retry replays the
+ruling's shape byte for byte) and a ``now`` on every call (no hidden
+clock).
 
 Discipline: value semantics — every refusal rides the library faces'
 ``Result`` ``Err`` out unchanged; no SQL string building (this module
@@ -96,6 +118,7 @@ from elc.world.action import (
     ReplanStatus,
     UserActionRecord,
     UserGateRecord,
+    action_by_id,
     action_of,
     begin_resolving,
     commit_action,
@@ -121,9 +144,10 @@ from elc.world.narrative.types import (
     WorldSceneDossierRecord,
 )
 from elc.world.providers import (
-    AdjudicationContext,
-    ChapterPlanContext,
+    DirectorPlanContext,
+    DirectorProvider,
     PlannerProvider,
+    ResolverContext,
     ResolverProvider,
     ScenePlanContext,
     WriterProvider,
@@ -205,21 +229,24 @@ class SceneRun:
 class RecoveryRun:
     """One :meth:`Pipeline.resume` walk's answer for one world: the
     gates re-adjudicated and committed (the scan's own ``gate_id``
-    order), the obligations consumed, the chapters settled, and the
-    ``ACTIVE`` scenes the walk read and **did not** route (an
-    interrupted scene is continued by the caller's next drive — nothing
-    durable is broken by waiting)."""
+    order), the obligations consumed, the continuations driven
+    (V3-8b's HARD GATE: the ``gate_id``s whose first continuation
+    passage landed — each one closed its gate in that same commit), the
+    chapters settled, and the ``ACTIVE`` scenes the walk read and **did
+    not** route (an interrupted scene is continued by the caller's next
+    drive — nothing durable is broken by waiting)."""
 
     world_id: str
     gates_committed: tuple[str, ...]
     replans_consumed: tuple[ReplanConsumption, ...]
+    continuations_driven: tuple[str, ...]
     chapters_settled: tuple[str, ...]
     active_scene_ids: tuple[str, ...]
 
 
 class Pipeline:
     """The Narrative V3 drive over one database — constructed with the
-    connection, the same connection's stores and the three provider
+    connection, the same connection's stores and the four provider
     protocols; it builds the library faces (Director / ScenePlanner /
     PovWriter) from those stores itself and holds no other state.
 
@@ -240,14 +267,18 @@ class Pipeline:
         narrative_store: SqliteNarrativeStore,
         writer_provider: WriterProvider,
         planner_provider: PlannerProvider,
+        director_provider: DirectorProvider,
         resolver_provider: ResolverProvider,
         action_duration_ticks: int,
     ) -> None:
         self._conn = conn
         self._worlds = world_store
+        self._cast = cast_store
+        self._bibles = bible_store
         self._narrative = narrative_store
         self._writer_provider = writer_provider
         self._planner_provider = planner_provider
+        self._director_provider = director_provider
         self._resolver_provider = resolver_provider
         self._action_duration_ticks = action_duration_ticks
         self._director = Director(
@@ -276,13 +307,37 @@ class Pipeline:
         blueprint: Mapping[str, Any],
         now: str,
     ) -> Result[ChapterOpening]:
-        """Plan the world's next chapter — the Director's own Plan-face
-        act, called in the RA §27 order's first step (the Blueprint
-        payload is the caller's: the LLM Blueprint production face is a
-        registered cut, and the deterministic baseline plans from the
-        caller's word)."""
+        """Plan the world's next chapter from the caller's own Blueprint
+        payload — the Director's Plan-face act, called in the RA §27
+        order's first step (the payload is the caller's:
+        :meth:`plan_chapter` is the same act with the payload produced
+        by the Director provider)."""
 
         return self._director.open_next_chapter(world_id, blueprint, now)
+
+    def plan_chapter(self, world_id: str, now: str) -> Result[ChapterOpening]:
+        """Plan the world's next chapter through the **Director
+        provider** — V3-8b's initial-Blueprint arm (HIGH-3): the
+        Blueprint's production is the world's own planning face, fed the
+        full ``DirectorContext`` (the no-trigger arm of
+        :class:`~elc.world.providers.DirectorPlanContext`);
+        ``Director.open_next_chapter`` keeps the validation and the
+        persistence. A dangling world is answered ``NOT_FOUND`` before
+        the provider is asked (the context read presumes the world)."""
+
+        tick = read_current_tick(self._conn, world_id)
+        if isinstance(tick, Err):
+            return Err(tick.error)
+        payload = self._director_provider.draft_blueprint(
+            DirectorPlanContext(
+                director_context=self._director.context(world_id),
+                chapter_id=None,
+                replan_request_id=None,
+                trigger=None,
+                blueprint=None,
+            )
+        )
+        return self._director.open_next_chapter(world_id, payload, now)
 
     # -- the scene arm -------------------------------------------------------
 
@@ -291,8 +346,6 @@ class Pipeline:
         scene_id: str,
         beats: Sequence[SegmentBeat | GateBeat],
         now: str,
-        *,
-        first_segment_seq: int = 1,
     ) -> Result[SceneRun]:
         """Drive one scene through ``beats`` (see the module docstring):
         a ``PLANNED`` scene opens first (its dossier rev 1, the scene
@@ -301,12 +354,15 @@ class Pipeline:
         committed beats replay), and a settled scene refuses (a
         completed drive is not re-runnable). Then the beats in order.
 
-        ``first_segment_seq`` is the sequence this drive's first fresh
-        segment takes — the scene's committed sequences + 1 (the
-        deterministic baseline has no public read face for a scene's
-        committed sequence numbers; the caller that drove the earlier
-        beats knows, and a re-drive of the same call replays the same
-        shapes).
+        **The script law (V3-8b)**: the beats are the scene's own
+        script from its first segment — the i-th
+        :class:`SegmentBeat` is the scene's i-th segment — so a
+        re-drive of the same script replays its committed segments
+        positionally (the library face's replay arm answers each stored
+        ``segment_key``). The V3-8a ``first_segment_seq`` knob is gone:
+        a mid-scene continuation is a durable-state matter and enters
+        through :meth:`resume`, whose seventh family derives its
+        ``segment_seq`` from the ``segment_commit`` rows.
 
         The first refusal stops the drive and rides out unchanged; the
         writes that already landed are durable (every step is
@@ -321,7 +377,7 @@ class Pipeline:
         actions: list[ActionOutcome] = []
         replans: list[ReplanConsumption] = []
         handled_gate_ids: list[str] = []
-        next_seq = first_segment_seq
+        next_seq = 1
         pending_ref: str | None = None
         for beat in beats:
             if isinstance(beat, GateBeat):
@@ -384,7 +440,12 @@ class Pipeline:
         straight to the settlement), then NCP-4's
         :func:`elc.world.settlement.settle_chapter` (the one-version
         row and the ``SETTLING → CLOSED`` flip in one short
-        transaction). A ``PLANNED`` or settled ``CLOSED`` chapter is
+        transaction). The flip judges V3-8b's SETTLING precondition
+        inside its own transaction (no ``ACTIVE`` scene, no gate outside
+        ``CLOSED``, no ``PENDING`` obligation): a chapter still holding
+        a running story refuses ``VALIDATION_FAILED`` naming it and
+        stays ``ACTIVE`` — the caller commits or discards the remaining
+        scenes first. A ``PLANNED`` or settled ``CLOSED`` chapter is
         refused by the settlement face itself (the honest answer)."""
 
         chapter = self._narrative.get_chapter(chapter_id)
@@ -415,8 +476,8 @@ class Pipeline:
     # -- the crash-resume arm ------------------------------------------------
 
     def resume(self, world_id: str, now: str) -> Result[RecoveryRun]:
-        """Walk ``recovery_scan``'s six families for one world and route
-        what is routable (see the module docstring):
+        """Walk ``recovery_scan``'s seven families for one world and
+        route what is routable (see the module docstring):
 
         - gates ``ANSWERED`` / ``RESOLVING`` — re-adjudicate **with the
           stored ``submission_id``** (the NCP-1 anchor; the resolver
@@ -425,7 +486,17 @@ class Pipeline:
           ruling and invents no second one), then route the ruling's
           own replan obligation when one was born;
         - obligations ``PENDING`` — consume through the scope's face
-          (``replan_scene`` / ``apply_action_replan``);
+          (``replan_scene`` / ``apply_action_replan``; the chapter-level
+          one is produced by the Director provider, V3-8b's HIGH-3);
+        - **continuations** — V3-8b's HARD GATE: a ``COMMITTED`` gate
+          whose scene holds no passage carrying its action is a ruling
+          nobody resumed past; the walk drives its **first continuation
+          passage** from durable state — the sequence rides the scan's
+          ``next_segment_seq`` (derived from the ``segment_commit``
+          rows, ``max + 1``), the committed action rides as the forced
+          ``outcome_ref``, and the gate closes in that same commit.
+          The caller re-supplies nothing: no in-process GateBeat, no
+          starting sequence;
         - ``SETTLING`` chapters — :meth:`settle` them to ``CLOSED``;
         - ``ACTIVE`` scenes — read and reported, never routed.
 
@@ -433,13 +504,21 @@ class Pipeline:
         world-scoped because the resume is. Every route is an idempotent
         library call, so re-running the walk after a completed one is a
         zero-write no-op. A refusal stops the walk and rides out
-        unchanged (the routes already taken are durable and replay)."""
+        unchanged (the routes already taken are durable and replay).
+
+        **One scan, one walk**: the walk routes the families the scan
+        found. A ruling this walk itself commits (the ``ANSWERED``
+        family) births its continuation obligation *after* the scan —
+        the next walk (or the caller's next drive) carries it, and
+        because every route is idempotent, walking twice converges
+        without a second story."""
 
         scan = recovery_scan(self._conn, narrative_store=self._narrative)
         if isinstance(scan, Err):
             return Err(scan.error)
         gates_committed: list[str] = []
         replans_consumed: list[ReplanConsumption] = []
+        continuations_driven: list[str] = []
         chapters_settled: list[str] = []
         active_scene_ids: list[str] = []
 
@@ -466,7 +545,7 @@ class Pipeline:
                 )
                 if isinstance(moved, Err):
                     return Err(moved.error)
-            context = self._adjudication_context_of(gate, action)
+            context = self._resolver_context_of(gate, action)
             if isinstance(context, Err):
                 return Err(context.error)
             ruling = self._resolver_provider.adjudicate(context.value)
@@ -517,6 +596,39 @@ class Pipeline:
                 return Err(consumed.error)
             replans_consumed.append(consumed.value)
 
+        for continuation in scan.value.continuations:
+            world = self._world_of_scene(continuation.scene_id)
+            if world is None:
+                return Err(self._dangling_scene(continuation.scene_id))
+            if world != world_id:
+                continue
+            scene = self._narrative.get_scene(continuation.scene_id)
+            if scene is None:  # unreachable through the FK; answered honestly
+                return Err(self._dangling_scene(continuation.scene_id))
+            if scene.status is not SceneStatus.ACTIVE:
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.VALIDATION_FAILED,
+                        message=(
+                            f"gate {continuation.gate_id!r} not"
+                            f" continued: its scene"
+                            f" {continuation.scene_id!r} is"
+                            f" {scene.status.value!r} — a continuation"
+                            " passage lands in an ACTIVE scene (the"
+                            " story the ruling resumed is still open)"
+                        ),
+                    )
+                )
+            driven = self._drive_continuation(
+                continuation.scene_id,
+                continuation.next_segment_seq,
+                continuation.user_action_id,
+                now,
+            )
+            if isinstance(driven, Err):
+                return Err(driven.error)
+            continuations_driven.append(continuation.gate_id)
+
         for chapter in scan.value.settling_chapters:
             if chapter.world_id != world_id:
                 continue
@@ -534,6 +646,7 @@ class Pipeline:
                 world_id=world_id,
                 gates_committed=tuple(gates_committed),
                 replans_consumed=tuple(replans_consumed),
+                continuations_driven=tuple(continuations_driven),
                 chapters_settled=tuple(chapters_settled),
                 active_scene_ids=tuple(active_scene_ids),
             )
@@ -695,7 +808,7 @@ class Pipeline:
             moved = begin_resolving(self._conn, gate_id=gate.gate_id, now=now)
             if isinstance(moved, Err):
                 return Err(moved.error)
-        context = self._adjudication_context_of(gate, action)
+        context = self._resolver_context_of(gate, action)
         if isinstance(context, Err):
             return Err(context.error)
         ruling = self._resolver_provider.adjudicate(context.value)
@@ -728,15 +841,19 @@ class Pipeline:
         """Consume one ruling's plan verdict through its durable
         obligation (the claim → work → complete protocol lives in the
         library faces; this drive only picks the scope's face and feeds
-        the Planner provider the POV-safe context).
+        the scope's provider the context the division freeze gives it).
 
         An ``APPLIED`` obligation answers its stored target zero-write
         (the crash after the plan change). A ``PENDING`` one resolves
-        its scene through the durable chain, compiles the scene's POV
-        context (the ruling scene's own read) and calls
-        ``ScenePlanner.replan_scene`` (``SCENE``) or
-        ``Director.apply_action_replan`` (``CHAPTER``) — the payloads
-        from :class:`~elc.world.providers.PlannerProvider`."""
+        its scene through the durable chain and calls
+        ``ScenePlanner.replan_scene`` (``SCENE`` — the revised element
+        from :class:`~elc.world.providers.PlannerProvider`, the
+        POV-safe scene context its primary input) or
+        ``Director.apply_action_replan`` (``CHAPTER`` — the revised
+        Blueprint from :class:`~elc.world.providers.DirectorProvider`,
+        produced from the full ``DirectorContext`` plus the committed
+        ruling that triggered it: V3-8b's HIGH-3, the chapter's plan is
+        the world's, never the POV-limited planner's)."""
 
         obligation = replan_obligation(self._conn, replan_request_id)
         if obligation is None:
@@ -837,16 +954,29 @@ class Pipeline:
                     ),
                 )
             )
-        payload = self._planner_provider.replan_blueprint(
-            ChapterPlanContext(
-                world_id=chapter.value.world_id,
+        trigger = action_by_id(self._conn, obligation.user_action_id)
+        if trigger is None:  # the FK makes this unreachable
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"replan obligation {replan_request_id!r} not"
+                        " consumed: its action row"
+                        f" {obligation.user_action_id!r} does not exist —"
+                        " the trigger of a CHAPTER replanning is the"
+                        " committed ruling itself"
+                    ),
+                )
+            )
+        payload = self._director_provider.replan_blueprint(
+            DirectorPlanContext(
+                director_context=self._director.context(
+                    chapter.value.world_id
+                ),
                 chapter_id=chapter.value.chapter_id,
-                scene_id=scene_id,
-                pov_actor_id=dossier.pov_actor_id,
-                current_tick=context.value.current_tick,
+                replan_request_id=replan_request_id,
+                trigger=trigger,
                 blueprint=_blueprint_mapping_of(plan),
-                cognition=context.value.cognition,
-                memory=context.value.memory,
             )
         )
         applied = self._director.apply_action_replan(
@@ -862,13 +992,22 @@ class Pipeline:
             )
         )
 
-    def _adjudication_context_of(
+    def _resolver_context_of(
         self,
         gate: UserGateRecord,
         action: UserActionRecord,
-    ) -> Result[AdjudicationContext]:
-        """Compile the Resolver provider's POV-safe input from the gate
-        and submission rows (the ruling scene's own POV read)."""
+    ) -> Result[ResolverContext]:
+        """Compile the Resolver provider's **world-authoritative** input
+        (V3-8b's HIGH-2; V3-8a's POV-limited ``AdjudicationContext`` is
+        replaced): the user's own submission (from the durable
+        ``user_action`` row) beside the world's real authority — the
+        ``CURRENT`` Bible, the settled ``world_state_fact`` half, the
+        player's durable row and the scene's counterpart profiles — and
+        the ruling scene's own plan face (its adopted dossier's place /
+        participants and the POV's read, for *what the player character
+        knows*). The reads are the stores' own public faces; nothing
+        here interprets a value (the honesty statements live on the
+        record's docstring)."""
 
         dossier = self._narrative.adopted_dossier(gate.scene_id)
         if dossier is None:
@@ -889,20 +1028,63 @@ class Pipeline:
         context = self._scene_context_of(chapter.value, dossier)
         if isinstance(context, Err):
             return Err(context.error)
+        world_id = chapter.value.world_id
+        player = self._cast.player_character(world_id)
+        player_id = None if player is None else player.player_character_id
+        counterparts = tuple(
+            profile
+            for profile in (
+                self._cast.actor_profile(participant)
+                for participant in dossier.participants
+                if participant != player_id
+            )
+            if profile is not None
+        )
         return Ok(
-            AdjudicationContext(
+            ResolverContext(
                 gate_id=gate.gate_id,
                 scene_id=gate.scene_id,
                 submission_id=action.submission_id,
                 intent_text=action.intent_text,
                 selected_option=action.selected_option,
                 options=gate.options,
-                pov_actor_id=dossier.pov_actor_id,
+                bible=self._bibles.current_bible(world_id),
+                current_facts=self._worlds.current_facts(world_id),
+                player_character=player,
+                place=dossier.place,
                 participants=dossier.participants,
-                current_tick=context.value.current_tick,
+                counterparts=counterparts,
+                pov_actor_id=dossier.pov_actor_id,
                 cognition=context.value.cognition,
                 memory=context.value.memory,
+                current_tick=context.value.current_tick,
             )
+        )
+
+    def _drive_continuation(
+        self,
+        scene_id: str,
+        segment_seq: int,
+        outcome_ref: str,
+        now: str,
+    ) -> Result[CommitOutcome]:
+        """Drive one committed-unclosed gate's **first continuation
+        passage** — V3-8b's HARD GATE (see :meth:`resume`): the
+        sequence is the recovery scan's durable derivation
+        (``segment_commit`` ``max + 1``) and the committed action rides
+        as the forced ``outcome_ref``, so the library face's forced law
+        is satisfied and the gate closes in the same commit. The
+        deterministic baseline gives the continuation the default
+        one-tick, non-terminal beat — its length and terminality are
+        the planner's seat in the LLM wiring, the same seat every
+        :class:`SegmentBeat` drives from."""
+
+        return self._drive_segment(
+            scene_id,
+            segment_seq,
+            SegmentBeat(),
+            outcome_ref,
+            now,
         )
 
     def _scene_context_of(

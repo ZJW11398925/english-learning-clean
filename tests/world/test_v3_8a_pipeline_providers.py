@@ -81,10 +81,12 @@ from elc.world.narrative import (
 )
 from elc.world.pipeline import GateBeat, Pipeline, SegmentBeat
 from elc.world.providers import (
-    AdjudicationContext,
     DeterministicFakeProvider,
+    DirectorPlanContext,
+    DirectorProvider,
     PlannerProvider,
     PovContext,
+    ResolverContext,
     ResolverProvider,
     ScenePlanContext,
     WriterProvider,
@@ -384,6 +386,7 @@ def _pipeline(
         narrative_store=narrative,
         writer_provider=fake,
         planner_provider=fake,
+        director_provider=fake,
         resolver_provider=fake,
         action_duration_ticks=action_duration_ticks,
     )
@@ -686,13 +689,15 @@ def test_a_mid_group_failure_rolls_the_whole_group_back(
 # ---------------------------------------------------------------------------
 
 
-def test_the_fake_satisfies_all_three_protocols() -> None:
-    """The structural contract: one class, three conformances — the
+def test_the_fake_satisfies_all_four_protocols() -> None:
+    """The structural contract: one class, four conformances (V3-8b
+    splits the chapter arm out into the Director face) — the
     orchestration can hold it behind each Protocol's own type."""
 
     fake = _fake()
     assert isinstance(fake, WriterProvider)
     assert isinstance(fake, PlannerProvider)
+    assert isinstance(fake, DirectorProvider)
     assert isinstance(fake, ResolverProvider)
 
 
@@ -706,7 +711,10 @@ def test_the_fake_is_deterministic_and_caller_influenceable(
     planner: ScenePlanner,
 ) -> None:
     """Configured outputs ride; unconfigured ones echo the context; an
-    unscripted gate raises rather than inventing a verdict."""
+    unscripted gate raises rather than inventing a verdict, and an
+    unscripted initial Blueprint raises rather than inventing a plan
+    (V3-8b: the Director face's initial arm has no content source to
+    echo)."""
 
     assert isinstance(
         _create_town(conn, world_store, cast_store, bible_store), Ok
@@ -760,30 +768,54 @@ def test_the_fake_is_deterministic_and_caller_influenceable(
     assert dict(fake.replan_element(plan_context)) == element  # echo now
 
     ruling = _ruling()
-    adjudication_context = AdjudicationContext(
+    player = cast_store.player_character(TOWN)
+    assert player is not None
+    profile = cast_store.actor_profile(ACTOR)
+    assert profile is not None
+    resolver_context = ResolverContext(
         gate_id=GATE,
         scene_id=SCENE,
         submission_id="sub-1",
         intent_text="I hand her the ledger.",
         selected_option=None,
         options=("hold the ledger", "step back"),
+        bible=bible_store.current_bible(TOWN),
+        current_facts=world_store.current_facts(TOWN),
+        player_character=player,
+        place=opening.dossier.place,
+        participants=opening.dossier.participants,
+        counterparts=(profile,),
         pov_actor_id=ACTOR,
-        participants=(ACTOR, PLAYER),
-        current_tick=opening.context.current_tick,
         cognition=opening.context.cognition,
         memory=opening.context.memory,
+        current_tick=opening.context.current_tick,
     )
-    ruling = fake.adjudicate(adjudication_context)
+    ruling = fake.adjudicate(resolver_context)
     assert ruling == _ruling()
     with pytest.raises(ValueError):
         fake.adjudicate(
-            dataclasses.replace(adjudication_context, gate_id="no-gate")
+            dataclasses.replace(resolver_context, gate_id="no-gate")
         )
+    # the Director face's initial arm: configured payloads ride, an
+    # unscripted draft is the script's gap.
+    director_context = director.context(TOWN)
+    draft_context = DirectorPlanContext(
+        director_context=director_context,
+        chapter_id=None,
+        replan_request_id=None,
+        trigger=None,
+        blueprint=None,
+    )
+    scripted = _fake(blueprints=(_blueprint(),))
+    assert dict(scripted.draft_blueprint(draft_context)) == _blueprint()
+    with pytest.raises(ValueError):
+        fake.draft_blueprint(draft_context)
     # the recordings are the pins' evidence
     assert [c.segment_seq for c in fake.segment_contexts] == [1, 2]
     assert len(fake.plan_contexts) == 1
     assert len(fake.replan_contexts) == 2
-    assert len(fake.adjudication_contexts) == 2
+    assert len(fake.resolver_contexts) == 2
+    assert len(fake.blueprint_contexts) == 1
 
 
 def test_pov_context_of_refuses_another_viewers_read(
@@ -1088,13 +1120,24 @@ def test_the_pipeline_drives_the_gold_scenario_shaped_chain(
     assert action.participants == ruling.participants
     assert action.replan_scope is ReplanScope.SCENE
     assert action.submission_id == "sub-1"
-    # the resolver's own provider input was POV-safe and carried the
-    # user's words (the intent), not a fact.
-    assert fake.adjudication_contexts[0].intent_text == (
+    # the resolver's own provider input was world-authoritative (V3-8b:
+    # the CURRENT Bible, the settled facts, the player's row beside the
+    # user's words — the intent comes from the durable submission, never
+    # an invention) and carried the POV read for what the player knows.
+    resolver_context = fake.resolver_contexts[0]
+    assert resolver_context.intent_text == (
         "I hold the ledger and say nothing."
     )
-    assert fake.adjudication_contexts[0].pov_actor_id == ACTOR
-    assert fake.adjudication_contexts[0].memory.viewer_id == ACTOR
+    assert resolver_context.submission_id == "sub-1"
+    assert resolver_context.bible is not None
+    assert resolver_context.place == "the bindery steps"
+    assert resolver_context.player_character is not None
+    assert resolver_context.player_character.player_character_id == PLAYER
+    assert [
+        profile.actor_id for profile in resolver_context.counterparts
+    ] == [ACTOR]
+    assert resolver_context.pov_actor_id == ACTOR
+    assert resolver_context.memory.viewer_id == ACTOR
 
     # the canonical rows (the lineage table carries the two SEGMENT rows
     # and the ruling's ACTION_OUTCOME row).
@@ -1177,50 +1220,40 @@ def test_a_crashed_scene_drive_replays_and_continues(
     bible_store: SqliteBibleStore,
     narrative: SqliteNarrativeStore,
 ) -> None:
-    """The crash window between beats: the first drive commits the
-    segment and the ruling and stops (the scene stays ``ACTIVE``, the
-    gate ``COMMITTED``, un-resumed); ``resume`` reports the active scene
-    without routing it; re-driving the same beats with the continuation
-    appended replays the committed segment and the ruling (zero second
-    rows) and lands only the new segment — which names the ruling
-    (``outcome_ref``) and closes the gate."""
+    """The crash window between beats: the first drive commits its
+    single segment and stops (the scene stays ``ACTIVE`` — no ruling
+    stands, so nothing else is unfinished); ``resume`` reports the
+    active scene without routing it; re-driving the same **script** with
+    the closing beat appended replays the committed segment (zero second
+    rows) and lands only the new one.
+
+    **Migrated by V3-8b**: this fixture used to crash *after a
+    committed ruling* — that window is the HARD GATE's now (``resume``
+    drives its continuation itself; its own pin lives in the V3-8b
+    suite, and the ``first_segment_seq`` knob this test once leaned on
+    is gone with the script law), so the no-gate crash keeps the
+    caller's re-drive as the resuming face."""
 
     assert isinstance(
         _create_town(conn, world_store, cast_store, bible_store), Ok
     )
-    fake = _fake(
-        prose={(SCENE, 1): PROSE_1, (SCENE, 2): PROSE_2},
-        adjudications={GATE: _ruling()},
-    )
+    fake = _fake(prose={(SCENE, 1): PROSE_1, (SCENE, 2): PROSE_2})
     pipeline = _pipeline(
         conn, world_store, cast_store, bible_store, narrative, fake
     )
     assert isinstance(pipeline.open_chapter(TOWN, _blueprint(), NOW), Ok)
-    beats = (
-        SegmentBeat(duration_ticks=3),
-        GateBeat(
-            gate_seq=1,
-            options=("hold the ledger", "step back"),
-            submission_id="sub-1",
-            intent_text="I hold the ledger and say nothing.",
-        ),
-    )
+    beats = (SegmentBeat(duration_ticks=3),)
     first = pipeline.run_scene(SCENE, beats, NOW)
     assert isinstance(first, Ok)
-    assert first.value.gates[0].status is GateStatus.COMMITTED
+    assert first.value.gates == ()
     assert _count(conn, "narrative_passage") == 1
-    assert _count(conn, "world_event") == 2  # the segment + the ruling
-    assert (
-        conn.execute(
-            "SELECT COUNT(*) FROM user_gate WHERE status != 'CLOSED'"
-        ).fetchone()[0]
-        == 1
-    )
+    assert _count(conn, "world_event") == 1  # the segment's own
 
     walk = pipeline.resume(TOWN, LATER)
     assert isinstance(walk, Ok)
     assert walk.value.gates_committed == ()
     assert walk.value.replans_consumed == ()
+    assert walk.value.continuations_driven == ()
     assert walk.value.chapters_settled == ()
     assert walk.value.active_scene_ids == (SCENE,)
 
@@ -1232,23 +1265,22 @@ def test_a_crashed_scene_drive_replays_and_continues(
     assert isinstance(second, Ok)
     run = second.value
     # the replayed segment answers its stored outcome (end tick 3 — no
-    # second advance); the fresh one lands at 12.
-    assert [outcome.actual_end_tick for outcome in run.segments] == [3, 12]
+    # second advance); the fresh one lands at 5.
+    assert [outcome.actual_end_tick for outcome in run.segments] == [3, 5]
     assert [outcome.passage_id for outcome in run.segments] == [
         f"{SCENE}-p0001",
         f"{SCENE}-p0002",
     ]
-    assert run.gates[0].status is GateStatus.CLOSED
     assert run.opening.dossier.dossier_id == f"{SCENE}-d1"
     # exactly one row of each kind for the replayed pair; the tick
     # advanced once per distinct commit.
     assert _count(conn, "narrative_passage") == 2
-    assert _count(conn, "segment_commit") == 3
-    assert _count(conn, "world_event") == 3
-    assert _count(conn, "user_action") == 1
+    assert _count(conn, "segment_commit") == 2
+    assert _count(conn, "world_event") == 2
+    assert _count(conn, "user_action") == 0
     tick = read_current_tick(conn, TOWN)
     assert isinstance(tick, Ok)
-    assert tick.value == 12
+    assert tick.value == 5
 
 
 def test_a_completed_scene_drive_is_not_re_runnable(
@@ -1335,7 +1367,10 @@ def test_resume_re_adjudicates_an_answered_gate_with_the_same_submission(
     """The RA §28 window "NCP-1 后崩溃": the gate is ``ANSWERED``; the
     resolver provider answers the same gate again (the same ruling) and
     ``commit_action`` lands the unique outcome with the **stored**
-    ``submission_id``. Re-running the walk is a zero-write no-op."""
+    ``submission_id``. The walk that commits the ruling carries its
+    continuation obligation into the **next** walk (V3-8b: the walk
+    routes the families its scan found), which drives the continuation
+    and closes the gate; the third walk is then the zero-write no-op."""
 
     _open_gate_and_submit(
         conn, world_store, cast_store, bible_store, director, planner
@@ -1349,6 +1384,7 @@ def test_resume_re_adjudicates_an_answered_gate_with_the_same_submission(
     assert isinstance(walk, Ok)
     assert walk.value.gates_committed == (GATE,)
     assert walk.value.replans_consumed == ()
+    assert walk.value.continuations_driven == ()
     assert walk.value.chapters_settled == ()
     gate = get_gate(conn, GATE)
     assert gate is not None and gate.status is GateStatus.COMMITTED
@@ -1357,24 +1393,41 @@ def test_resume_re_adjudicates_an_answered_gate_with_the_same_submission(
     assert action.status is ActionStatus.COMMITTED
     assert action.submission_id == "sub-1"
     assert action.outcome == ruling.outcome
-    assert fake.adjudication_contexts[0].submission_id == "sub-1"
-    assert fake.adjudication_contexts[0].gate_id == GATE
+    assert fake.resolver_contexts[0].submission_id == "sub-1"
+    assert fake.resolver_contexts[0].gate_id == GATE
     assert _count(conn, "world_event") == 1
     assert _count(conn, "user_action") == 1
     tick = read_current_tick(conn, TOWN)
     assert isinstance(tick, Ok)
     assert tick.value == 7  # the ruling's own duration
 
+    # V3-8b: the second walk finds the committed-unclosed gate (the
+    # ruling nobody resumed past) and drives its first continuation
+    # passage — the gate closes in that same commit.
     again = pipeline.resume(TOWN, LATER2)
     assert isinstance(again, Ok)
     assert again.value.gates_committed == ()
     assert again.value.replans_consumed == ()
+    assert again.value.continuations_driven == (GATE,)
     assert again.value.chapters_settled == ()
-    assert _count(conn, "world_event") == 1
+    gate = get_gate(conn, GATE)
+    assert gate is not None and gate.status is GateStatus.CLOSED
+    assert _count(conn, "narrative_passage") == 1
+    assert _count(conn, "world_event") == 2
     assert _count(conn, "user_action") == 1
     tick_again = read_current_tick(conn, TOWN)
     assert isinstance(tick_again, Ok)
-    assert tick_again.value == 7
+    assert tick_again.value == 8  # the continuation's one-tick beat
+
+    # the third walk: nothing left to route — the zero-write no-op.
+    third = pipeline.resume(TOWN, LATER2)
+    assert isinstance(third, Ok)
+    assert third.value.continuations_driven == ()
+    assert _count(conn, "narrative_passage") == 1
+    assert _count(conn, "world_event") == 2
+    tick_third = read_current_tick(conn, TOWN)
+    assert isinstance(tick_third, Ok)
+    assert tick_third.value == 8
 
 
 def test_resume_consumes_a_pending_replan_obligation(
@@ -1462,8 +1515,11 @@ def test_resume_consumes_a_pending_chapter_obligation(
     director: Director,
     planner: ScenePlanner,
 ) -> None:
-    """The CHAPTER arm of the routing: the obligation's payload comes
-    from the Planner provider's ``replan_blueprint`` and lands through
+    """The CHAPTER arm of the routing — **migrated by V3-8b's HIGH-3**:
+    the obligation's payload comes from the **Director provider's**
+    ``replan_blueprint`` (the chapter's plan is the world's, fed the
+    full ``DirectorContext`` plus the committed ruling that triggered
+    it — never the POV-limited Planner provider) and lands through
     ``Director.apply_action_replan`` — a new adopted plan revision.
     (The echo default makes the revised shape equal the current one; the
     revision still mints and the obligation still completes.)"""
@@ -1500,15 +1556,38 @@ def test_resume_consumes_a_pending_chapter_obligation(
     consumed = walk.value.replans_consumed[0]
     assert consumed.scope is ReplanScope.CHAPTER
     assert consumed.target_ref == f"{CH}-bp-r2"
-    assert fake.blueprint_contexts[0].chapter_id == CH
-    assert fake.blueprint_contexts[0].pov_actor_id == ACTOR
-    assert "scenes" in fake.blueprint_contexts[0].blueprint
+    blueprint_context = fake.blueprint_contexts[0]
+    # the plan face's production is the Director's: the full
+    # DirectorContext rides, and so does the triggering ruling.
+    assert blueprint_context.chapter_id == CH
+    assert blueprint_context.replan_request_id == request
+    assert blueprint_context.director_context.world_id == TOWN
+    assert blueprint_context.director_context.bible is not None
+    assert blueprint_context.director_context.cast.player_character is not None
+    assert blueprint_context.trigger is not None
+    assert blueprint_context.trigger.user_action_id == f"{GATE}-a"
+    assert blueprint_context.trigger.intent_text == (
+        "I hold the ledger and say nothing."
+    )
+    assert blueprint_context.trigger.replan_scope is ReplanScope.CHAPTER
+    assert "scenes" in blueprint_context.blueprint
+    # the POV-limited context never entered this arm.
+    assert fake.replan_contexts == []
+    assert fake.plan_contexts == []
     applied = replan_obligation(conn, request)
     assert applied is not None and applied.status.value == "APPLIED"
     plans = narrative.plans_of(CH)
     assert [plan.plan_revision for plan in plans] == [1, 2]
     assert plans[-1].chapter_plan_id == f"{CH}-bp-r2"
     assert plans[-1].status.value == "ADOPTED"
+
+    # V3-8b's HARD GATE rides the same walk: the committed-unclosed gate
+    # the obligation came from is a continuation nobody resumed past —
+    # the walk drove its first continuation passage after the plan
+    # change landed.
+    assert walk.value.continuations_driven == (GATE,)
+    left = get_gate(conn, GATE)
+    assert left is not None and left.status is GateStatus.CLOSED
 
     again = pipeline.resume(TOWN, LATER2)
     assert isinstance(again, Ok)
