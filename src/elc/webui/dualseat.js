@@ -470,9 +470,14 @@ function render(payload, isFinal) {
       (world.current_tick === null || world.current_tick === undefined
         ? "" : "　·　tick " + world.current_tick) +
       (payload.draft ? "　·　开局草稿（待定调）" : "");
+  } else if (world && !world.exists) {
+    el("ds-world").textContent = "雾季 · 青溪渡尚未落笔";
   }
   sealParagraph();
   renderFlow(payload);
+  // 空态每拍重绘开始钮：renderFlow 清空正文区后，开始钮由这里补回
+  //（boot 只画一次会被轮询滴答抹掉）。
+  if (world && !world.exists) renderStartCard(payload);
   const stop = payload.stop;
   const note = payload.note || (stop && stop.note) || null;
   const next = payload.next || {};
@@ -728,7 +733,6 @@ function stopPolling() {
   try {
     const payload = await readState();
     render(payload, false);
-    renderStartCard(payload);
     if (!seenGuide && payload.world && !payload.world.exists) {
       guideStep = 0;
       renderGuide();
