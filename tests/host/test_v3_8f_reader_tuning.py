@@ -337,8 +337,10 @@ def test_the_drive_wait_is_the_reading_faces_own_budget() -> None:
     and its default arm is untouched; exactly the five V3 write routes
     pass the 1800.0 drive budget (V3-8h: the drive loop's own arithmetic
     — the ceiling × the measured per-call latency + the planning round
-    trips); no other ``_run_host_write`` caller does (the ack route and
-    every non-V3 write keep the house wait)."""
+    trips) — and, since DS-1, exactly two more (the immersion face's
+    settle / next_chapter, long real-model faces by the same arithmetic);
+    no other ``_run_host_write`` caller does (the ack route and every
+    non-V3/non-DS write keep the house wait)."""
 
     source = (REPO / "src" / "elc" / "web.py").read_text(encoding="utf-8")
     assert web_module._WORKER_WAIT_SECONDS == 60.0
@@ -346,8 +348,11 @@ def test_the_drive_wait_is_the_reading_faces_own_budget() -> None:
     assert "_WORKER_WAIT_SECONDS = 60.0" in source
     assert "_V3_DRIVE_WAIT_SECONDS = 1800.0" in source
     assert "timeout = _WORKER_WAIT_SECONDS if wait is None else wait" in source
-    assert source.count("wait=") == 5
-    assert source.count("wait=_V3_DRIVE_WAIT_SECONDS") == 5
+    # DS-1 moved the count 5 → 7: the immersion face's settle /
+    # next_chapter are the same long-real-model shape (the file's own
+    # arithmetic: the beats × the measured per-call latency).
+    assert source.count("wait=") == 7
+    assert source.count("wait=_V3_DRIVE_WAIT_SECONDS") == 7
 
     start = source.index('if self.path == "/api/v3/start":')
     ack = source.index('if self.path == "/api/v3/ack":')
@@ -364,7 +369,13 @@ def test_the_drive_wait_is_the_reading_faces_own_budget() -> None:
     assert span.count("wait=_V3_DRIVE_WAIT_SECONDS") == 5
 
     outside = source[:start] + source[ack:]
-    assert "wait=" not in outside
+    # the only waits outside the V3 span are the DS face's own two long
+    # drives (settle / next_chapter); every other caller keeps the house
+    # wait.
+    ds_span = outside[outside.index('if self.path == "/api/ds/start":'):]
+    ds_span = ds_span[: ds_span.index('if self.path not in (')]
+    assert ds_span.count("wait=_V3_DRIVE_WAIT_SECONDS") == 2
+    assert "wait=" not in outside.replace(ds_span, "")
     assert outside.count("self._run_host_write(") > 0
     assert "timeout=_WORKER_WAIT_SECONDS" in source  # the sibling waits keep it
 
