@@ -9589,6 +9589,30 @@ def _build_server(
                     )
                 )
                 return
+            if self.path == "/api/ds/language":
+                # DS-1/DS-2: the immersion face's prose-language switch —
+                # the same shared key (``v3_prose_language``), the same
+                # grammar and the same write face the reading face's
+                # own route ships (V3-8g): one whitelisted word
+                # (``en`` / ``zh``), a bad body is the 400 人话, the
+                # write is the reading face's idempotent
+                # ``set_language`` upsert. Committed passages are never
+                # rewritten — only the drives after the switch carry
+                # the word (the very next drive reads it live). The
+                # locals are the route's own names (not the V3 route's
+                # ``lang_*``): a second same-name assignment in this
+                # one function scope would break mypy's closure
+                # narrowing for BOTH routes.
+                ds_lang_error, ds_lang_word = v3_language_request(
+                    self._read_json_body()
+                )
+                if ds_lang_error is not None or ds_lang_word is None:
+                    self._send_json(400, {"error": ds_lang_error})
+                    return
+                self._run_host_write(
+                    lambda: (200, face.narrative.set_language(ds_lang_word))
+                )
+                return
             if self.path in ("/api/ds/open", "/api/ds/advance"):
                 # DS-1: the world's own beats over SSE — no body, the
                 # durable position is the request.

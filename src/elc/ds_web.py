@@ -87,6 +87,7 @@ from elc.world.ds_opening import (
 )
 from elc.world.harness import Principal, Tool, authorize
 from elc.world.llm_providers import (
+    PROSE_LANGUAGE_DEFAULT,
     LlmBatchAdjudicatorProvider,
     LlmCharacterProvider,
     LlmDispatcherProvider,
@@ -172,7 +173,12 @@ _BIBLE_FIELDS = (
 )
 
 #: The state face's honest empty shape (the page renders it without
-#: special cases).
+#: special cases). ``language`` is **not** a literal here: the shape's
+#: consumers that cannot read the setting (no legs / a failed ro read)
+#: answer :data:`PROSE_LANGUAGE_DEFAULT` beside the spread, and every
+#: real derivation overrides the word with the live
+#: ``prose_language_of`` read — the shared ``v3_prose_language`` key is
+#: the one truth, never a hardcoded ``en``.
 _EMPTY_STATE: dict[str, Any] = {
     "ok": True,
     "did": None,
@@ -186,7 +192,6 @@ _EMPTY_STATE: dict[str, Any] = {
     "settlement": None,
     "bible": [],
     "pending_bible": [],
-    "language": "en",
     "light_model": "",
     "draft": DS_OPENING_IS_DRAFT,
     "next": {"kind": "start", "detail": "点「开始」，种下青溪渡。"},
@@ -362,6 +367,7 @@ class DualSeatWebFace:
             "did": None,
             "error": _NO_LEGS_SENTENCE,
             **_EMPTY_STATE,
+            "language": PROSE_LANGUAGE_DEFAULT,
         }
 
     def _refuse(self, error: str) -> dict[str, Any]:
@@ -1121,4 +1127,5 @@ def ds_state_ro(app_db_path: str) -> dict[str, Any]:
             "did": None,
             "error": _STATE_READ_FAILED,
             **_EMPTY_STATE,
+            "language": PROSE_LANGUAGE_DEFAULT,
         }

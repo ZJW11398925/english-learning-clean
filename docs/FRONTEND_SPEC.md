@@ -1313,12 +1313,16 @@ dual-seat-world-technical-definition.md`）。独立文档（dualseat.html/css/j
 - 路由（只增不改，见 `elc/web.py` 的 DS-1 分支；服务面全在
   `elc/ds_web.py` 的 `DualSeatWebFace`）：`GET /ds` 发页面；`GET
   /api/ds/state` **脱队读**（`ds_state_ro`——/api/v3/state 同一姿态）；
-  `POST /api/ds/start|settle|next_chapter|bible|settings/light_model`
+  `POST /api/ds/start|settle|next_chapter|bible|settings/light_model|
+  language`
   （阻塞写面；settle / next_chapter 走 `_V3_DRIVE_WAIT_SECONDS` 长驱动
   预算；语法 handler fail-closed 400）；`POST /api/ds/open|advance|reply`
   （**SSE**——`_run_ds_stream` 同 `/api/turn_stream` 姿态：`str` 增量=
   delta 帧、`dict`=结构帧整发（`{"type":"stage","stage":…}` 拍型阶段
-  帧）、恰一 final 帧=驱动报告⨝全状态、断连停写不停驱动）。
+  帧）、恰一 final 帧=驱动报告⨝全状态、断连停写不停驱动）。`language`
+  与 V3 阅读面共享同一 `v3_prose_language` key（同一文法
+  `v3_language_request`、同一幂等写面 `set_language`——DS-2 随迁；
+  已写段落不改写，只影响此后新段）。
 - 组件：**零新增组件**——复用 #1 btn 族（send/ink/faint 变体）、#2 pen
   （输入框）、#12 system-line（`.sysline` 错误行）、#16 field（方向输入
   行、轻档词行）。库表 ③ 不加行（无新组件 ⇒ 无登记义务；
@@ -1337,8 +1341,15 @@ dual-seat-world-technical-definition.md`）。独立文档（dualseat.html/css/j
   （可编辑可撤回），下一拍携带（多签换行并入一次提交），失败话不丢
   （回填待落签一键重试）；⑤章末非阻断内联章间面——章 `CLOSED` 时正文
   流末尾展开（可收起）：幕外摘要 + 方向输入（留空=让世界自行发展）+
-  开下一章；⑥失败态诚实——final `ok:false` 逐码人话 + 故障行；⑦首开
+  开下一章；⑥失败态诚实——final `ok:false` 逐码人话 + 故障行，红条
+  粘住（唯一隐藏处 = 下一次驱动起手，轮询拍不得覆盖）；⑦首开
   引导——三步（你是谁/输入框永远开着/停点是什么），localStorage 记读。
+  拍间律（DS-2 补）：正文面（renderFlow/开始卡/开篇卡/章末面）由貌签
+  门把守——世界/草稿旗/章/计划之问/已落段落/幕外摘要/下一步形态/
+  开篇许可全同的轮询拍整块跳过 DOM 重建（此前每 3 秒全量清空重建即
+  用户亲验的「闪烁」）；四类态变迁（种世界/开篇/新段落落/章末）必然
+  改貌、必然重绘；状态行/阶段句等廉价面照常逐拍更新；设定面板编辑
+  进行中（行内 textarea 在场）轮询拍不重建面板（编辑文本不被抹）。
 - 设定面（导演位 · 分级生效 §6 F3）：Bible 十四字段行（当前值 + 即时/
   下一章两档模式钮 + 待落角标）；文本性改动即时一次 `revise_bible`
   （只影响之后的世界，已写段落永不改写——面板脚注明示）；结构性改动
@@ -1346,8 +1357,9 @@ dual-seat-world-technical-definition.md`）。独立文档（dualseat.html/css/j
   行（`ds_light_model`，空=随现役端点——调度/裁定两臂走轻档，阶段句
   由此成立）。
 - 文案：中文界面；段落正文即模型原文（语言随共享 `v3_prose_language`
-  设置）；开局世界为**草稿**（state 的 `draft` 旗随行，顶栏标注
-  「开局草稿（待定调）」——非 gold 式冻结剧本）。
+  设置；顶栏 EN/中文 对钮写 `/api/ds/language`、当前语言高亮——DS-2
+  随迁，已写段落不改写）；开局世界为**草稿**（state 的 `draft` 旗随
+  行，顶栏标注「开局草稿（待定调）」——非 gold 式冻结剧本）。
 - 诚实边界：沉浸位只读/驱动这个世界自己的账；导演位只落设定与方向；
   消费面零入口在主 UI（URL 即全部）。
 

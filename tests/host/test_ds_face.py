@@ -346,7 +346,12 @@ def test_the_served_script_wires_the_opening_button() -> None:
     script = (WEBUI / "dualseat.js").read_text(encoding="utf-8")
     assert "can_open" in script
     assert "streamDrive(API.open" in script
-    assert 'next.kind === "opening" || controls.can_open' in script
+    # DS-2 随迁：开篇卡判断挪进 render 的貌签守卫块（建卡/收卡由貌签
+    # 承担），条件字面同义改写（payload.next 容空取 kind + controlsNow）。
+    assert (
+        '(payload.next || {}).kind === "opening"'
+        " || controlsNow.can_open" in script
+    )
     assert "开篇（世界落第一笔）" in script
     # the card is rebuilt inside render (after renderFlow clears the
     # flow), not appended once at boot — the poll would wipe it.
@@ -386,3 +391,117 @@ def test_the_poll_tick_rests_while_busy() -> None:
     tail = script.index("function stopPolling", head)
     block = script[head:tail]
     assert "if (busy) return;" in block
+
+
+def test_the_flow_rerender_is_fingerprint_gated() -> None:
+    """dualseat.js（DS-2 面 1）——正文面的重绘受貌签门把守：``render``
+    先铸 ``flowFingerprint``（世界、草稿旗、章、计划之问、已落段落、
+    幕外摘要、下一步形态、开篇许可），貌签与上一拍同貌就整块跳过
+    ``renderFlow``/开始卡/开篇卡/章末面的 DOM 重建。2026-10-15 教训：
+    轮询拍每 3 秒全量清空重建正文区（``inner.textContent = ""``），
+    用户亲验为「画面文字一直在闪烁」——呈现律（技术定义 §12）的拍间
+    形态。齿在两处：①清空行所在函数只从貌签变化的分支可达（结构偏序
+    钉）；②貌签输入覆盖钉——四类态变迁（种世界/开篇/新段落落/章末）
+    各自由至少一项输入变化驱动，删任何一项输入即钉红。把貌签比较改
+    恒等（模拟回退为无貌检查）同样转红。"""
+
+    script = (WEBUI / "dualseat.js").read_text(encoding="utf-8")
+    # ① 貌签函数覆盖全部正文面输入。
+    fp_head = script.index("function flowFingerprint")
+    fp_tail = script.index("function renderFlow", fp_head)
+    fingerprint = script[fp_head:fp_tail]
+    assert "world.exists === true" in fingerprint
+    assert "payload.draft === true" in fingerprint
+    assert "chapter.chapter_index" in fingerprint
+    assert "chapter.status" in fingerprint
+    assert "dramatic_question" in fingerprint
+    assert "passage.passage_id" in fingerprint
+    assert "passage.body" in fingerprint
+    assert "settlement.summary" in fingerprint
+    assert "(payload.next || {}).kind" in fingerprint
+    assert "can_open === true" in fingerprint
+    # ② render 里清空路径只从貌签守卫可达：renderFlow/两卡/收尾全部
+    # 挂在 ``if (fingerprint !== lastFlowFingerprint)`` 块内。
+    head = script.index("function render(payload")
+    tail = script.index("\nfunction renderLang", head)
+    block = script[head:tail]
+    guard_at = block.index("if (fingerprint !== lastFlowFingerprint) {")
+    for call in (
+        "sealParagraph()",
+        "renderFlow(payload)",
+        "renderStartCard(payload)",
+        "renderOpenCard()",
+    ):
+        assert block.index(call, guard_at) > guard_at
+    # ③ renderFlow 仍是正文区唯一的全量清空处（貌签门的就是它）。
+    flow_head = script.index("function renderFlow")
+    flow_tail = script.index("function zhIndex", flow_head)
+    assert 'inner.textContent = "";' in script[flow_head:flow_tail]
+
+
+def test_the_settings_edit_survives_the_poll_tick() -> None:
+    """dualseat.js（DS-2 面 1 次生同根）——设定面板编辑中（
+    ``editBibleRow`` 打开的 ``.ds-sedit`` textarea 在场）轮询拍不得全
+    量重建设定面板；保存成功路径自行退出编辑态（随后的状态重绘恢复
+    接管），失败路径不动编辑行（话不丢）。2026-10-15 教训：``render``
+    每拍调 ``renderSettings`` 全量 ``body.textContent = ""`` 重建——
+    正在编辑的设定文本每 3 秒被轮询抹掉。删守卫行（或把保存成功路径
+    的退出编辑态拆掉）即钉红。"""
+
+    script = (WEBUI / "dualseat.js").read_text(encoding="utf-8")
+    head = script.index("function render(payload")
+    tail = script.index("\nfunction renderLang", head)
+    block = script[head:tail]
+    guard_at = block.index('querySelector(".ds-sedit")')
+    assert block.index("renderSettings(payload)", guard_at) > guard_at
+    eb_head = script.index("function editBibleRow")
+    eb_tail = script.index("async function postJSON", eb_head)
+    handler = script[eb_head:eb_tail]
+    ok_at = handler.index("if (payload && payload.ok) {")
+    between = handler[ok_at:handler.index("const fresh", ok_at)]
+    assert "renderSettings(lastPayload)" in between
+
+
+def test_the_render_error_branch_sticks_the_faultline() -> None:
+    """钉 C（DS-2 面 2，热修 4 遗稿吸收）—— dualseat.js 的 ``render``
+    错误分支在状态行之外点亮红条（``setFault(payload.error)``），且除
+    ``beginBusy`` 外无人可再把红条藏起。2026-10-14 教训：开篇拍遇真实
+    模型抖动，SSE final 答 ``ok:false``，``render`` 只把句子写进状态
+    行——三秒后的下一个轮询拍用 ``next.detail``（「轮到你了……」）把
+    它覆盖，用户看到空页面、无任何报错；彼时 ``setFault`` 全文件零调
+    用方。粘住律一并钉死：``setFault`` 自身空文分支之外，全文件直接
+    藏红条处恰一处（``beginBusy`` 的起手清）——轮询 render 永远不清
+    它。拔掉 ``setFault`` 调用（或长出第二处直接藏红条）即钉红。"""
+
+    script = (WEBUI / "dualseat.js").read_text(encoding="utf-8")
+    head = script.index("function render(payload")
+    tail = script.index("function renderSettings", head)
+    block = script[head:tail]
+    assert "setStatus(payload.error)" in block
+    assert "setFault(payload.error)" in block
+    # 粘住律：恰一处直接藏红条——beginBusy 的。
+    assert script.count('el("ds-faultline").hidden = true') == 1
+
+
+def test_the_ds_language_face_reads_and_writes_the_shared_word() -> None:
+    """钉 D（DS-2 面 2，热修 4 遗稿吸收）——DS 沉浸面的语言位：
+    ``web.py`` 有 ``/api/ds/language`` 路由（V3-8g 同一文法
+    ``v3_language_request``、同一写面 ``set_language``——共享
+    ``v3_prose_language`` key），页面（dualseat.js）接了这同一通道，
+    且 ``ds_web.py`` 的空态不再携带硬编码 ``"language": "en"`` 字面
+    （无腿/读失败两形状在铺开处以 ``PROSE_LANGUAGE_DEFAULT`` 作答；
+    真实推导一律以 ``prose_language_of`` 活读覆盖）。2026-10-14 教训：
+    空态答 ``en`` 而驱动活读共享 key——页面语言对钮对着一条假读数高
+    亮；且 /ds 页面根本没有语言切换钮（bible 中文、正文英文——V3-8g
+    的旧痛重现）。拔路由、退回硬编码、或拆掉页面通道任一即钉红。"""
+
+    web_source = (REPO / "src" / "elc" / "web.py").read_text(
+        encoding="utf-8"
+    )
+    assert '"/api/ds/language"' in web_source
+    page = (WEBUI / "dualseat.js").read_text(encoding="utf-8")
+    assert '"/api/ds/language"' in page
+    ds_source = (REPO / "src" / "elc" / "ds_web.py").read_text(
+        encoding="utf-8"
+    )
+    assert '"language": "en"' not in ds_source

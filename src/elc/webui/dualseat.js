@@ -51,6 +51,7 @@ let currentStage = null;
 let currentBeat = "advance";
 let pollTimer = null;
 let lastPayload = null;
+let lastFlowFingerprint = null; // 正文面貌签（§12.2：同貌拍不重绘）
 let chips = [];        // {text} — 待落签
 let chipModes = {};    // field -> "now" | "next"
 let acked = new Set();
@@ -217,6 +218,28 @@ function sealParagraph() {
     el("ds-hairline").classList.remove("on");
     el("ds-hairfill").style.width = "0%";
   }
+}
+
+function flowFingerprint(payload) {
+  // 正文面（renderFlow + 开始卡/开篇卡/章末面）依赖的全部输入——貌
+  // 签恒等 ⇔ 正文区一个节点都不必动；任何一类态变迁（种世界/开篇/
+  // 新段落落/章末）都改变其中至少一项，必然重绘。
+  const world = payload.world || {};
+  const chapter = payload.chapter || null;
+  const settlement = payload.settlement || null;
+  return JSON.stringify([
+    world.exists === true,
+    payload.draft === true,
+    chapter ? chapter.chapter_index : null,
+    chapter ? chapter.status : null,
+    (payload.plan || {}).dramatic_question || null,
+    (payload.passages || []).map(
+      (passage) => [passage.passage_id, passage.body]
+    ),
+    settlement ? settlement.summary || null : null,
+    (payload.next || {}).kind || null,
+    (payload.controls || {}).can_open === true,
+  ]);
 }
 
 function renderFlow(payload) {
@@ -460,7 +483,17 @@ async function postDrive(path, body, busyLine) {
 function render(payload, isFinal) {
   if (!payload) return;
   if (payload.error && payload.ok !== true) {
+    // 失败态诚实（呈现律 6）：错误进状态行的同时点亮红条（faultline），
+    // 且只在下一次 beginBusy 清——轮询的后续拍（next.detail「轮到你了
+    // ……」）不得覆盖它，错误粘住直到用户重试。半截流式段在此一并撤
+    // 下（失败拍没有落库，重绘路径本会清它——同一份责任提前收尾，
+    // 发丝线随之归零）。
     setStatus(payload.error);
+    setFault(payload.error);
+    if (streamPara && streamPara.parentNode) {
+      streamPara.parentNode.removeChild(streamPara);
+    }
+    sealParagraph();
     return;
   }
   lastPayload = payload;
@@ -473,11 +506,26 @@ function render(payload, isFinal) {
   } else if (world && !world.exists) {
     el("ds-world").textContent = "雾季 · 青溪渡尚未落笔";
   }
-  sealParagraph();
-  renderFlow(payload);
-  // 空态每拍重绘开始钮：renderFlow 清空正文区后，开始钮由这里补回
-  //（boot 只画一次会被轮询滴答抹掉）。
-  if (world && !world.exists) renderStartCard(payload);
+  // 正文面铸貌签（§12.2 呈现律的拍间律，DS-2）：renderFlow/开始卡/
+  // 开篇卡/章末面依赖的全部输入（世界、草稿旗、章、计划之问、已落
+  // 段落、幕外摘要、下一步形态、开篇许可）合成一张貌签——与上一拍
+  // 同貌就整块跳过 DOM 重建，轮询拍只走下面的状态行/输入行等廉价
+  // textContent 面。此前每 3 秒全量清空重建正文区（用户亲验的「画面
+  // 文字一直在闪烁」）正是无貌检查的全量重绘；种世界、开篇、新段落
+  // 落、章末四类态变迁必然改貌、必然重绘。
+  const fingerprint = flowFingerprint(payload);
+  if (fingerprint !== lastFlowFingerprint) {
+    lastFlowFingerprint = fingerprint;
+    sealParagraph();
+    renderFlow(payload);
+    // 空态开始钮：renderFlow 清空正文区后，开始钮由这里补回（boot
+    // 只画一次会被轮询滴答抹掉）。
+    if (world && !world.exists) renderStartCard(payload);
+    const controlsNow = payload.controls || {};
+    if ((payload.next || {}).kind === "opening" || controlsNow.can_open) {
+      renderOpenCard();
+    }
+  }
   const stop = payload.stop;
   const note = payload.note || (stop && stop.note) || null;
   const next = payload.next || {};
@@ -508,17 +556,45 @@ function render(payload, isFinal) {
     setStatus(next.detail || "");
   }
   const controls = payload.controls || {};
-  // 开篇卡：种下之后 state 一直说「点『开篇』」，页面却从没有那个钮
-  //（API.open 无人接线）——这里补上；renderFlow 每拍先清空正文区，
-  // 故每拍在此重建即幂等（与开始卡同法）。
-  if (next.kind === "opening" || controls.can_open) renderOpenCard();
   el("ds-turntag").hidden = next.kind !== "your_turn";
   el("ds-inputrow").classList.toggle("yourturn", next.kind === "your_turn");
   say.placeholder = next.kind === "your_turn"
     ? "轮到你了——说什么都行" : "说点什么……任何时候都可以";
-  renderSettings(payload);
+  renderLang(payload.language);
+  // 设定面同律（DS-2 次生同根）：编辑进行中（editBibleRow 打开的
+  // textarea 还在面板里）轮询拍不得全量重建设定面板——正在编辑的
+  // 设定文本不被轮询抹掉。保存成功由 save 自行退出编辑态后恢复重
+  // 绘；手动重绘（模式钮/取消/打开面板）不经此守卫。
+  if (!el("ds-settings-body").querySelector(".ds-sedit")) {
+    renderSettings(payload);
+  }
   syncGearBadge(payload);
 }
+
+// ── 语言对钮（正文语言 · 与 V3 阅读面共享同一 v3_prose_language key）
+// 当前语言高亮（读 state.language）；点击写 /api/ds/language 后重读
+// state 重渲。已写段落不改写——语言只影响此后新段（V3-8g 同律）。
+function renderLang(word) {
+  const zh = word === "zh";
+  el("ds-lang-zh").classList.toggle("on", zh);
+  el("ds-lang-en").classList.toggle("on", !zh);
+}
+
+async function switchLanguage(word) {
+  const payload = await postJSON("/api/ds/language", { language: word });
+  if (payload && payload.ok) {
+    setStatus(word === "zh"
+      ? "正文语言已切到中文——此后落笔的新段用中文写，已写段落不改写。"
+      : "正文语言已切到英文——此后落笔的新段用英文写，已写段落不改写。");
+  } else if (payload) {
+    setStatus(payload.error || "语言没有切换成功——再试一次。");
+  }
+  const fresh = await readState().catch(() => null);
+  if (fresh) render({ ...fresh, ok: true }, false);
+}
+
+el("ds-lang-en").addEventListener("click", () => switchLanguage("en"));
+el("ds-lang-zh").addEventListener("click", () => switchLanguage("zh"));
 
 // ── 设定面（导演位 · 分级生效 §6 F3）────────────────────────────
 function renderSettings(payload) {
@@ -589,6 +665,9 @@ function editBibleRow(node, row, mode) {
       setStatus(mode === "now"
         ? "「" + row.field + "」已即时生效——只影响之后的世界。"
         : "「" + row.field + "」将在下一章生效。");
+      // 成功即退出编辑态（恢复展示行）——随后的状态重绘恢复接管面
+      // 板；失败则什么都不拆，编辑文本留在框里（话不丢，改完再存）。
+      renderSettings(lastPayload);
     } else if (payload) {
       setStatus(payload.error || "设定没有落下去——再试一次。");
     }
@@ -719,7 +798,9 @@ function renderStartCard(payload) {
 }
 
 // 开篇钮：世界已种下、本章起了头而第一拍还没落——API.open 走 SSE
-// 流式（与 advance 同一管线，beat 已有 "open" 分支）。
+// 流式（与 advance 同一管线，beat 已有 "open" 分支）。建卡/收卡由
+// render 的貌签守卫承担：kind==="opening"/can_open 在貌签里，开篇拍
+// 落段后貌签变貌、重绘自然收卡（不再每拍重建）。
 function renderOpenCard() {
   const inner = el("ds-inner");
   const p = document.createElement("p");
