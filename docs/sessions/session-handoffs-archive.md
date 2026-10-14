@@ -393,3 +393,8 @@ esidue.patch`）可复用为执行者起点，开工三件 DMCP 已在。其后 
   - `PLAN-…eaaa5a1d.19` Phase 2 PLAN；`VAL-…eaaa5a1d.17` 相位门；P2A/P2B 各系列 id 见旧交接（`git log` 可溯）
   - `DEC-…eaaa5a1d.2` 外部评审采纳（权威漂移）；`DEC-…d7937fd7.19`/`DEC-…d7937fd7.12` Phase 1 评审/COMPLETE
   - `DEC-…9dc4e77f.4` **契约载体**（跨会话重建先读它）；`DEC-…091f35c3.7/.13`；`DEC-…d5b616bf.3/.7`；`DEC-…7bf80972.2` PHASE 0
+
+## 第四十四会话交接块（归档 2026-10-15）
+
+- 原文全文：`git show 7fd24f0:AGENTS.md` 的「终末换总控交接块（2026-10-13——第四十四会话）」节。
+- 压缩条目：用户明令换总控（上下文太长）；接续三件（DMCP rev 841 时点/tip 08517d7/块即交接件）；V3-8f/g 全链毕 + V3-8h 在途（后被第四十五会话全链收口，见索引第四十五行）；DEC 链 OPI-c0f4d9b4 …10..…36；纪律提示（decision_add expected 顶层）；AOCI 21→22 钉；总控零通道违规留痕；新总控理解指引（正典全读清单+理解标准）。
