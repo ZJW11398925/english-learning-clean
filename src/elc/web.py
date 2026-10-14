@@ -9491,9 +9491,14 @@ def _build_server(
             if self.path == "/api/ds/start":
                 # DS-1: the immersion face's idempotent start (no body —
                 # the draft world itself is the request); a replay of
-                # either half is a zero-write no-op.
+                # either half is a zero-write no-op. Seeding the world
+                # plus the real-model plan can take ~90s (chain-measured),
+                # so the house 60s budget would cut it off mid-plan —
+                # the drive wait applies (the settle / next_chapter
+                # posture).
                 self._run_host_write(
-                    lambda: (200, face.dualseat.start())
+                    lambda: (200, face.dualseat.start()),
+                    wait=_V3_DRIVE_WAIT_SECONDS,
                 )
                 return
             if self.path == "/api/ds/settle":

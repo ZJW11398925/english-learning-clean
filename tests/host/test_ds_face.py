@@ -46,6 +46,9 @@ from elc.world.store import SqliteWorldStore
 
 NOW = "2026-10-14T00:00:00+00:00"
 
+REPO = Path(__file__).resolve().parents[2]
+WEBUI = REPO / "src" / "elc" / "webui"
+
 BLUEPRINT: dict[str, Any] = {
     "goal": "the mark on the cornerstone demands an answer tonight",
     "dramatic_question": "who painted the mark",
@@ -328,3 +331,40 @@ def test_the_ro_poll_reads_the_same_derivation(
     assert payload["ok"] is True
     assert payload["world"]["exists"] is True
     assert payload["chapter"]["status"] == "PLANNED"
+
+
+def test_the_served_script_wires_the_opening_button() -> None:
+    """dualseat.js: the opening card is wired — the state says
+    ``can_open`` / ``kind: "opening"`` and the page renders the 开篇
+    button through ``streamDrive(API.open, …)``. 2026-10-14 lesson:
+    ``API.open`` existed in the route table but nothing on the page
+    ever called it, so a freshly seeded world showed no content and no
+    way forward (the user sat on an empty reading face). The card
+    hangs off the ``opening`` stop kind (the other stop kinds must not
+    grow it)."""
+
+    script = (WEBUI / "dualseat.js").read_text(encoding="utf-8")
+    assert "can_open" in script
+    assert "streamDrive(API.open" in script
+    assert 'next.kind === "opening" || controls.can_open' in script
+    assert "开篇（世界落第一笔）" in script
+    # the card is rebuilt inside render (after renderFlow clears the
+    # flow), not appended once at boot — the poll would wipe it.
+    assert "renderOpenCard" in script
+
+
+def test_the_start_route_carries_the_drive_wait_budget() -> None:
+    """web.py: the ``/api/ds/start`` route's ``_run_host_write`` passes
+    ``wait=_V3_DRIVE_WAIT_SECONDS`` (the settle / next_chapter
+    posture). 2026-10-14 lesson: seeding the world plus the real-model
+    plan chain-measures ~90s while the house budget is 60s — the route
+    answered 500 mid-plan; the chain tests drove the face directly and
+    never crossed HTTP, so the routing wait budget was never exercised
+    by a test. A revert to the default wait re-reds this pin."""
+
+    source = (REPO / "src" / "elc" / "web.py").read_text(encoding="utf-8")
+    head = source.index('"/api/ds/start"')
+    tail = source.index('"/api/ds/settle"', head)
+    block = source[head:tail]
+    assert "_run_host_write(" in block
+    assert "wait=_V3_DRIVE_WAIT_SECONDS" in block

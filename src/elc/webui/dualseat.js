@@ -111,11 +111,11 @@ function setFault(text) {
 }
 
 // ── SSE 驱动 ─────────────────────────────────────────────────────
-async function streamDrive(path, body) {
+async function streamDrive(path, body, busyLine) {
   const beat = path === API.reply ? "reply" : (path === API.open ? "open" : "advance");
   beginBusy(beat);
   setStage(beat === "reply" ? "dispatching" : "dispatching");
-  setStatus("世界进行中……（真实模型）");
+  setStatus(busyLine || "世界进行中……（真实模型）");
   const options = { method: "POST", headers: {} };
   if (body !== undefined) {
     options.headers["Content-Type"] = "application/json";
@@ -508,6 +508,10 @@ function render(payload, isFinal) {
     setStatus(next.detail || "");
   }
   const controls = payload.controls || {};
+  // 开篇卡：种下之后 state 一直说「点『开篇』」，页面却从没有那个钮
+  //（API.open 无人接线）——这里补上；renderFlow 每拍先清空正文区，
+  // 故每拍在此重建即幂等（与开始卡同法）。
+  if (next.kind === "opening" || controls.can_open) renderOpenCard();
   el("ds-turntag").hidden = next.kind !== "your_turn";
   el("ds-inputrow").classList.toggle("yourturn", next.kind === "your_turn");
   say.placeholder = next.kind === "your_turn"
@@ -709,6 +713,26 @@ function renderStartCard(payload) {
   btn.textContent = "开始（种下开局 · 起第一幕）";
   btn.addEventListener("click", () => driveButton(API.start, undefined,
     "种下开局、计划第一幕…（真实模型）"));
+  p.appendChild(document.createElement("br"));
+  p.appendChild(btn);
+  inner.appendChild(p);
+}
+
+// 开篇钮：世界已种下、本章起了头而第一拍还没落——API.open 走 SSE
+// 流式（与 advance 同一管线，beat 已有 "open" 分支）。
+function renderOpenCard() {
+  const inner = el("ds-inner");
+  const p = document.createElement("p");
+  p.className = "ds-startline";
+  p.textContent = "本章起了头——";
+  const btn = document.createElement("button");
+  btn.className = "btn btn--ink";
+  btn.type = "button";
+  btn.textContent = "开篇（世界落第一笔）";
+  btn.addEventListener("click", async () => {
+    if (busy) { setStatus("上一步还在进行中（已用 " + elapsedSeconds() + " 秒）——等它跑完。"); return; }
+    await streamDrive(API.open, undefined, "开篇拍落笔中……（真实模型）");
+  });
   p.appendChild(document.createElement("br"));
   p.appendChild(btn);
   inner.appendChild(p);
