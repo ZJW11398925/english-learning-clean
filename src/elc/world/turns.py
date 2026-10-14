@@ -94,6 +94,7 @@ from elc.world.action import (
     ActionStatus,
     Adjudication,
     GateStatus,
+    ReplanScope,
     UserActionRecord,
     UserGateRecord,
     action_of,
@@ -130,6 +131,7 @@ from elc.world.narrative.types import (
     WorldSceneDossierRecord,
     WorldSceneRecord,
 )
+from elc.world.pipeline import Pipeline
 from elc.world.scene import ScenePlanner
 from elc.world.settlement import (
     CommitOutcome,
@@ -551,6 +553,7 @@ class TurnEngine:
         action_duration_ticks: int,
         language: str,
         clock: Callable[[], str],
+        replan_pipeline: Pipeline | None = None,
     ) -> None:
         self._conn = conn
         self._worlds = world_store
@@ -564,6 +567,7 @@ class TurnEngine:
         self._duration = action_duration_ticks
         self._language = language
         self._clock = clock
+        self._replan_pipeline = replan_pipeline
         self._reads = TurnReads(
             conn, narrative_store=narrative_store, world_store=world_store
         )
@@ -1067,6 +1071,36 @@ class TurnEngine:
             now=now,
         ))
         self._land_private_thoughts(world_id, outcome.event_id, proposals)
+        if outcome.replan_scope is not ReplanScope.NONE:
+            # §1b: the replan_scope three-word semantics ride unchanged —
+            # the ruling's plan verdict is consumed through the same
+            # library protocol the V3 gate drive auto-routes (the
+            # engine's Pipeline holds the scope faces; without it the
+            # obligation stays PENDING and the settlement's own
+            # precondition refuses the chapter — the honest block, never
+            # a silent drop).
+            if self._replan_pipeline is None:
+                self._notes.append(
+                    "replan obligation"
+                    f" {outcome.user_action_id} left pending — the engine"
+                    " holds no replan pipeline"
+                )
+            else:
+                consumed = self._unwrap(
+                    self._replan_pipeline.consume_pending_replans(
+                        world_id, now
+                    )
+                )
+                if consumed:
+                    self._notes.append(
+                        f"replan consumed: {len(consumed)} obligation(s)"
+                        " ("
+                        + ", ".join(
+                            f"{c.scope.value}->{c.target_ref}"
+                            for c in consumed
+                        )
+                        + ")"
+                    )
         context = self._narration_context(
             world_id, dossier, "reply", decision, proposals, ruling=ruling
         )

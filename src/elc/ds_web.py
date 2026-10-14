@@ -487,6 +487,7 @@ class DualSeatWebFace:
             action_duration_ticks=DS_ACTION_DURATION_TICKS,
             language=language,
             clock=self._clock,
+            replan_pipeline=self._planner(),
         )
 
     def _planner(self) -> Pipeline:

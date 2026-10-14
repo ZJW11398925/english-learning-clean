@@ -137,7 +137,13 @@ class ScriptedDSCompletion:
             return "narrator"
         if "resolver of a two-seat" in prompt:
             return "adjudicate"
-        raise AssertionError("unknown prompt family")
+        if "scene planner of an interactive story world" in prompt:
+            return "planner"
+        if "world director of an interactive story world" in prompt:
+            return "director"
+        raise AssertionError(
+            "unknown prompt family: " + prompt[:120]
+        )
 
     def count(self, kind: str) -> int:
         return len(self.prompts.get(kind, []))
@@ -836,6 +842,88 @@ def test_turn_steps_read_back_in_canonical_order(
 # ---------------------------------------------------------------------------
 # 9 — the offstage settlement (§7)
 # ---------------------------------------------------------------------------
+
+
+def test_a_scene_scope_ruling_consumes_its_replan(
+    planned: sqlite3.Connection, stores: tuple
+) -> None:
+    """§1b: the replan_scope three-word semantics ride unchanged — a
+    ruling whose scope is SCENE leaves a PENDING obligation that the
+    spine consumes through the same library protocol (the obligation
+    lands APPLIED, the dossier revision moves; a chapter does not
+    settle under an unfinished replan, so the consumption is the
+    settle path's own precondition)."""
+
+    world_store, cast_store, bible_store, narrative = stores
+    from elc.world.llm_providers import (
+        LlmDirectorProvider,
+        LlmPlannerProvider,
+        LlmResolverProvider,
+        LlmWriterProvider,
+    )
+    from elc.world.pipeline import Pipeline
+
+    queues = _default_queues()
+    queues["adjudicate"] = [
+        _adjudication_payload().replace(
+            '"replan_scope": "NONE"', '"replan_scope": "SCENE"'
+        )
+    ]
+    queues["narrator"] = [_narration_payload()] * 2
+    _planner_answer = json.dumps(
+        {
+            "pov_actor_id": PLAYER,
+            "participants": [PLAYER, WENQ, "han"],
+            "planned_start_tick": 1320,
+            "place": "the bridge head, lantern light",
+            "entry_goals": "the walk tests the painter's story",
+            "exit_condition": "the fog turns all",
+            "elasticity": "one walk",
+            "revealable": "the paint's freshness",
+            "must_hide": "who painted the mark",
+        },
+        ensure_ascii=False,
+    )
+    queues["planner"] = [_planner_answer]
+    completion = ScriptedDSCompletion(**queues)
+    # the SAME scripted seam rides the engine AND the replan pipeline
+    # (the consumption is one prompt family on one script)
+    replan_pipeline = Pipeline(
+        planned,
+        world_store=world_store,
+        cast_store=cast_store,
+        bible_store=bible_store,
+        narrative_store=narrative,
+        writer_provider=LlmWriterProvider(completion),
+        planner_provider=LlmPlannerProvider(completion),
+        director_provider=LlmDirectorProvider(completion),
+        resolver_provider=LlmResolverProvider(completion),
+        action_duration_ticks=5,
+    )
+    engine = _engine(planned, stores, completion)
+    engine._replan_pipeline = replan_pipeline
+    scene_id = planned.execute(
+        "SELECT scene_id FROM world_scene"
+        " WHERE chapter_id = (SELECT MAX(chapter_id) FROM world_chapter)"
+    ).fetchone()[0]
+    run = engine.drive(
+        DS_WORLD_ID,
+        ReplyBeat(submission_id="sub-scene", intent_text="…"),
+        NOW,
+    )
+    assert run.error is None
+    obligation = planned.execute(
+        "SELECT status FROM action_replan"
+        " WHERE replan_request_id = 'rp:qingxi-ds-01-ch01-s01-g01:sub-scene'"
+    ).fetchone()
+    assert obligation is not None
+    assert obligation[0] == "APPLIED"  # consumed in the same drive
+    dossier_after = narrative.adopted_dossier(scene_id)
+    assert dossier_after is not None
+    # rev 1 is open_scene's own; the SCENE replan's revised element is rev 2
+    assert dossier_after.dossier_revision == 2
+    assert dossier_after.place == "the bridge head, lantern light"
+    assert any("replan consumed" in note for note in run.notes)
 
 
 def test_the_settlement_lands_the_offstage_delta(

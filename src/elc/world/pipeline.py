@@ -125,6 +125,7 @@ from elc.world.action import (
     commit_action,
     get_gate,
     open_gate,
+    pending_replans,
     recovery_scan,
     replan_obligation,
     replan_request_id_for,
@@ -535,6 +536,44 @@ class Pipeline:
             chapter_id=chapter_id,
             now=now,
         )
+
+    def consume_pending_replans(
+        self, world_id: str, now: str
+    ) -> Result[tuple[ReplanConsumption, ...]]:
+        """Consume every ``PENDING`` replan obligation of one world
+        through its scope's face (DS-1's seat: the dual-seat spine
+        commits rulings through the same gate chain and owes the same
+        auto-routed replan the V3 gate drive performs — the recovery
+        walk consumes these among its seven families, but a live drive
+        wants the narrow face, not a full walk). Each consumption is
+        the library protocol's own (claim → work → complete); a
+        refusal stops the sweep and rides out unchanged — the landed
+        consumptions are durable and replay."""
+
+        consumed: list[ReplanConsumption] = []
+        for obligation in pending_replans(self._conn):
+            world = self._world_of_obligation(obligation.replan_request_id)
+            if world is None:
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.NOT_FOUND,
+                        message=(
+                            "replan obligation"
+                            f" {obligation.replan_request_id!r} not"
+                            " consumed: its action chain (obligation →"
+                            " action → gate → scene) is dangling"
+                        ),
+                    )
+                )
+            if world != world_id:
+                continue
+            routed = self._consume_replan(
+                obligation.replan_request_id, now
+            )
+            if isinstance(routed, Err):
+                return Err(routed.error)
+            consumed.append(routed.value)
+        return Ok(tuple(consumed))
 
     # -- the crash-resume arm ------------------------------------------------
 
