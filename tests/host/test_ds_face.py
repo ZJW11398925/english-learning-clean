@@ -368,3 +368,21 @@ def test_the_start_route_carries_the_drive_wait_budget() -> None:
     block = source[head:tail]
     assert "_run_host_write(" in block
     assert "wait=_V3_DRIVE_WAIT_SECONDS" in block
+
+
+def test_the_poll_tick_rests_while_busy() -> None:
+    """dualseat.js: the ``startPolling`` tick carries a ``busy`` guard
+    before ``render`` — during a streaming/blocking drive the SSE
+    frames (and the final render) own the UI, so the poll rests a beat
+    and realigns only when idle. 2026-10-14 lesson: 流式期间轮询重绘会
+    打掉在流段落；busy 守卫缺失属前端生命周期缺口，三连热修之三。The
+    served script is sliced by ``function startPolling`` first —
+    ``renderChips``/``beginBusy`` also mention ``busy`` and a bare
+    substring check could mismatch. Reverting the guard re-reds this
+    pin."""
+
+    script = (WEBUI / "dualseat.js").read_text(encoding="utf-8")
+    head = script.index("function startPolling")
+    tail = script.index("function stopPolling", head)
+    block = script[head:tail]
+    assert "if (busy) return;" in block

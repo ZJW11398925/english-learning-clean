@@ -742,6 +742,8 @@ function renderOpenCard() {
 function startPolling() {
   stopPolling();
   pollTimer = window.setInterval(async () => {
+    // busy（流式/阻塞驱动）期间不重绘——SSE 自己驱动，轮询只在不忙时对齐状态
+    if (busy) return;
     try {
       const payload = await readState();
       if (payload && payload.world) render({ ...payload, ok: true }, false);
