@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>青溪渡 · 双位一世界（沉浸面）</title>
+  <!-- DS-1 沉浸面（/ds）：独立于主 UI 与 /v3 试读面的新页面。样式一律
+       复用 tokens.css + components.css（组件唯一样式源），本页只在
+       dualseat.css 登记 .ds-* 屏级骨架；零外链、零内联样式、零内联
+       脚本。呈现律（技术定义 §12）：
+
+       1. 拍型感知管线——open/advance 只见「铺陈→落纸」，reply 见
+          「接你的话→她们在想→世界在定夺→落纸」，因果不倒置（阶段帧
+          由服务端事件面给出，页面不猜）；
+       2. 流式正文——narration 增量即到即渲（服务端已扣住停点标记尾），
+          顶部发丝线按已落字数走；
+       3. 可读状态句——停点行只说「轮到你了」级别的事实；
+       4. 常开输入 chip——输入框永不禁用；生成中的输入成为「待落」签，
+          可编辑可撤回，下一句驱动携带；
+       5. 章末非阻断内联章间面——印章 + 摘要 + 方向 + 开下一章，随文档
+          滚动、可收起；
+       6. 失败态诚实——真实秒红、话不丢（chip 保留，重试一键）；
+       7. 首开引导——三步（你是谁 / 输入框永远开着 / 停点是什么）。 -->
+
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/components.css">
+<link rel="stylesheet" href="/static/dualseat.css">
+<script type="module" src="/static/dualseat.js"></script>
+</head>
+<body class="ds">
+
+<div id="ds-hairline" class="ds-hairline" aria-hidden="true"><i id="ds-hairfill"></i></div>
+
+<header class="ds-top">
+  <div class="ds-brand">
+    <span class="seal-press" aria-hidden="true">渡</span>
+    <div>
+      <h1 class="ds-title">青溪渡</h1>
+      <p class="ds-sub" id="ds-world">正在读取状态…</p>
+    </div>
+  </div>
+  <nav class="ds-tools">
+    <button id="ds-guide-btn" class="btn btn--faint" type="button">引导</button>
+    <button id="ds-settings-btn" class="btn btn--faint" type="button">设定<span
+      id="ds-gearbadge" class="ds-gearbadge" hidden></span></button>
+  </nav>
+</header>
+
+<main id="ds-flow" class="ds-flow" aria-live="polite"><div class="ds-inner" id="ds-inner"></div></main>
+
+<footer class="ds-dock">
+  <div class="ds-strip">
+    <div class="ds-strip-head">
+      <span id="ds-stage" class="ds-stage">…</span>
+      <span id="ds-elapsed" class="ds-elapsed"></span>
+      <span id="ds-subhint" class="ds-subhint"></span>
+    </div>
+    <p id="ds-faultline" class="ds-faultline" hidden></p>
+    <p id="ds-status" class="ds-statusline"></p>
+  </div>
+  <div id="ds-chips" class="ds-chips" hidden></div>
+  <div class="ds-inputrow" id="ds-inputrow">
+    <span id="ds-turntag" class="ds-turntag" hidden>● 停点 · 轮到你了</span>
+    <textarea id="ds-say" class="pen" rows="1"
+      placeholder="说点什么……任何时候都可以"></textarea>
+    <button id="ds-send" class="btn btn--send" type="button" title="说（Enter 发送）">说</button>
+  </div>
+</footer>
+
+<!-- 设定（导演位）：设定文本分级生效 + 轻档词 -->
+<div class="ds-overlay" id="ds-settings" hidden>
+  <div class="ds-panel">
+    <h3 class="ds-panel-title">世界设定</h3>
+    <p class="ds-panel-note">
+      改动只影响之后的世界；已写下的段落不会因改动而改写。
+      「下一章生效」的改动，会在下一章开篇时落进世界。
+    </p>
+    <div id="ds-settings-body" class="ds-settings-body"></div>
+    <p class="ds-panel-foot">
+      <label class="field ds-light-field">
+        <span class="fieldname">轻档模型词（调度/裁定用，空=随现役端点）</span>
+        <input id="ds-light-model" type="text" placeholder="例：deepseek-chat">
+      </label>
+      <button id="ds-light-save" class="btn btn--faint" type="button">保存轻档</button>
+    </p>
+    <p class="ds-panel-actions">
+      <button id="ds-settings-close" class="btn btn--ink" type="button">收起</button>
+    </p>
+  </div>
+</div>
+
+<!-- 首开引导 -->
+<div class="ds-overlay" id="ds-guide" hidden>
+  <div class="ds-panel">
+    <h3 class="ds-panel-title">青溪渡</h3>
+    <div class="ds-gstep" id="ds-gstep"></div>
+    <div class="ds-gdots" id="ds-gdots"></div>
+    <p class="ds-panel-actions">
+      <button class="btn btn--faint" id="ds-gskip" type="button">跳过</button>
+      <button class="btn btn--ink" id="ds-gnext" type="button">下一步</button>
+    </p>
+  </div>
+</div>
+
+<p class="sysline" id="ds-error" hidden></p>
+
+</body>
+</html>

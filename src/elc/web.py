@@ -425,6 +425,12 @@ from elc.conversation.types import CommitUserTurn
 from elc.curriculum.readiness import READINESS_LEVELS
 from elc.deletion.controller import DeletionController
 from elc.deletion.types import DeletionRequest, DeletionScope
+from elc.ds_web import (
+    DualSeatWebFace,
+    ds_bible_request,
+    ds_state_ro,
+    ds_turn_request,
+)
 from elc.host import Host
 from elc.narrative_web import (
     NarrativeWebFace,
@@ -783,6 +789,12 @@ _STATIC_TYPES: dict[str, str] = {
     "reader.html": "text/html; charset=utf-8",
     "reader.css": "text/css; charset=utf-8",
     "reader.js": "text/javascript; charset=utf-8",
+    # DS-1: the dual-seat immersion face — another separate file set
+    # (the main UI's seven files and the reading face's three are
+    # untouched; the allowlist grows, nothing else).
+    "dualseat.html": "text/html; charset=utf-8",
+    "dualseat.css": "text/css; charset=utf-8",
+    "dualseat.js": "text/javascript; charset=utf-8",
 }
 
 #: The favicon (v3-d 清扫, the v31R 登记「favicon 既有」): one inline SVG —
@@ -3372,6 +3384,9 @@ class _WebFace:
         # hosts lack. Every route that touches it reaches it from the
         # host's thread (the work queue), which is where it may be built.
         self._narrative_face: NarrativeWebFace | None = None
+        # DS-1: the immersion face's service half, built lazily on
+        # first use (the same lazy-safe posture).
+        self._dualseat_face: DualSeatWebFace | None = None
 
     @property
     def narrative(self) -> NarrativeWebFace:
@@ -3381,6 +3396,16 @@ class _WebFace:
         if self._narrative_face is None:
             self._narrative_face = NarrativeWebFace(self._host)
         return self._narrative_face
+
+    @property
+    def dualseat(self) -> DualSeatWebFace:
+        """The dual-seat immersion face (DS-1): the whole 沉浸面
+        contract lives in :mod:`elc.ds_web`; this face only reaches
+        it."""
+
+        if self._dualseat_face is None:
+            self._dualseat_face = DualSeatWebFace(self._host)
+        return self._dualseat_face
 
     def _require_cards(self) -> SqliteCharacterCardStore:
         """The card store, or the loud refusal (never a silent empty)."""
@@ -8670,6 +8695,81 @@ def _build_server(
             except OSError:
                 return
 
+        def _run_ds_stream(
+            self,
+            job: "Callable[[queue.Queue[str | dict[str, Any]]], dict[str, Any]]",
+        ) -> None:
+            """DS-1: the immersion drive's streamed answer —
+            :meth:`_run_stream_turn`'s drain posture over a DS drive:
+            the job receives the event queue, puts the narration's prose
+            increments on it as they arrive (the streamed seam DS-1
+            re-opened), and its return value is the one ``final`` frame
+            (the drive's report beside the whole state). The same
+            one-queue discipline, the same exactly-one-final guarantee,
+            the same disconnect-stops-the-writing-never-the-drive
+            rule."""
+
+            events: "queue.Queue[str | dict[str, Any]]" = queue.Queue()
+            done = threading.Event()
+            box: dict[str, Any] = {}
+            failure: list[str] = []
+
+            def job_wrap() -> None:
+                try:
+                    box["payload"] = job(events)
+                except Exception as exc:  # answered, never swallowed
+                    failure.append(f"{type(exc).__name__}: {exc}")
+                finally:
+                    done.set()
+
+            work.put(job_wrap)
+            self.send_response(200)
+            self.send_header(
+                "Content-Type", "text/event-stream; charset=utf-8"
+            )
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            deadline = time.monotonic() + _V3_DRIVE_WAIT_SECONDS
+            while True:
+                drained = False
+                while True:
+                    try:
+                        chunk = events.get_nowait()
+                    except queue.Empty:
+                        drained = True
+                        break
+                    try:
+                        # str = a prose increment (a delta frame); a dict
+                        # = a structured stage frame, sent whole (the
+                        # world-first frame's own posture).
+                        if isinstance(chunk, dict):
+                            self._send_sse_event(chunk)
+                        else:
+                            self._send_sse_event(
+                                {"type": "delta", "text": chunk}
+                            )
+                    except OSError:
+                        return  # the reader is gone; the drive runs on
+                if done.is_set() and drained:
+                    break
+                if done.wait(0.02):
+                    continue
+                if time.monotonic() > deadline:
+                    failure.append("the host worker did not answer in time")
+                    break
+            if failure:
+                payload: dict[str, Any] = {
+                    "ok": False,
+                    "did": None,
+                    "error": failure[0],
+                }
+            else:
+                payload = box["payload"]
+            try:
+                self._send_sse_event({"type": "final", **payload})
+            except OSError:
+                return
+
         def _read_json_body(self) -> Any:
             """(p-3) The POST body, parsed once — the turn face's inline
             read, extracted for the two new write faces only (the existing
@@ -8981,6 +9081,19 @@ def _build_server(
                 # read that cannot answer says so in one sentence — never
                 # a 500 (the page's next tick retries).
                 self._send_json(200, narrative_state_ro(face.app_db_path))
+            elif self.path == "/ds":
+                # DS-1: the dual-seat immersion face's own page — a
+                # separate file set (the main UI's shell and the reading
+                # face's page are untouched; the URL is the only
+                # entry). Served from the static allowlist like every
+                # other page file.
+                self._send_page_file("dualseat.html")
+            elif self.path == "/api/ds/state":
+                # DS-1: the immersion state — the same off-queue ro
+                # posture as /api/v3/state (a drive holds the worker for
+                # the whole model round trip; the poll never queues and
+                # never 500s).
+                self._send_json(200, ds_state_ro(face.app_db_path))
             else:
                 self._send_json(404, {"error": "not found"})
 
@@ -9373,6 +9486,128 @@ def _build_server(
                     return
                 self._run_host_write(
                     lambda: (200, face.narrative.set_language(lang_word))
+                )
+                return
+            if self.path == "/api/ds/start":
+                # DS-1: the immersion face's idempotent start (no body —
+                # the draft world itself is the request); a replay of
+                # either half is a zero-write no-op.
+                self._run_host_write(
+                    lambda: (200, face.dualseat.start())
+                )
+                return
+            if self.path == "/api/ds/settle":
+                # DS-1: the chapter's offstage settlement (§7) — the
+                # per-protagonist time-passage calls + the world summary
+                # delta + the flip + the NCP-4 compression. Long (real
+                # model); the house drive budget applies.
+                self._run_host_write(
+                    lambda: (200, face.dualseat.settle()),
+                    wait=_V3_DRIVE_WAIT_SECONDS,
+                )
+                return
+            if self.path == "/api/ds/next_chapter":
+                # DS-1: the director seat's word between chapters — the
+                # optional direction rides the shared soft-expectation
+                # law; the parked structural bible edits land here
+                # (§6 F3).
+                payload = self._read_json_body()
+                direction = None
+                if isinstance(payload, dict) and payload:
+                    if (
+                        set(payload) != {"direction"}
+                        or not isinstance(payload["direction"], str)
+                        or not payload["direction"].strip()
+                    ):
+                        self._send_json(
+                            400,
+                            {
+                                "error": (
+                                    'need an empty body or {"direction":'
+                                    ' "<text>"} with a non-empty string'
+                                )
+                            },
+                        )
+                        return
+                    direction = payload["direction"]
+                self._run_host_write(
+                    lambda: (200, face.dualseat.next_chapter(direction)),
+                    wait=_V3_DRIVE_WAIT_SECONDS,
+                )
+                return
+            if self.path == "/api/ds/bible":
+                # DS-1: one graded bible edit (§6 F3) — the director
+                # seat's tool; a textual edit lands at once, a
+                # structural one parks until the next chapter.
+                bible_error, edit = ds_bible_request(self._read_json_body())
+                if bible_error is not None or edit is None:
+                    self._send_json(400, {"error": bible_error})
+                    return
+                self._run_host_write(
+                    lambda: (
+                        200,
+                        face.dualseat.bible_edit(
+                            str(edit["field"]),
+                            str(edit["value"]),
+                            str(edit["mode"]),
+                        ),
+                    )
+                )
+                return
+            if self.path == "/api/ds/settings/light_model":
+                # DS-1: the light-tier word (the settings face) — the
+                # dispatch / adjudication arms dial this model on the
+                # same endpoint when non-empty; empty = the live model
+                # for every arm. Bookkeeping on the shared settings
+                # table; the very next drive reads it live.
+                payload = self._read_json_body()
+                light_word = (
+                    payload.get("word")
+                    if isinstance(payload, dict) and "word" in payload
+                    else None
+                )
+                if light_word is None or not isinstance(light_word, str):
+                    self._send_json(
+                        400,
+                        {
+                            "error": (
+                                'need a JSON body {"word": "<model>"}'
+                                " (empty = follow the live model)"
+                            )
+                        },
+                    )
+                    return
+                self._run_host_write(
+                    lambda: (
+                        200,
+                        face.dualseat.set_light_model(light_word),
+                    )
+                )
+                return
+            if self.path in ("/api/ds/open", "/api/ds/advance"):
+                # DS-1: the world's own beats over SSE — no body, the
+                # durable position is the request.
+                action = self.path.rsplit("/", 1)[-1]
+                self._run_ds_stream(
+                    lambda events: face.dualseat.drive_beat(action, events)
+                )
+                return
+            if self.path == "/api/ds/reply":
+                # DS-1: the reader's own words, the reply beat over SSE
+                # — the grammar is fail-closed (a bad body is the same
+                # 400 answer, still JSON because nothing has streamed
+                # yet); everything after rides the stream.
+                reply_error, reply = ds_turn_request(self._read_json_body())
+                if reply_error is not None or reply is None:
+                    self._send_json(400, {"error": reply_error})
+                    return
+                self._run_ds_stream(
+                    lambda events: face.dualseat.drive_beat(
+                        "reply",
+                        events,
+                        text=str(reply["text"]),
+                        submission_id=reply["submission_id"],
+                    )
                 )
                 return
             if self.path not in (

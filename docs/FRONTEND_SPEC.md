@@ -1304,6 +1304,53 @@ Narrative V3 故事线（Gold Scenario）的最小试读面——「好玩」亲
   属试读，产物与主 UI 的会话/教学设计面互不打扰（exposure 记录独立落
   `reader_exposure`）。
 
+#### 8.2.14 沉浸面（DS-1 新增——双位一世界 POC，独立新页，非主壳屏非 /v3）
+
+「双位一世界」的沉浸位页面（技术定义 §11–§12；`docs/design/2026-10-14-
+dual-seat-world-technical-definition.md`）。独立文档（dualseat.html/css/js
+三新文件、静态白名单只增三条），不经主壳、不改主壳、不触 /v3 一字节。
+
+- 路由（只增不改，见 `elc/web.py` 的 DS-1 分支；服务面全在
+  `elc/ds_web.py` 的 `DualSeatWebFace`）：`GET /ds` 发页面；`GET
+  /api/ds/state` **脱队读**（`ds_state_ro`——/api/v3/state 同一姿态）；
+  `POST /api/ds/start|settle|next_chapter|bible|settings/light_model`
+  （阻塞写面；settle / next_chapter 走 `_V3_DRIVE_WAIT_SECONDS` 长驱动
+  预算；语法 handler fail-closed 400）；`POST /api/ds/open|advance|reply`
+  （**SSE**——`_run_ds_stream` 同 `/api/turn_stream` 姿态：`str` 增量=
+  delta 帧、`dict`=结构帧整发（`{"type":"stage","stage":…}` 拍型阶段
+  帧）、恰一 final 帧=驱动报告⨝全状态、断连停写不停驱动）。
+- 组件：**零新增组件**——复用 #1 btn 族（send/ink/faint 变体）、#2 pen
+  （输入框）、#12 system-line（`.sysline` 错误行）、#16 field（方向输入
+  行、轻档词行）。库表 ③ 不加行（无新组件 ⇒ 无登记义务；
+  `test_fg1_architecture.py` 的 COMPONENTS 不动）。页级骨架 `.ds-*`
+  （dualseat.css 唯一定义处；不定义/不覆写组件类）：发丝进度线
+  `.ds-hairline`、阶段行 `.ds-stage`/`.ds-elapsed`、故障行
+  `.ds-faultline`、待落签 `.ds-chip*`、输入行 `.ds-inputrow`、章首头
+  `.ds-chaphead`、章末内联卡 `.ds-chapend`/`.ds-chcard`、设定行
+  `.ds-srow*`、引导 `.ds-gstep`/`.ds-gdots`。
+- 呈现律（技术定义 §12 七条的落法，页面义务）：①拍型感知管线——阶段
+  句只随**服务端 stage 帧**走（reply=接你的话→在想你说的话→世界在定夺
+  →落纸；open/advance=铺陈→落纸），页面不猜、因果不倒置；②流式正文——
+  delta 帧按句渐入（服务端已扣住停点标记尾，页面永不见 JSON），发丝线
+  随已落字数走；③可读状态句——停点行只说「轮到你了」级事实，绝不剧透
+  内心（私念律）；④常开输入——输入框永不禁用；驱动中的输入成为待落签
+  （可编辑可撤回），下一拍携带（多签换行并入一次提交），失败话不丢
+  （回填待落签一键重试）；⑤章末非阻断内联章间面——章 `CLOSED` 时正文
+  流末尾展开（可收起）：幕外摘要 + 方向输入（留空=让世界自行发展）+
+  开下一章；⑥失败态诚实——final `ok:false` 逐码人话 + 故障行；⑦首开
+  引导——三步（你是谁/输入框永远开着/停点是什么），localStorage 记读。
+- 设定面（导演位 · 分级生效 §6 F3）：Bible 十四字段行（当前值 + 即时/
+  下一章两档模式钮 + 待落角标）；文本性改动即时一次 `revise_bible`
+  （只影响之后的世界，已写段落永不改写——面板脚注明示）；结构性改动
+  停至下一章（`ds_pending_bible`，开下一章时折入一次修订）；轻档模型词
+  行（`ds_light_model`，空=随现役端点——调度/裁定两臂走轻档，阶段句
+  由此成立）。
+- 文案：中文界面；段落正文即模型原文（语言随共享 `v3_prose_language`
+  设置）；开局世界为**草稿**（state 的 `draft` 旗随行，顶栏标注
+  「开局草稿（待定调）」——非 gold 式冻结剧本）。
+- 诚实边界：沉浸位只读/驱动这个世界自己的账；导演位只落设定与方向；
+  消费面零入口在主 UI（URL 即全部）。
+
 ---
 
 ### 8.3 术语翻译表（工程词 → 通信语言）

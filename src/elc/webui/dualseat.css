@@ -1,0 +1,189 @@
+/* dualseat.css —— DS-1 沉浸面（/ds）的屏级骨架（唯一样式源仍是
+   tokens.css + components.css；本文件只登记 .ds-* 屏级落位，不重写
+   任何令牌字面值）。 */
+
+.ds {
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* ── 发丝进度线（正文就是进度）────────────────────────────────── */
+.ds-hairline {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px;
+  z-index: 30; pointer-events: none; opacity: 0;
+  transition: opacity .8s ease;
+}
+.ds-hairline.on { opacity: 1; }
+.ds-hairline i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+  transition: width .3s linear;
+}
+
+/* ── 顶栏 ───────────────────────────────────────────────────── */
+.ds-top {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 15;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 18px;
+  background: linear-gradient(rgba(246, 242, 232, .94), rgba(246, 242, 232, .78));
+  border-bottom: 1px solid var(--rule);
+}
+.ds-brand { display: flex; align-items: center; gap: 10px; }
+.ds-brand .seal-press { width: 34px; height: 34px; font-size: 15px; }
+.ds-title { font: var(--f-display); font-size: 16px; letter-spacing: .3em; margin: 0; }
+.ds-sub { font-size: 11.5px; color: var(--ink-faint); margin: 2px 0 0; letter-spacing: .05em; }
+.ds-tools { display: flex; gap: 8px; position: relative; }
+.ds-gearbadge {
+  display: inline-block; min-width: 14px; height: 14px; margin-left: 5px;
+  border-radius: 7px; background: var(--seal); color: var(--paper-high);
+  font-size: 10px; line-height: 14px; text-align: center; vertical-align: 1px;
+}
+
+/* ── 正文流 ─────────────────────────────────────────────────── */
+.ds-flow {
+  position: relative; z-index: 1;
+  height: 100vh; overflow-y: auto;
+  padding: 88px 24px 260px;
+}
+.ds-inner { max-width: 640px; margin: 0 auto; }
+.ds-flow p { font-size: 17.5px; line-height: 2.05; letter-spacing: .02em;
+  text-align: justify; text-indent: 2em; margin: 0 0 1.5em;
+  animation: ds-fadein 1s ease both; }
+@keyframes ds-fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.ds-flow p .ds-sent { animation: ds-sentin .5s ease both; }
+@keyframes ds-sentin { from { opacity: .3; } to { opacity: 1; } }
+.ds-flow p.ds-you { text-indent: 0; text-align: left; color: var(--ink-soft);
+  font-size: 16px; border-left: 3px solid var(--accent-soft); padding-left: 12px; }
+.ds-flow p.ds-you .ds-you-label { display: block; font-size: 11px;
+  color: var(--ink-faint); letter-spacing: .2em; margin-bottom: 4px; text-indent: 0; }
+
+/* 章首之问（计划面的 dramatic_question，弱墨居中）*/
+.ds-chapq { text-indent: 0 !important; text-align: center !important;
+  font-size: 12.5px !important; color: var(--ink-faint) !important; }
+.ds-startline { text-indent: 0 !important; text-align: center !important; }
+.ds-chdir-label { margin-top: 10px; }
+.ds-chopen { margin-top: 10px; width: 100%; }
+
+/* 章首标题与章末印章 */
+.ds-chaphead { text-align: center; margin: 1em 0 2.4em; animation: ds-fadein 1.1s ease both; }
+.ds-chaphead h2 { font: var(--f-display); font-size: 21px; letter-spacing: .3em; margin: 0; }
+.ds-chaphead .ds-rule { width: 52px; height: 1px; background: var(--rule); margin: 12px auto 0; }
+.ds-chapend { margin: 3em 0 1em; animation: ds-fadein 1.2s ease both; }
+.ds-chapend.folded .ds-chcard { display: none; }
+.ds-chsealrow { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; }
+.ds-chseal { width: 44px; height: 44px; border: 2px solid var(--seal); color: var(--seal);
+  display: flex; align-items: center; justify-content: center; font-size: 21px;
+  border-radius: 2px; transform: rotate(6deg); opacity: .85; }
+.ds-chsealtxt { font-size: 13px; color: var(--seal); letter-spacing: .4em; }
+.ds-chsub { text-align: center; font-size: 12px; color: var(--ink-faint);
+  letter-spacing: .12em; margin: 0 0 14px; text-indent: 0; }
+.ds-chcard { background: var(--paper-2); border: 1px solid var(--rule);
+  border-radius: 2px; padding: 16px 20px; }
+.ds-chcard h5 { font-size: 13px; color: var(--ink-soft); letter-spacing: .2em; margin: 0 0 8px; }
+.ds-chcard li { font-size: 13.5px; line-height: 1.9; color: var(--ink-soft);
+  list-style: none; padding-left: 14px; position: relative; text-align: justify; }
+.ds-chcard li::before { content: ''; position: absolute; left: 0; top: .85em;
+  width: 5px; height: 5px; background: var(--rule); border-radius: 50%; }
+.ds-chfold { margin-top: 8px; background: none; border: none; color: var(--ink-faint);
+  font-size: 12px; letter-spacing: .14em; padding: 4px 0; cursor: pointer;
+  border-bottom: 1px dotted var(--ink-faint); }
+
+/* ── 底部工作区（状态条 + chips + 输入）──────────────────────── */
+.ds-dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 0 16px 14px; pointer-events: none;
+}
+.ds-dock > * { pointer-events: auto; width: 100%; max-width: 660px; }
+.ds-strip { background: var(--paper-high); border: 1px solid var(--rule);
+  border-bottom: none; border-radius: 2px 2px 0 0; padding: 8px 12px 7px; }
+.ds-strip-head { display: flex; align-items: baseline; gap: 10px; min-height: 18px; }
+.ds-stage { font-size: 13px; color: var(--ink); letter-spacing: .08em; }
+.ds-elapsed { font-size: 11.5px; color: var(--ink-faint); }
+.ds-subhint { font-size: 11.5px; color: var(--ink-faint); margin-left: auto;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds-statusline { font-size: 12px; color: var(--ink-soft); margin: 5px 0 0;
+  min-height: 15px; }
+.ds-faultline { margin: 6px 0 0; font-size: 12.5px; color: var(--seal);
+  background: rgba(154, 57, 43, .07); border-left: 3px solid var(--seal);
+  padding: 4px 9px; }
+
+/* 待落 chips（常开输入 §12.4）*/
+.ds-chips { display: flex; flex-direction: column; gap: 6px; }
+.ds-chip { background: var(--paper-high); border: 1px dashed var(--seal);
+  border-radius: 2px; padding: 6px 11px 7px; animation: ds-fadein .4s ease both; }
+.ds-chip.consuming { border-style: solid; border-color: var(--accent); }
+.ds-chip-top { display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--seal); letter-spacing: .1em; }
+.ds-chip-act { margin-left: auto; display: flex; gap: 10px; }
+.ds-chip-act button { background: none; border: none; color: var(--ink-faint);
+  font-size: 11px; letter-spacing: .1em; padding: 0; cursor: pointer;
+  border-bottom: 1px dotted var(--ink-faint); }
+.ds-chip-text { font-size: 13.5px; color: var(--ink); margin-top: 4px;
+  line-height: 1.7; word-break: break-all; }
+.ds-chip-edit { width: 100%; margin-top: 5px; font-size: 13.5px; line-height: 1.7;
+  padding: 6px 8px; border: 1px solid var(--rule); border-radius: 2px;
+  background: var(--paper-high); color: var(--ink); resize: vertical; }
+
+/* 输入行（永不禁用）*/
+.ds-inputrow { position: relative; display: flex; align-items: flex-end; gap: 10px;
+  background: var(--paper-high); border: 1px solid var(--rule);
+  border-radius: 2px; padding: 10px 12px; }
+.ds-inputrow.yourturn { border-color: var(--seal); }
+.ds-turntag { position: absolute; top: -20px; right: 4px; font-size: 11px;
+  color: var(--seal); letter-spacing: .14em; }
+.ds-inputrow .pen { flex: 1; border: none; background: transparent; resize: none;
+  font-size: 15px; line-height: 1.7; max-height: 110px; }
+
+/* ── 覆层面板（设定 / 引导）────────────────────────────────── */
+.ds-overlay { position: fixed; inset: 0; z-index: 50;
+  background: rgba(25, 27, 30, .45); display: flex; align-items: center;
+  justify-content: center; padding: 20px; }
+.ds-overlay[hidden] { display: none; }
+.ds-panel { background: var(--paper); border: 1px solid var(--rule);
+  border-radius: 2px; width: 100%; max-width: 560px; max-height: 86vh;
+  overflow-y: auto; padding: 26px 30px; animation: ds-fadein .4s ease both; }
+.ds-panel-title { font: var(--f-display); font-size: 18px; letter-spacing: .3em;
+  text-align: center; margin: 0 0 6px; }
+.ds-panel-note { font-size: 12.5px; color: var(--ink-faint); text-align: center;
+  line-height: 1.8; margin: 0 0 14px; }
+.ds-panel-actions { display: flex; justify-content: flex-end; gap: 10px; margin: 14px 0 0; }
+.ds-panel-foot { margin: 14px 0 0; display: flex; align-items: flex-end; gap: 10px; }
+.ds-light-field { flex: 1; }
+.ds-settings-body { border-top: 1px solid var(--rule); }
+.ds-srow { padding: 9px 2px; border-bottom: 1px dashed var(--rule); }
+.ds-srow-h { display: flex; align-items: center; gap: 10px; }
+.ds-srow-h b { font-size: 13.5px; letter-spacing: .1em; }
+.ds-smode { display: flex; border: 1px solid var(--rule); border-radius: 2px; overflow: hidden; }
+.ds-smode button { background: transparent; border: none; font-size: 10.5px;
+  color: var(--ink-faint); padding: 3px 8px; cursor: pointer; letter-spacing: .05em; }
+.ds-smode button.on { background: var(--accent); color: var(--paper-high); }
+.ds-smode button.on.now { background: var(--seal); }
+.ds-sval { font-size: 13px; line-height: 1.8; color: var(--ink-soft);
+  margin-top: 5px; cursor: text; }
+.ds-sval:hover { color: var(--ink); }
+.ds-sedit { width: 100%; font-size: 13px; line-height: 1.8; border: 1px solid var(--rule);
+  border-radius: 2px; background: var(--paper-high); color: var(--ink);
+  padding: 6px 8px; resize: vertical; min-height: 52px; margin-top: 5px; }
+.ds-sops { margin-top: 6px; display: flex; gap: 12px; }
+.ds-sops button { background: none; border: none; font-size: 11.5px;
+  color: var(--ink-soft); letter-spacing: .1em; border-bottom: 1px dotted var(--ink-soft);
+  padding: 0; cursor: pointer; }
+.ds-sstat { margin-left: auto; font-size: 11px; color: var(--ink-faint); letter-spacing: .08em; }
+.ds-sstat.wait { color: #b97a2a; }
+
+/* 引导 */
+.ds-gstep { min-height: 110px; font-size: 14.5px; line-height: 2; color: var(--ink-soft);
+  text-align: justify; }
+.ds-gstep h4 { font-size: 15px; letter-spacing: .2em; color: var(--accent-deep);
+  margin: 0 0 10px; }
+.ds-gdots { display: flex; gap: 7px; justify-content: center; margin: 18px 0 4px; }
+.ds-gdots i { width: 6px; height: 6px; border-radius: 50%; background: var(--rule); }
+.ds-gdots i.on { background: var(--accent); }
+
+@media (max-width: 640px) {
+  .ds-flow { padding: 80px 16px 280px; }
+  .ds-flow p { font-size: 16px; }
+  .ds-panel { padding: 20px 18px; }
+}
