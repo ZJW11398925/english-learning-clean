@@ -12,9 +12,13 @@ seam by the **assembly face** (the V3-8e reading-face wiring); this
 module deliberately does **not** import ``elc.persona`` in any form —
 ``elc.world`` keeps no cross-package import edge (the P4-3 cold-start
 discipline), and the seam is where a transport plugs in. The seam's
-streaming face (``complete_streaming(prompt, on_chunk)``) is the
-registered extension point for a later cut — deliberately not
-implemented here (the reading face's UX may re-open it explicitly).
+streaming face (``complete_streaming(prompt, on_chunk)``) was the
+registered extension point for a later cut — and that cut arrived:
+**DS-1** (the dual-seat technical definition §12, F15) re-opened it
+explicitly for the narration arm, as the separate
+:class:`StreamingTextCompletion` protocol below — the bypass channel
+that leaves every existing constructor and the four original arms'
+signatures byte for byte untouched.
 
 **The four implementations** satisfy the frozen Protocols structurally
 (no inheritance — the Protocol *is* the contract):
@@ -176,23 +180,26 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from elc.world.action import Adjudication, ReplanScope
+from elc.world.memory import V3MemoryView
 from elc.world.types import StateEffect
 
 if TYPE_CHECKING:  # the annotation-only edges (same-package contexts)
     from elc.world.bible import BibleRevision
-    from elc.world.cast import ActorProfileRecord
+    from elc.world.cast import (
+        ActorProfileRecord,
+        PlayerCharacterRecord,
+    )
     from elc.world.cognition import V3CognitionView
     from elc.world.director import (
         DirectorCastMember,
         DirectorContext,
         DirectorPlayerCharacter,
     )
-    from elc.world.memory import V3MemoryView
     from elc.world.providers import (
         DirectorPlanContext,
         PovContext,
@@ -206,12 +213,24 @@ if TYPE_CHECKING:  # the annotation-only edges (same-package contexts)
 __all__ = [
     "PROSE_LANGUAGE_DEFAULT",
     "PROSE_LANGUAGE_WORDS",
+    "BatchAdjudicationContext",
+    "CharacterContext",
+    "CharacterProposal",
     "CompletionOutcome",
+    "DispatchContext",
+    "DispatchDecision",
+    "LlmBatchAdjudicatorProvider",
+    "LlmCharacterProvider",
+    "LlmDispatcherProvider",
     "LlmDirectorProvider",
+    "LlmNarratorProvider",
     "LlmPlannerProvider",
     "LlmProviderError",
     "LlmResolverProvider",
     "LlmWriterProvider",
+    "NarrationContext",
+    "NarrationResult",
+    "StreamingTextCompletion",
     "TextCompletion",
 ]
 
@@ -1571,5 +1590,819 @@ class LlmResolverProvider:
             _complete_text(
                 self._completion,
                 _resolver_prompt(context, language=self._language),
+            )
+        )
+
+
+# ---------------------------------------------------------------------------
+# the dual-seat extension (DS-1, the technical definition §1–§4, §12) —
+# three new model arms over the same seam, the same parsing law, and the
+# re-opened streaming face. Everything below is additive: the four
+# original arms above keep every constructor and signature byte for byte.
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class StreamingTextCompletion(Protocol):
+    """The re-opened streaming face (DS-1, the technical definition §12
+    F15) — the bypass channel beside :class:`TextCompletion`: the same
+    one-prompt-in value shape, with the answer's increments handed to
+    ``on_chunk`` exactly once, in arrival order, and the honest whole
+    returned as the outcome (the persona adapter's ``call_streaming``
+    contract). A completion that does not carry this method simply never
+    satisfies the protocol — the callers check at call time and fall
+    back to the blocking face, so no existing constructor changes."""
+
+    def complete_streaming(
+        self, prompt: str, on_chunk: Callable[[str], None]
+    ) -> CompletionOutcome: ...
+
+
+@dataclass(frozen=True)
+class DispatchContext:
+    """The dispatch arm's compiled input (DS-1 §1 ③) — the world-side
+    situation one structured scheduling decision is asked about. The
+    context is assembled by the spine from the durable rows; the arm
+    itself reads nothing.
+
+    ``responders`` is the eligible character vocabulary (id + display
+    name, rendered ``id (name)`` — the same identity-contract shape the
+    three JSON arms above state); ``user_utterance`` is ``None`` on the
+    ``open`` / ``advance`` beats (no words of the user's to read — the
+    arm then decides the world event and the pacing only)."""
+
+    world_id: str
+    place: str
+    current_tick: int
+    beat_kind: str
+    chapter_goal: str
+    situation: str
+    user_utterance: str | None
+    responders: tuple[str, ...]
+    recent_narration: str
+    premise: str
+    hard_rules: str
+    language: str = PROSE_LANGUAGE_DEFAULT
+
+
+@dataclass(frozen=True)
+class DispatchDecision:
+    """One structured scheduling decision (DS-1 §1: who responds / the
+    order / whether a world event inserts / the pacing) — the parser's
+    output shape, consumed by the spine (which owns the execution; the
+    arm never acts)."""
+
+    reading: str
+    responders: tuple[str, ...]
+    world_event: str | None
+    pacing: str
+    options: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class CharacterContext:
+    """One protagonist's private-seat context (DS-1 §2) — the code-
+    assembled context pack: the persona card, the durable profile (the
+    private context included — this is that character's OWN seat), the
+    retrieved memory (the layered view, recency-truncated), the current
+    goal / mood facts, the situation, the event that touches her and
+    her own perceivable face (the cognition view — the witness filter's
+    physical form). No other participant's private face rides: the pack
+    is one character's, and its shape is the door."""
+
+    actor_id: str
+    name: str
+    identity: str
+    personality: str
+    background: str
+    speech_style: str
+    values: str
+    boundaries: str
+    long_term_drive: str
+    current_arc_seed: str
+    private_context: str
+    goal_mood: str
+    memories: V3MemoryView
+    place: str
+    current_tick: int
+    situation: str
+    event: str
+    perceivable: V3CognitionView
+    recent_narration: str
+    language: str = PROSE_LANGUAGE_DEFAULT
+
+
+@dataclass(frozen=True)
+class CharacterProposal:
+    """One protagonist's structured proposal (DS-1 §1b: the batch
+    adjudication's per-character input) — the public face
+    (``speech`` / ``action``), the private face (``intent`` /
+    ``private_thought``) the adjudicator weighs and the narration never
+    sees."""
+
+    actor_id: str
+    speech: str
+    action: str
+    intent: str
+    private_thought: str
+
+
+@dataclass(frozen=True)
+class NarrationContext:
+    """The narration arm's compiled input (DS-1 §1 ⑦, §12 item 2) — the
+    second-person limited knowledge face: the player character's OWN
+    cognition / memory views (the witness filter's physical form), the
+    committed ruling's public outcome (a reply beat resumes it), the
+    responders' **public** face only (speech / action — never an intent
+    or a private thought: what ``you`` cannot perceive, the prose cannot
+    tell), and the recent narration tail the segment continues from."""
+
+    world_id: str
+    player_id: str
+    player_name: str
+    place: str
+    current_tick: int
+    beat_kind: str
+    player_cognition: V3CognitionView | None
+    player_memory: V3MemoryView | None
+    committed_outcome: str | None
+    committed_actual_action: str | None
+    committed_consequences: str | None
+    committed_effects: tuple[StateEffect, ...]
+    public_proposals: tuple[tuple[str, str, str], ...]
+    world_event: str | None
+    recent_narration: str
+    language: str = PROSE_LANGUAGE_DEFAULT
+
+
+@dataclass(frozen=True)
+class NarrationResult:
+    """One narration's answer — the prose beside its structured stop
+    markers (DS-1 §4). The markers are the narration arm's own output,
+    the stop policy's input; the prose is what the SEGMENT COMMIT
+    lands."""
+
+    prose: str
+    addresses_you: bool
+    impends_on_you: bool
+    beat_complete: bool
+
+
+@dataclass(frozen=True)
+class BatchAdjudicationContext:
+    """The batch adjudication face's input (DS-1 §1b) — the
+    world-authoritative arms are the :class:`ResolverContext`'s own,
+    field for field (the reuse the definition names), and the new input
+    form rides beside them: the k character proposals and the dispatch
+    arm's optional world event. One call synthesizes **one** δ — the
+    seven-field :class:`~elc.world.action.Adjudication` unchanged, its
+    ``state_effects`` list carrying the multi-effect batch (one claim
+    per key; the per-effect gates stay the commit face's)."""
+
+    gate_id: str
+    scene_id: str
+    submission_id: str
+    intent_text: str
+    selected_option: str | None
+    options: tuple[str, ...]
+    bible: BibleRevision | None
+    current_facts: tuple[WorldStateFact, ...]
+    player_character: PlayerCharacterRecord | None
+    place: str
+    participants: tuple[str, ...]
+    counterparts: tuple[ActorProfileRecord, ...]
+    player_cognition: V3CognitionView | None
+    player_memory: V3MemoryView | None
+    pov_actor_id: str
+    cognition: V3CognitionView
+    memory: V3MemoryView
+    current_tick: int
+    proposals: tuple[CharacterProposal, ...]
+    world_event: str | None = None
+
+
+#: The dispatch arm's pacing vocabulary (DS-1 §1 ③) — three words, the
+#: parser's enum.
+_PACING_WORDS = ("hold", "press", "settle")
+
+
+#: The narrator's stop-marker tail shape (DS-1 §4): a line containing
+#: only ``---`` separates the prose from one JSON object carrying the
+#: three marker booleans. The streaming gate holds back this sentinel
+#: and everything after it (the tail never flickers onto the page).
+_NARRATION_TAIL = re.compile(r"(?m)^---\s*$")
+
+#: The streaming gate's hold-back window: one more character than the
+#: sentinel itself, so a sentinel split across two increments is still
+#: withheld whole.
+_TAIL_HOLD = 5
+
+
+class _TailGate:
+    """The streaming wrapper that keeps the marker tail off the wire:
+    increments flow through until the sentinel ``\\n---`` appears in the
+    accumulated text; from that point on nothing is emitted (the tail is
+    parsed from the outcome's whole text after the call returns)."""
+
+    def __init__(self, on_chunk: Callable[[str], None]) -> None:
+        self._on_chunk = on_chunk
+        self._buffer = ""
+        self._closed = False
+
+    def __call__(self, chunk: str) -> None:
+        if self._closed or not chunk:
+            return
+        self._buffer += chunk
+        idx = self._buffer.find("\n---")
+        if idx != -1:
+            self._closed = True
+            head = self._buffer[:idx]
+            self._buffer = ""
+            if head:
+                self._on_chunk(head)
+            return
+        if len(self._buffer) > _TAIL_HOLD:
+            head = self._buffer[: -_TAIL_HOLD]
+            self._buffer = self._buffer[-_TAIL_HOLD:]
+            self._on_chunk(head)
+
+
+def _parse_dispatch(text: str, responders: tuple[str, ...]) -> DispatchDecision:
+    """One structured scheduling decision (see :class:`DispatchDecision`)
+    — shape only; the spine keeps every deeper judgment (the gate
+    options' 2–4 bound). The responder vocabulary is matched on the
+    **bare id head** (the identity contract: the context renders the
+    vocabulary as ``id (name)`` and the answer names the bare id — a
+    rendered composite answered back is normalized to its head, the
+    same clause the three JSON arms state)."""
+
+    payload = _payload_object(text)
+    reading = _text(payload, "reading")
+    words = _words(payload, "responders")
+    vocabulary = {
+        rendered.split(" (", 1)[0].strip() for rendered in responders
+    }
+    normalized: list[str] = []
+    for word in words:
+        head = word.split(" (", 1)[0].strip()
+        if head not in vocabulary:
+            raise LlmProviderError("bad-shape")
+        normalized.append(head)
+    raw_event = _field(payload, "world_event")
+    if raw_event is None:
+        world_event = None
+    elif isinstance(raw_event, str):
+        world_event = raw_event
+    else:
+        raise LlmProviderError("bad-shape")
+    pacing = _field(payload, "pacing")
+    if not isinstance(pacing, str) or pacing not in _PACING_WORDS:
+        raise LlmProviderError("bad-shape")
+    options = _words(payload, "options")
+    return DispatchDecision(
+        reading=reading,
+        responders=tuple(normalized),
+        world_event=None if not world_event else world_event,
+        pacing=pacing,
+        options=options,
+    )
+
+
+def _parse_proposal(text: str, actor_id: str) -> CharacterProposal:
+    """One character proposal — the four contract strings; a
+    ``private_thought`` answered as JSON ``null`` rides the honest empty
+    string (the field is optional in spirit, never absent in shape)."""
+
+    payload = _payload_object(text)
+    speech = _text(payload, "speech")
+    action = _text(payload, "action")
+    intent = _text(payload, "intent")
+    raw_private = _field(payload, "private_thought")
+    if raw_private is None:
+        private = ""
+    elif isinstance(raw_private, str):
+        private = raw_private
+    else:
+        raise LlmProviderError("bad-shape")
+    return CharacterProposal(
+        actor_id=actor_id,
+        speech=speech,
+        action=action,
+        intent=intent,
+        private_thought=private,
+    )
+
+
+def _parse_narration(text: str) -> NarrationResult:
+    """One narration answer: the prose before the sentinel line, the
+    three marker booleans from the JSON tail after it. No sentinel is
+    ``missing-field:markers`` — the tail is the stop law's input, never
+    guessed; prose before it keeps one fence's worth of cleaning (the
+    parsing law's own minimal form)."""
+
+    cleaned = _clean(text)
+    parts = _NARRATION_TAIL.split(cleaned, maxsplit=1)
+    if len(parts) != 2:
+        raise LlmProviderError("missing-field:markers")
+    prose = parts[0].strip()
+    if not prose:
+        raise LlmProviderError("no-output")
+    payload = _payload_object(parts[1])
+    markers = []
+    for name in ("addresses_you", "impends_on_you", "beat_complete"):
+        value = _field(payload, name)
+        if not isinstance(value, bool):
+            raise LlmProviderError("bad-shape")
+        markers.append(value)
+    return NarrationResult(
+        prose=prose,
+        addresses_you=markers[0],
+        impends_on_you=markers[1],
+        beat_complete=markers[2],
+    )
+
+
+def pack_memories(view: V3MemoryView, cap: int) -> V3MemoryView:
+    """The character pack's memory retrieval (DS-1 §2 F5, the POC-grade
+    policy — marked adjustable): the layered view is already the
+    presence filter (a viewer's own rows only — 亲历或听闻 by
+    construction), so this face applies the **recency truncation**
+    alone: keep the ``cap`` most recent rows (``learned_at_tick`` then
+    ``memory_id``), re-presented in the view's own layer order. The
+    salience scoring is a later blade (the lunar greedy-packing
+    design); ``cap <= 0`` answers the honest empty view."""
+
+    if cap <= 0 or not view.memories:
+        return V3MemoryView(viewer_id=view.viewer_id, memories=())
+    ranked = sorted(
+        view.memories,
+        key=lambda row: (row.learned_at_tick, row.memory_id),
+    )
+    kept = set(ranked[-cap:])
+    return V3MemoryView(
+        viewer_id=view.viewer_id,
+        memories=tuple(row for row in view.memories if row in kept),
+    )
+
+
+def _render_card(context: CharacterContext) -> str:
+    """One protagonist's persona card as the private seat reads it."""
+
+    return "\n".join(
+        [
+            f"- name: {context.name}",
+            f"- identity: {context.identity!r}",
+            f"- personality: {context.personality!r}",
+            f"- background: {context.background!r}",
+            f"- speech_style: {context.speech_style!r}",
+            f"- values: {context.values!r}",
+            f"- boundaries: {context.boundaries!r}",
+            f"- long_term_drive: {context.long_term_drive!r}",
+            f"- current_arc_seed: {context.current_arc_seed!r}",
+            f"- private_context: {context.private_context!r}",
+        ]
+    )
+
+
+def _dispatch_prompt(context: DispatchContext) -> str:
+    """The dispatch arm's prompt (DS-1 §1 ③) — one structured scheduling
+    decision; the intent reading rides the same answer (the light-tier
+    single call the probe informed)."""
+
+    lines = [
+        "You are the dispatcher of a two-seat story world: the code",
+        "spine owns the turn and asks you for ONE structured scheduling",
+        "decision. Answer with one JSON object and nothing else.",
+        _JSON_PROSE_LINE[_prose_language_word(context.language)],
+        "",
+        "The object's keys (all required; keys beyond them are ignored).",
+        _PROSE_TYPE_SENTENCE,
+        _IDENTITY_SENTENCE,
+        '- "reading": one JSON string — how this beat\'s words land in',
+        "  the scene (one sentence; with no user words, what the world",
+        "  is doing).",
+        '- "responders": a JSON array of the character ids that respond',
+        "  this beat, in the order they should respond — taken only from",
+        "  the ids listed below; an empty array means nobody speaks.",
+        '- "world_event": one JSON string or null — one small world',
+        "  event to insert now, or null for none.",
+        '- "pacing": exactly one of "hold" | "press" | "settle" — hold',
+        "  the beat where it stands, press the situation forward, or",
+        "  settle toward a quiet close.",
+        '- "options": a JSON array of 2-4 short natural actions the',
+        "  user's own character could take next (never plot outlines).",
+        "",
+        f"World: {context.world_id}, place: {context.place},",
+        f"current_tick: {context.current_tick}, beat: {context.beat_kind}",
+        "Chapter's goal (a soft expectation, never a condition):",
+        f"- {context.chapter_goal}",
+        "World premise:",
+        f"- {context.premise}",
+        "The world's hard rules:",
+        f"- {context.hard_rules}",
+        "The scene right now:",
+        f"- {context.situation}",
+    ]
+    if context.user_utterance is not None:
+        lines.extend(
+            [
+                "The user's own words (never a world fact — read them,",
+                " do not extend them):",
+                f"- {context.user_utterance!r}",
+            ]
+        )
+    else:
+        lines.append("- no user words this beat (an open / advance beat).")
+    lines.extend(
+        [
+            "",
+            "Eligible responder ids (the identity vocabulary):",
+            _render_list(list(context.responders)),
+            "",
+            "The narration so far (its tail):",
+            _render_list([context.recent_narration])
+            if context.recent_narration
+            else "- (nothing narrated yet)",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _character_prompt(context: CharacterContext) -> str:
+    """The character arm's prompt (DS-1 §2) — the private seat's
+    proposal: the character's own card, memory, goal / mood, situation,
+    the touching event and her own perceivable face; nothing of any
+    other participant's private face."""
+
+    return "\n".join(
+        [
+            "You are one character of a two-seat story world, in your own",
+            "private seat: propose how you respond — never decide for",
+            "anyone else, never decide the outcome. Answer with one JSON",
+            "object and nothing else.",
+            _JSON_PROSE_LINE[_prose_language_word(context.language)],
+            "",
+            "The object's keys (all required).",
+            _PROSE_TYPE_SENTENCE,
+            '- "speech": one JSON string — what you say, in your own',
+            "  voice (may be empty when you say nothing).",
+            '- "action": one JSON string — what you visibly do.',
+            '- "intent": one JSON string — what you are actually trying',
+            "  to do (private; the judge reads it, the story never",
+            "  narrates it).",
+            '- "private_thought": one JSON string — your private thought',
+            "  in this moment (private; may be empty).",
+            "",
+            "Your card:",
+            _render_card(context),
+            "",
+            f"Where you are: {context.place}, current_tick"
+            f" {context.current_tick}.",
+            f"The situation right now: {context.situation}",
+            "The event that touches you:",
+            f"- {context.event}",
+            "What you can perceive (your own witnessed face — the whole",
+            " of what this proposal may draw on):",
+            _render_cognition(context.perceivable),
+            "",
+            "Your own memory (most recent first by layer):",
+            _render_memory(pack_memories(context.memories, _MEMORY_CAP)),
+            "",
+            "The narration so far (its tail):",
+            _render_list([context.recent_narration])
+            if context.recent_narration
+            else "- (nothing narrated yet)",
+        ]
+    )
+
+
+#: The character pack's memory cap (DS-1 §2 F5: 「建议 ≤24 条」) — the
+#: recency truncation the prompt's own read applies.
+_MEMORY_CAP = 24
+
+
+def _narrator_prompt(context: NarrationContext) -> str:
+    """The narration arm's prompt (DS-1 §1 ⑦, §12 item 2) — second
+    person, the player's own limited knowledge, the responders' public
+    face only; the answer is prose, then the sentinel line, then the
+    three stop-marker booleans (§4)."""
+
+    if context.committed_outcome is not None:
+        event_block = [
+            "The committed ruling this segment resumes (already canon —",
+            "carry the story past it, never re-tell it):",
+            f"- outcome: {context.committed_outcome!r}",
+            f"- actual_action: {context.committed_actual_action!r}",
+            f"- consequences: {context.committed_consequences!r}",
+        ]
+    else:
+        event_block = [
+            "No committed ruling rides this beat — write what the world",
+            "does next from the perceivable face below.",
+        ]
+    proposals = [
+        f"- {actor_id}: speech={speech!r}, action={action!r}"
+        for actor_id, speech, action in context.public_proposals
+    ]
+    lines = [
+        "You are the narrator of a two-seat story world. Write in",
+        f"SECOND PERSON: the reader IS {context.player_name}"
+        f" ({context.player_id}) — every paragraph addresses them as",
+        '"you", and presents only what they can perceive, know or',
+        "remember (their own limited-knowledge face below is the whole",
+        "of what may be presented as known; another person's intent or",
+        "private thought never enters the prose). Never decide, speak",
+        "or act with intent for the reader's character: the words below",
+        "are theirs alone.",
+        f"{_WRITER_PROSE_LINE[_prose_language_word(context.language)]}",
+        f"- {_CONTINUITY_SENTENCE}",
+        "",
+        "Answer shape: the prose (3-8 sentences), then a line containing",
+        "only ---, then one JSON object and nothing after it:",
+        '{"addresses_you": <bool>, "impends_on_you": <bool>,'
+        ' "beat_complete": <bool>}',
+        "- addresses_you: someone has just addressed the reader's",
+        "  character and awaits their reply.",
+        "- impends_on_you: something is about to demand the reader's",
+        "  own decision.",
+        "- beat_complete: this beat's arc is complete (true only when",
+        "  neither marker above is true).",
+        "",
+        f"World: {context.world_id}, place: {context.place}, current_tick",
+        f"{context.current_tick}, beat: {context.beat_kind}.",
+        *event_block,
+        "The responders' public face (speech and visible action only):",
+        _render_list(proposals),
+    ]
+    if context.world_event:
+        lines.extend(
+            [
+                "A world event inserts itself (already decided — present",
+                " it as what happens):",
+                f"- {context.world_event!r}",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            f"What {context.player_name} knows (cognition):",
+            "(no player-side knowledge arm rides — the world declares no"
+            " player character)"
+            if context.player_cognition is None
+            or context.player_memory is None
+            else _render_cognition(context.player_cognition),
+            "",
+            f"What {context.player_name} remembers:",
+            _render_memory(context.player_memory)
+            if context.player_memory is not None
+            else "- (nothing)",
+            "",
+            "The narration so far (its tail — continue from it):",
+            _render_list([context.recent_narration])
+            if context.recent_narration
+            else "- (nothing narrated yet)",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _batch_adjudicator_prompt(
+    context: BatchAdjudicationContext, *, language: str
+) -> str:
+    """The batch adjudication face's prompt (DS-1 §1b) — the
+    world-authoritative read of the resolver arm, with the k proposals
+    and the user's event beside it: ONE ruling, the seven-field shape
+    verbatim, the batch riding ``state_effects``."""
+
+    if context.player_character is None:
+        player_block = "(no player character is declared for this world)"
+    else:
+        player = context.player_character
+        player_block = (
+            f"{player.player_character_id} ({player.name}):"
+            f" abilities={player.abilities!r}, limits={player.limits!r}"
+        )
+    if context.player_cognition is None or context.player_memory is None:
+        knows_block = (
+            "(no player-side knowledge arm rides — the world declares no"
+            " player character)"
+        )
+    else:
+        knows_block = (
+            "cognition:\n"
+            f"{_render_cognition(context.player_cognition)}\n"
+            "memory:\n"
+            f"{_render_memory(context.player_memory)}"
+        )
+    proposal_lines = [
+        f"- {proposal.actor_id}: speech={proposal.speech!r},"
+        f" action={proposal.action!r}, intent={proposal.intent!r},"
+        f" private_thought={proposal.private_thought!r}"
+        for proposal in context.proposals
+    ]
+    lines = [
+        "You are the resolver of a two-seat story world: the user took",
+        "an action and the responding characters answered with their own",
+        "proposals; you synthesize ONE authoritative outcome — what",
+        "actually happens. Answer with one JSON object and nothing",
+        "else, carrying exactly these keys.",
+        _JSON_PROSE_LINE[_prose_language_word(language)],
+        _PROSE_TYPE_SENTENCE,
+        _IDENTITY_SENTENCE,
+        '- "interpretation": one JSON string — what the user\'s action',
+        "  means in this world (a reading of the user's intent, never",
+        "  an invented intention).",
+        '- "outcome": one JSON string — what actually happens, as world',
+        "  fact (weighing the user's action AND the proposals).",
+        '- "actual_action": one JSON string — the action that actually',
+        "  unfolds.",
+        '- "consequences": one JSON string — what changes because of it.',
+        '- "state_effects": a JSON array of {"key": <one JSON string>,',
+        '  "statement": <one JSON string>} objects — the BATCH: one',
+        "  object per changed fact (dotted keys such as a place fact or",
+        "  one character's mood / goal), never the same key twice; an",
+        "  empty array when nothing changes.",
+        '- "participants": a JSON array of participant identity strings',
+        "  the outcome is about — the ids this prompt lists; it MUST",
+        "  carry the player character's id.",
+        '- "replan_scope": exactly one of "NONE" | "SCENE" | "CHAPTER" —',
+        "  whether the situation plan must be revised.",
+        "",
+        "Hard rules:",
+        "- The user's words are an intent, not a world fact: never",
+        "  extend, upgrade or invent them — decide what happens, not",
+        "  what they meant beyond the words given.",
+        "- The proposals are the characters' own attempts, not facts:",
+        "  you weigh them against the world's real rules, its physics",
+        "  and the participants' abilities and limits — a proposal the",
+        "  world refuses simply does not happen.",
+        "- Rule by the world authority below; a soft expectation is",
+        "  never a condition.",
+        "",
+        "The world authority:",
+        "- Bible (the world's rules and setting):",
+        _render_bible(context.bible),
+        "- settled facts (the current world state):",
+        _render_facts(context.current_facts),
+        f"- place: {context.place}",
+        f"- participants: {', '.join(context.participants)}",
+        "- the player character (abilities / limits):",
+        f"  {player_block}",
+        "- the scene's counterpart profiles:",
+        _render_profiles(context.counterparts),
+        "- what the user's character knows (the authority for what the",
+        "  user knows):",
+        f"  {knows_block}",
+        "",
+        "The responders' proposals (their own attempts, private faces",
+        "included — you weigh all of it; the story never narrates an",
+        "intent or a private thought):",
+        _render_list(proposal_lines),
+    ]
+    if context.world_event:
+        lines.extend(
+            [
+                "A world event inserts itself this beat (already decided):",
+                f"- {context.world_event!r}",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "The user's own submission (durable, never an invention):",
+            f"- intent_text: {context.intent_text!r}",
+            f"- selected_option: {context.selected_option!r}",
+            f"- options: {', '.join(context.options)}",
+            f"- current_tick: {context.current_tick}",
+        ]
+    )
+    return "\n".join(lines)
+
+
+class LlmDispatcherProvider:
+    """The dispatch arm (DS-1 §1 ③, the director agent's structured
+    scheduling decision) over one :class:`TextCompletion` seam — one
+    call, one decision; the spine owns every execution (F9: no
+    tool-calling loop, no execution power on the arm)."""
+
+    def __init__(
+        self,
+        completion: TextCompletion,
+        language: str = PROSE_LANGUAGE_DEFAULT,
+    ) -> None:
+        self._completion = completion
+        self._language = language
+
+    def decide(self, context: DispatchContext) -> DispatchDecision:
+        """One structured scheduling decision (see the class
+        docstring)."""
+
+        return _parse_dispatch(
+            _complete_text(
+                self._completion, _dispatch_prompt(context)
+            ),
+            context.responders,
+        )
+
+
+class LlmCharacterProvider:
+    """The character arm (DS-1 §2) over one :class:`TextCompletion`
+    seam — one private seat's proposal per call; the k-parallel
+    dispatch is the spine's (:meth:`TurnEngine` in ``elc.world.turns``),
+    never this class's."""
+
+    def __init__(
+        self,
+        completion: TextCompletion,
+        language: str = PROSE_LANGUAGE_DEFAULT,
+    ) -> None:
+        self._completion = completion
+        self._language = language
+
+    def propose(self, context: CharacterContext) -> CharacterProposal:
+        """One private seat's proposal (see the class docstring); the
+        answer's ``actor_id`` is the context's own — the pack was
+        compiled for exactly this character."""
+
+        return _parse_proposal(
+            _complete_text(
+                self._completion,
+                _character_prompt(context),
+            ),
+            context.actor_id,
+        )
+
+
+class LlmNarratorProvider:
+    """The narration arm (DS-1 §1 ⑦, §12 item 2) over one
+    :class:`TextCompletion` seam — the second-person limited-knowledge
+    prose, streamed through the re-opened
+    :class:`StreamingTextCompletion` face when the seam carries it
+    (the marker tail is withheld from the wire by :class:`_TailGate`)
+    and blocking otherwise. The four original arms' signatures stay
+    byte for byte (the bypass channel, F15)."""
+
+    def __init__(
+        self,
+        completion: TextCompletion,
+        language: str = PROSE_LANGUAGE_DEFAULT,
+    ) -> None:
+        self._completion = completion
+        self._language = language
+
+    def render(
+        self,
+        context: NarrationContext,
+        *,
+        on_chunk: Callable[[str], None] | None = None,
+    ) -> NarrationResult:
+        """One narration answer (see the class docstring); ``on_chunk``
+        receives the prose increments as they arrive (never the marker
+        tail) when the seam streams, and is ignored when it does not."""
+
+        prompt = _narrator_prompt(context)
+        if on_chunk is not None and isinstance(
+            self._completion, StreamingTextCompletion
+        ):
+            outcome = self._completion.complete_streaming(
+                prompt, _TailGate(on_chunk)
+            )
+            if outcome.error is not None:
+                raise LlmProviderError(_seam_code(outcome.error))
+            if outcome.text is None:
+                raise LlmProviderError("no-output")
+            text = outcome.text
+        else:
+            text = _complete_text(self._completion, prompt)
+        return _parse_narration(text)
+
+
+class LlmBatchAdjudicatorProvider:
+    """The batch adjudication face (DS-1 §1b) over one
+    :class:`TextCompletion` seam — the k proposals + the user's event →
+    ONE ruling in the :class:`~elc.world.action.Adjudication` shape
+    verbatim (the seven fields; the batch rides ``state_effects``); the
+    commit chain's three checks stay
+    :func:`elc.world.action.commit_action`'s, downstream."""
+
+    def __init__(
+        self,
+        completion: TextCompletion,
+        language: str = PROSE_LANGUAGE_DEFAULT,
+    ) -> None:
+        self._completion = completion
+        self._language = language
+
+    def adjudicate(
+        self, context: BatchAdjudicationContext
+    ) -> Adjudication:
+        """The one synthesized ruling (see the class docstring)."""
+
+        return _parse_adjudication(
+            _complete_text(
+                self._completion,
+                _batch_adjudicator_prompt(
+                    context, language=self._language
+                ),
             )
         )

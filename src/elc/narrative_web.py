@@ -188,9 +188,12 @@ face, never a fabricated passage; the reader's exposure records are
 :func:`elc.world.settlement.record_exposure` and touches nothing else
 (N-INV-005: the record face writes no actor memory and no belief); the
 page is a **separate file set** under ``webui/`` reached by URL
-(``/v3``) — no main-UI entry, no main-UI change. Streaming stays the
-seam's registered extension point (a later cut's explicit re-open): this
-face drives blocking calls and the page renders progress by polling.
+(``/v3``) — no main-UI entry, no main-UI change. Streaming stayed the
+seam's registered extension point until DS-1 re-opened it explicitly
+(the dual-seat technical definition §12 F15): this face's own drives
+stay blocking, the seam now carries
+:meth:`PersonaEgressCompletion.complete_streaming` beside the blocking
+``complete``, and the dual-seat face (``elc.ds_web``) is its consumer.
 
 Discipline: every write path runs on the thread that opened the host's
 connection (``web.py``'s work queue) and lands inside a library face's
@@ -663,23 +666,78 @@ class PersonaEgressCompletion:
     same coordinates, same secret source, same injected transport). The
     derivation is rebuilt per call, so a settings-page hot swap still
     lands on the very next call.
-    """
 
-    def __init__(self, provider_of: Callable[[], object]) -> None:
+    **The DS-1 bypass channel rides beside them** (the dual-seat
+    technical definition §12 F15): ``model_of`` is an optional per-call
+    read of a **model word override** (the light-tier face — an empty
+    word keeps the live model, and ``with_model`` derives the same
+    egress with one word moved, no second credential channel); and
+    :meth:`complete_streaming` is the re-opened streaming face, the
+    persona adapter's ``call_streaming`` mapped the same value way (the
+    accumulated whole as ``text``, one short code on every failure).
+    The existing constructor call and the blocking
+    :meth:`complete` are byte for byte what they always were."""
+
+    def __init__(
+        self,
+        provider_of: Callable[[], object],
+        *,
+        model_of: Callable[[], str | None] | None = None,
+    ) -> None:
         self._provider_of = provider_of
+        self._model_of = model_of
+
+    def _live(self) -> OpenAICompatibleProvider | None:
+        """The live provider, derived with the drive's timeout and the
+        optional model word — ``None`` when the live object is not an
+        OpenAI-shaped one at all (the caller answers
+        :data:`REASON_NO_EGRESS`)."""
+
+        live = self._provider_of()
+        if not isinstance(live, OpenAICompatibleProvider):
+            return None
+        derived = live.with_timeout(WORLD_EGRESS_TIMEOUT_SECONDS)
+        if self._model_of is not None:
+            derived = derived.with_model(self._model_of() or "")
+        return derived
 
     def complete(self, prompt: str) -> CompletionOutcome:
         """One prompt's completion — see the class docstring."""
 
-        live = self._provider_of()
-        if not isinstance(live, OpenAICompatibleProvider):
+        derived = self._live()
+        if derived is None:
             return CompletionOutcome(text=None, error=REASON_NO_EGRESS)
-        output = live.with_timeout(WORLD_EGRESS_TIMEOUT_SECONDS).call(
+        output = derived.call(
             CompiledPrompt(
                 persona_id=WORLD_PROMPT_PERSONA_ID,
                 prompt_text=prompt,
                 generation_contract=WORLD_PROMPT_CONTRACT,
             )
+        )
+        if output.error is not None:
+            return CompletionOutcome(text=None, error=output.error)
+        return CompletionOutcome(text=output.text, error=None)
+
+    def complete_streaming(
+        self, prompt: str, on_chunk: Callable[[str], None]
+    ) -> CompletionOutcome:
+        """The re-opened streaming face (DS-1, the technical definition
+        §12 F15): the increments flow to ``on_chunk`` exactly once, in
+        arrival order, and the outcome carries the honest whole — the
+        same failure vocabulary as :meth:`complete` (a key echo split
+        across increments is caught by the persona adapter's own
+        accumulate-then-check guard)."""
+
+        derived = self._live()
+        if derived is None:
+            return CompletionOutcome(text=None, error=REASON_NO_EGRESS)
+        output = derived.call_streaming(
+            CompiledPrompt(
+                persona_id=WORLD_PROMPT_PERSONA_ID,
+                prompt_text=prompt,
+                generation_contract=WORLD_PROMPT_CONTRACT,
+            ),
+            on_chunk,
         )
         if output.error is not None:
             return CompletionOutcome(text=None, error=output.error)

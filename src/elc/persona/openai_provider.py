@@ -307,6 +307,31 @@ class OpenAICompatibleProvider:
             stream_transport=self._stream,
         )
 
+    def with_model(self, model: str) -> OpenAICompatibleProvider:
+        """One derivation of this provider, overriding **only** the
+        model word — the additive arm the dual-seat light-tier face
+        needs (DS-1: the dispatch / adjudication stages dial a faster
+        tier on the same endpoint when the assembly's setting names
+        one; the stage-0 probe measured 3.5s vs 30.6s on the same
+        prompt).
+
+        Everything else rides unchanged by construction — the same
+        ``base_url``, the same ``secret_ref`` and
+        :class:`~elc.platform.secrets.SecretSource`, and the very
+        transports this instance was built with — so the derivation is
+        no second configuration face and no second credential channel:
+        it is the *same* live egress with one word moved. An empty or
+        equal word answers this instance unchanged."""
+
+        if not model or model == self._config.model:
+            return self
+        return OpenAICompatibleProvider(
+            replace(self._config, model=model),
+            self._secrets,
+            transport=self._post,
+            stream_transport=self._stream,
+        )
+
     def call(self, prompt: CompiledPrompt) -> ProviderOutput:
         """Check the destination, resolve the key, POST once, answer a value.
 
