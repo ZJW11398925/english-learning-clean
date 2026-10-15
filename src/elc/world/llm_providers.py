@@ -227,9 +227,12 @@ __all__ = [
     "LlmPlannerProvider",
     "LlmProviderError",
     "LlmResolverProvider",
+    "LlmSituationPlannerProvider",
     "LlmWriterProvider",
     "NarrationContext",
     "NarrationResult",
+    "SituationPlan",
+    "SituationPlanContext",
     "StreamingTextCompletion",
     "TextCompletion",
 ]
@@ -1781,6 +1784,61 @@ class BatchAdjudicationContext:
     world_event: str | None = None
 
 
+@dataclass(frozen=True)
+class SituationPlanContext:
+    """The situation planner's compiled input (DS-3, the technical
+    definition §6 — the dual-seat chapter's **situation plan**, the
+    four-question contract). The context is assembled by the landing
+    face from the durable rows; the arm reads nothing. It carries NO
+    literary-structure input: no scene count, no four-part architecture,
+    no ``dramatic_question`` device, no gate beats, no ``user_present``
+    — the plan contract is the world's pressure on one person, nothing
+    else (the old blueprint machine is the retired test face).
+
+    ``author_direction`` (the director seat's word, V3-8h's law) rides
+    as a soft expectation when present; ``cast_members`` is the
+    ``(actor_id, display name)`` vocabulary the plan's identities draw
+    on; ``recent_narration`` is the tail the next chapter continues
+    from (empty at the opening)."""
+
+    world_id: str
+    chapter_index: int
+    current_tick: int
+    premise: str
+    hard_rules: str
+    place: str
+    recent_narration: str
+    cast_members: tuple[tuple[str, str], ...]
+    player_id: str
+    player_name: str
+    author_direction: str | None = None
+    language: str = PROSE_LANGUAGE_DEFAULT
+
+
+@dataclass(frozen=True)
+class SituationPlan:
+    """One chapter's situation plan (DS-3 §6) — the four questions'
+    answers beside the minimal field set, exactly as the definition
+    spells them: ①这一幕你在哪（``where_you_stand``）②什么事冲你来
+    （``what_presses_on_you`` — 冲着你的压力，不是氛围）③谁对你说第一
+    句话（``first_speaker`` ＋ ``first_words``）④第一幕交互悬点
+    （``open_question``）；最小字段集——本章世界事件候选（
+    ``world_event_candidates``）×你的处境与位置（``place``）×各主角
+    目标（``protagonist_goals``）×节奏（``pacing``）与结算预期
+    （``settlement_expectation``）."""
+
+    where_you_stand: str
+    place: str
+    what_presses_on_you: str
+    first_speaker: str
+    first_words: str
+    open_question: str
+    world_event_candidates: tuple[str, ...]
+    protagonist_goals: tuple[tuple[str, str], ...]
+    pacing: str
+    settlement_expectation: str
+
+
 #: The dispatch arm's pacing vocabulary (DS-1 §1 ③) — three words, the
 #: parser's enum.
 _PACING_WORDS = ("hold", "press", "settle")
@@ -1865,6 +1923,72 @@ def _parse_dispatch(text: str, responders: tuple[str, ...]) -> DispatchDecision:
         world_event=None if not world_event else world_event,
         pacing=pacing,
         options=options,
+    )
+
+
+#: The situation plan's required non-empty string keys (DS-3 §6): the
+#: four questions' six prose answers beside the pacing and the
+#: settlement expectation — every one concrete and specific, the
+#: machine-checkable face the acceptance pin reads.
+_SITUATION_TEXT_KEYS = (
+    "where_you_stand",
+    "place",
+    "what_presses_on_you",
+    "first_words",
+    "open_question",
+    "pacing",
+    "settlement_expectation",
+)
+
+
+def _parse_situation_plan(
+    text: str, cast_members: tuple[tuple[str, str], ...]
+) -> SituationPlan:
+    """One chapter's situation plan (see :class:`SituationPlan`) — the
+    four questions answered concretely and the minimal field set filled.
+    ``first_speaker`` obeys the identity contract (the bare id token
+    from the listed vocabulary); ``protagonist_goals`` must cover every
+    listed character (各主角目标 — a goalless protagonist is a hole in
+    the plan, not an empty map entry)."""
+
+    payload = _payload_object(text)
+    values: dict[str, str] = {}
+    for key in _SITUATION_TEXT_KEYS:
+        value = _text(payload, key)
+        if not value.strip():
+            raise LlmProviderError("bad-shape")
+        values[key] = value
+    vocabulary = {actor_id for actor_id, _name in cast_members}
+    raw_speaker = _text(payload, "first_speaker")
+    speaker = raw_speaker.split(" (", 1)[0].strip()
+    if speaker not in vocabulary:
+        raise LlmProviderError("bad-shape")
+    candidates = _words(payload, "world_event_candidates")
+    if not candidates or any(not word.strip() for word in candidates):
+        raise LlmProviderError("bad-shape")
+    raw_goals = _field(payload, "protagonist_goals")
+    if not isinstance(raw_goals, Mapping):
+        raise LlmProviderError("bad-shape")
+    goals: list[tuple[str, str]] = []
+    for actor_id, goal in raw_goals.items():
+        if actor_id not in vocabulary:
+            raise LlmProviderError("bad-shape")
+        if not isinstance(goal, str) or not goal.strip():
+            raise LlmProviderError("bad-shape")
+        goals.append((actor_id, goal))
+    if len(goals) != len(vocabulary):
+        raise LlmProviderError("bad-shape")
+    return SituationPlan(
+        where_you_stand=values["where_you_stand"],
+        place=values["place"],
+        what_presses_on_you=values["what_presses_on_you"],
+        first_speaker=speaker,
+        first_words=values["first_words"],
+        open_question=values["open_question"],
+        world_event_candidates=tuple(candidates),
+        protagonist_goals=tuple(goals),
+        pacing=values["pacing"],
+        settlement_expectation=values["settlement_expectation"],
     )
 
 
@@ -2023,6 +2147,116 @@ def _dispatch_prompt(context: DispatchContext) -> str:
             _render_list([context.recent_narration])
             if context.recent_narration
             else "- (nothing narrated yet)",
+        ]
+    )
+    return "\n".join(lines)
+
+
+#: The situation plan's structural ban (DS-3 §6) — the sentence that
+#: keeps the old blueprint machine's 章法 out of the product path's plan:
+#: no literary architecture, no gate beats, no ``user_present``, no
+#: dramatic-question device. Per word (the V3-8g wording-law posture).
+_SITUATION_BAN_SENTENCE = {
+    "en": (
+        "This plan carries NO literary structure: no scene count, no"
+        " four-part architecture, no atmosphere-first opening, no"
+        ' "dramatic question" device, no planned gates, no'
+        ' "user_present" flag. The plan is the world\'s pressure on one'
+        " person — where they stand, what bears down on them, who"
+        " speaks to them first, what stays unresolved — nothing else."
+    ),
+    "zh": (
+        "本计划不含任何文学结构：不写场数、不写四段式章法、不写氛围"
+        "开场、不写「戏剧之问」那一套、不排门拍、不写 user_present。"
+        "计划就是世界压在一个人的身上的样子——你在哪、什么事冲你来、"
+        "谁对你开口、什么悬而未决——仅此而已。"
+    ),
+}
+
+
+def _situation_plan_prompt(context: SituationPlanContext) -> str:
+    """The situation planner's prompt (DS-3 §6) — the dual-seat chapter
+    planned as a SITUATION: the four questions answered concretely
+    beside the minimal field set; the structural ban stated in the
+    prompt's own language. One call, one JSON object (F9's posture)."""
+
+    members = [
+        f"{actor_id} ({name})" if name else actor_id
+        for actor_id, name in context.cast_members
+    ]
+    standing = (
+        context.place
+        or "(nothing has happened yet — this is the opening)"
+    )
+    lines = [
+        "You are the situation planner of a two-seat story world: the",
+        "code spine asks you to plan ONE chapter as a SITUATION — the",
+        "world's pressure on the reader's character. Answer with one",
+        "JSON object and nothing else.",
+        _JSON_PROSE_LINE[_prose_language_word(context.language)],
+        "",
+        "The object's keys (all required).",
+        _PROSE_TYPE_SENTENCE,
+        _IDENTITY_SENTENCE,
+        "",
+        "The four questions (every answer concrete and specific — a",
+        "real place, a real event, real words; never atmosphere alone):",
+        '- "where_you_stand": where the reader\'s character is and what',
+        "  situation they stand in when this chapter opens (concretely,",
+        "  on the spot).",
+        '- "place": one short location phrase (the scene\'s place tag).',
+        '- "what_presses_on_you": the event this chapter that bears',
+        "  down on the reader's character — pressure aimed AT them,",
+        "  never mere mood or ambience.",
+        '- "first_speaker": the character id of whoever speaks the',
+        "  first words TO the reader's character — from the ids listed",
+        "  below only (never the reader's own character).",
+        '- "first_words": those first words themselves, addressed to',
+        "  the reader's character.",
+        '- "open_question": the unresolved question left hanging on the',
+        "  reader's character when this chapter's first act closes.",
+        "",
+        "The situation's minimal fields:",
+        '- "world_event_candidates": a JSON array of 1-4 concrete world',
+        "  events that may close in this chapter (each one sentence).",
+        '- "protagonist_goals": a JSON object — EVERY listed character',
+        "  id maps to what they are trying to do this chapter.",
+        '- "pacing": one short sentence — how the pressure should move.',
+        '- "settlement_expectation": one short sentence — what this',
+        "  chapter's closing settlement should take stock of.",
+        "",
+        _SITUATION_BAN_SENTENCE[_prose_language_word(context.language)],
+        "",
+        f"World: {context.world_id}, chapter {context.chapter_index},",
+        f"current_tick: {context.current_tick}.",
+        "World premise:",
+        f"- {context.premise}",
+        "The world's hard rules:",
+        f"- {context.hard_rules}",
+        f"Where the world stands now: {standing}",
+    ]
+    if context.author_direction:
+        lines.extend(
+            [
+                _AUTHOR_DIRECTION_SENTENCE[
+                    _prose_language_word(context.language)
+                ],
+                "The direction:",
+                f"- {context.author_direction!r}",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "The cast (the identity vocabulary — ids with display names):",
+            _render_list(members),
+            f"The reader's own character: {context.player_name}"
+            f" ({context.player_id}) — never the first_speaker.",
+            "",
+            "The narration so far (its tail):",
+            _render_list([context.recent_narration])
+            if context.recent_narration
+            else "- (nothing narrated yet — this is the opening)",
         ]
     )
     return "\n".join(lines)
@@ -2405,4 +2639,33 @@ class LlmBatchAdjudicatorProvider:
                     context, language=self._language
                 ),
             )
+        )
+
+
+class LlmSituationPlannerProvider:
+    """The situation planner arm (DS-3, the technical definition §6 —
+    the dual-seat chapter's planning face, the director agent's
+    situation contract) over one :class:`TextCompletion` seam — one
+    call, one four-question plan; the structural ban and the identity
+    contract ride the prompt (F9: a structured single call, never a
+    tool-calling loop). The old blueprint machine
+    (:class:`LlmDirectorProvider` + the literary schema) stays the
+    retired test face; the /ds product path plans through this arm."""
+
+    def __init__(
+        self,
+        completion: TextCompletion,
+        language: str = PROSE_LANGUAGE_DEFAULT,
+    ) -> None:
+        self._completion = completion
+        self._language = language
+
+    def plan(self, context: SituationPlanContext) -> SituationPlan:
+        """One chapter's situation plan (see the class docstring)."""
+
+        return _parse_situation_plan(
+            _complete_text(
+                self._completion, _situation_plan_prompt(context)
+            ),
+            context.cast_members,
         )

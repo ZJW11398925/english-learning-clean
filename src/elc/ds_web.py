@@ -85,6 +85,10 @@ from elc.world.ds_opening import (
     DS_WORLD_ID,
     seed_ds_world,
 )
+from elc.world.ds_situation import (
+    plan_situation_chapter,
+    situation_face_of,
+)
 from elc.world.harness import Principal, Tool, authorize
 from elc.world.llm_providers import (
     PROSE_LANGUAGE_DEFAULT,
@@ -93,6 +97,7 @@ from elc.world.llm_providers import (
     LlmDispatcherProvider,
     LlmNarratorProvider,
     LlmProviderError,
+    LlmSituationPlannerProvider,
 )
 from elc.world.narrative.store import SqliteNarrativeStore
 from elc.world.narrative.types import ChapterStatus
@@ -497,12 +502,13 @@ class DualSeatWebFace:
         )
 
     def _planner(self) -> Pipeline:
-        """A fresh chapter planner — the shared Director provider over
-        the main completion; ``require_plan_gates=False`` is the DS-1
-        replacement (the technical definition §6 F2: the plan-gate
-        production is the replaced V3-8i face; the DS plan is the
-        situation plan in the legacy ten-key shape, and the stop law
-        lives in the spine's §4 policy)."""
+        """A fresh chapter pipeline — kept for the **replan
+        consumption** the spine owes (the SCENE / CHAPTER protocol arms)
+        and nothing else: the /ds product path PLANS through the
+        situation machine (:meth:`_plan_situation`, DS-3 §6), never
+        through the blueprint machine (``plan_chapter`` — the retired
+        test face; the plan-gate production is the replaced V3-8i face,
+        §6 F2)."""
 
         conn = self._conn
         worlds = self._worlds
@@ -546,6 +552,47 @@ class DualSeatWebFace:
             require_plan_gates=False,
         )
 
+    def _situation_planner(self) -> LlmSituationPlannerProvider:
+        """The situation planner arm over the main completion (the
+        director seat's own tier), the language read live."""
+
+        return LlmSituationPlannerProvider(
+            self._completion, language=self._prose_language()
+        )
+
+    def _plan_situation(
+        self, author_direction: str | None = None
+    ) -> str | None:
+        """Plan the world's next chapter through the situation machine
+        (DS-3 §6) — the refusal sentence, or ``None`` on a landing. The
+        legs are the caller's own invariant (every caller checks
+        :meth:`_legs_ready` first)."""
+
+        assert (
+            self._conn is not None
+            and self._worlds is not None
+            and self._bibles is not None
+            and self._casts is not None
+            and self._narrative is not None
+        )
+        planned = plan_situation_chapter(
+            self._conn,
+            world_store=self._worlds,
+            cast_store=self._casts,
+            bible_store=self._bibles,
+            narrative_store=self._narrative,
+            planner=self._situation_planner(),
+            world_id=DS_WORLD_ID,
+            now=self._clock(),
+            author_direction=author_direction,
+        )
+        if isinstance(planned, Err):
+            return (
+                "这一章的情境没能计划出来："
+                f"{planned.error.code.value}: {planned.error.message}"
+            )
+        return None
+
     # -- the state face ------------------------------------------------------
 
     def state(self) -> dict[str, Any]:
@@ -565,10 +612,9 @@ class DualSeatWebFace:
 
     def start(self) -> dict[str, Any]:
         """The idempotent start: seed the draft opening world when
-        absent, plan the first chapter when the world holds none, then
-        answer the state. The plan rides the shared Director provider
-        (the situation plan in the blueprint shape — the DS face never
-        consumes the gate-production face, §6 F2)."""
+        absent, plan the first chapter as a SITUATION when the world
+        holds none (DS-3 §6 — the four questions; the blueprint machine
+        is the retired test face), then answer the state."""
 
         if not self._legs_ready():
             return self._no_legs()
@@ -596,14 +642,11 @@ class DualSeatWebFace:
             if refusal is not None:
                 return self._refuse(refusal)
             try:
-                planned = self._planner().plan_chapter(DS_WORLD_ID, now)
+                failure = self._plan_situation()
             except LlmProviderError as exc:
                 return self._refuse(self._provider_failure(exc.reason))
-            if isinstance(planned, Err):
-                return self._refuse(
-                    "第一幕没能计划出来："
-                    f"{planned.error.code.value}: {planned.error.message}"
-                )
+            if failure is not None:
+                return self._refuse(failure)
         return self._landed({"kind": "start"})
 
     def drive_beat(
@@ -758,16 +801,11 @@ class DualSeatWebFace:
         if applied is not None:
             return self._refuse(applied)
         try:
-            planned = self._planner().plan_chapter(
-                DS_WORLD_ID, self._clock(), author_direction=direction
-            )
+            failure = self._plan_situation(direction)
         except LlmProviderError as exc:
             return self._refuse(self._provider_failure(exc.reason))
-        if isinstance(planned, Err):
-            return self._refuse(
-                "下一章没能计划出来："
-                f"{planned.error.code.value}: {planned.error.message}"
-            )
+        if failure is not None:
+            return self._refuse(failure)
         return self._landed({"kind": "next_chapter"})
 
     def bible_edit(
@@ -954,17 +992,35 @@ def _derive_state(
 
 
 def _plan_face(plan: WorldChapterPlanRecord) -> dict[str, Any]:
-    """The situation plan's read face (the 情境计划's summary)."""
+    """The situation plan's read face (DS-3 §6) — the four questions'
+    answers beside the minimal field set, read from the plan element's
+    situation document; a legacy blueprint row (the retired test face's
+    own storage) answers the goal line alone, honestly."""
 
-    return {
+    face: dict[str, Any] = {
         "chapter_plan_id": plan.chapter_plan_id,
         "plan_revision": plan.plan_revision,
         "goal": plan.goal,
-        "dramatic_question": plan.dramatic_question,
-        "closing_pressure": plan.closing_pressure,
         "scene_count": len(plan.scenes),
         "places": [str(element.get("place", "")) for element in plan.scenes],
     }
+    doc = situation_face_of(plan)
+    if doc is None:
+        return face
+    face.update(
+        {
+            "where_you_stand": doc["where_you_stand"],
+            "what_presses_on_you": doc["what_presses_on_you"],
+            "first_speaker": doc["first_speaker"],
+            "first_words": doc["first_words"],
+            "open_question": doc["open_question"],
+            "world_event_candidates": list(doc["world_event_candidates"]),
+            "protagonist_goals": dict(doc["protagonist_goals"]),
+            "pacing": doc["pacing"],
+            "settlement_expectation": doc["settlement_expectation"],
+        }
+    )
+    return face
 
 
 def _chapter_passages(

@@ -49,29 +49,29 @@ NOW = "2026-10-14T00:00:00+00:00"
 REPO = Path(__file__).resolve().parents[2]
 WEBUI = REPO / "src" / "elc" / "webui"
 
-BLUEPRINT: dict[str, Any] = {
-    "goal": "the mark on the cornerstone demands an answer tonight",
-    "dramatic_question": "who painted the mark",
-    "planned_start_tick": 1310,
-    "planned_end_tick": 1500,
-    "closing_pressure": "the fog closes in",
-    "desired_development": "the answer moves the town",
-    "soft_outcomes": "an uneasy truce",
-    "chapter_questions_to_advance": "what the mark means",
-    "scenes": [
-        {
-            "purpose": "the public question",
-            "place": "the ferry house steps",
-            "pov_actor_id": "ache",
-            "participants": ["ache", "wenq", "han"],
-            "planned_start_tick": 1310,
-            "entry_goals": "the question hangs on you",
-            "exit_condition": "the walk ends",
-            "elasticity": "one night",
-            "revealable": "the paint's freshness",
-            "must_hide": "who painted the mark",
-        }
+SITUATION_PLAN: dict[str, Any] = {
+    "where_you_stand": (
+        "the ferry house steps at lantern light, the town's question"
+        " hanging on you"
+    ),
+    "place": "the ferry house steps",
+    "what_presses_on_you": (
+        "the county clerk arrives at dawn and the mark must have an"
+        " answer — yours"
+    ),
+    "first_speaker": "wenq",
+    "first_words": "The clerk comes at dawn. Was it there when you"
+        " crossed?",
+    "open_question": "will your answer keep you out of the water gate",
+    "world_event_candidates": [
+        "the fog closes the crossing before dawn",
     ],
+    "protagonist_goals": {
+        "wenq": "keep the ledger clean through the dawn",
+        "han": "keep the water's secret one more night",
+    },
+    "pacing": "the pressure tightens with every hour of fog",
+    "settlement_expectation": "where the mark's answer has left you",
 }
 
 
@@ -83,7 +83,9 @@ class ScriptedCompletion:
         self.prompts: dict[str, list[str]] = {}
 
     def complete(self, prompt: str) -> CompletionOutcome:
-        if "world director" in prompt:
+        if "situation planner of a two-seat" in prompt:
+            kind = "situation"
+        elif "world director" in prompt:
             kind = "director"
         elif "dispatcher of a two-seat" in prompt:
             kind = "dispatch"
@@ -101,9 +103,12 @@ class ScriptedCompletion:
             raise AssertionError(f"the {kind} script is exhausted")
         return CompletionOutcome(text=queue.pop(0), error=None)
 
+    def count(self, kind: str) -> int:
+        return len(self.prompts.get(kind, []))
 
-def _director_payload() -> str:
-    return json.dumps(BLUEPRINT, ensure_ascii=False)
+
+def _situation_payload() -> str:
+    return json.dumps(SITUATION_PLAN, ensure_ascii=False)
 
 
 def _dispatch_payload() -> str:
@@ -178,7 +183,7 @@ def env(
         ),
     )
     completion = ScriptedCompletion(
-        director=[_director_payload()] * 3,
+        situation=[_situation_payload()] * 3,
         dispatch=[_dispatch_payload()] * 3,
         character=[_proposal_payload()] * 6,
         narrator=[_narration_payload()] * 6,
@@ -213,7 +218,23 @@ def test_start_seeds_and_plans_then_the_face_opens(
     payload = landed
     assert payload["world"]["exists"] is True
     assert payload["chapter"]["status"] == "PLANNED"
-    assert payload["plan"]["dramatic_question"] == "who painted the mark"
+    # the situation plan's read face carries the four questions (DS-3
+    # §6) — not the blueprint's literary columns
+    assert (
+        payload["plan"]["what_presses_on_you"]
+        == SITUATION_PLAN["what_presses_on_you"]
+    )
+    assert payload["plan"]["first_speaker"] == "wenq"
+    assert payload["plan"]["open_question"] == (
+        SITUATION_PLAN["open_question"]
+    )
+    assert "dramatic_question" not in payload["plan"]
+    # the blueprint machine was never asked (the retired test face)
+    assert completion.count("situation") == 1
+    assert "situation" in completion.prompts
+    prompt = completion.prompts["situation"][0]
+    assert '"first_words"' in prompt
+    assert "NO literary structure" in prompt
     assert payload["controls"].get("can_open") is True
     # the opening beat drives through the face (the scripted completion)
     run = face.drive_beat("open", _queue())
