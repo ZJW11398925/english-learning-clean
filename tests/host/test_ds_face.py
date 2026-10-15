@@ -33,6 +33,7 @@ from elc.ds_web import (
     DS_LIGHT_MODEL_KEY,
     DS_PENDING_BIBLE_KEY,
     DualSeatWebFace,
+    RetryingTextCompletion,
     ds_bible_request,
     ds_state_ro,
     ds_turn_request,
@@ -40,9 +41,11 @@ from elc.ds_web import (
 from elc.platform.db.app_settings import AppSettingStore
 from elc.platform.db.epoch import open_runtime_epoch
 from elc.platform.db.migrations import apply_migrations
+from elc.platform.types import Err
 from elc.world.ds_opening import DS_WORLD_ID
 from elc.world.llm_providers import CompletionOutcome
 from elc.world.store import SqliteWorldStore
+from elc.world.types import WorldEvent
 
 NOW = "2026-10-14T00:00:00+00:00"
 
@@ -571,3 +574,215 @@ def test_the_ds_language_face_reads_and_writes_the_shared_word() -> None:
         encoding="utf-8"
     )
     assert '"language": "en"' not in ds_source
+
+
+# ---------------------------------------------------------------------------
+# DS-4 — the shallow-scene recovery and the transport-class retry
+# ---------------------------------------------------------------------------
+
+
+def _scene_id_of(db: sqlite3.Connection) -> str:
+    row = db.execute(
+        "SELECT scene_id FROM world_scene ORDER BY scene_id LIMIT 1"
+    ).fetchone()
+    assert row is not None
+    return str(row[0])
+
+
+def _advance_scene_row_to_active(db: sqlite3.Connection) -> str:
+    """The user's live crash shape (2026-10-15): the opening beat's
+    transport death had already advanced the scene row to ACTIVE while
+    zero prose had landed. The row update here is the honest storage
+    fact the recovery face must read through."""
+
+    scene_id = _scene_id_of(db)
+    db.execute(
+        "UPDATE world_scene SET status = 'ACTIVE' WHERE scene_id = ?",
+        (scene_id,),
+    )
+    db.commit()
+    return scene_id
+
+
+def _land_one_world_delta(
+    db: sqlite3.Connection, scene_id: str
+) -> None:
+    """One landed world δ at the position the beat would replay from
+    (the engine's own event id: ``{scene_id}:beat-{next_segment_seq}``
+    — zero segments means beat-1), the user's second crash residue."""
+
+    fence = open_runtime_epoch(db)
+    landed = SqliteWorldStore(db, fence).record_event(
+        WorldEvent(
+            event_id=f"{scene_id}:beat-1",
+            world_id=DS_WORLD_ID,
+            kind="world",
+            narration="the fog closed the crossing before dawn",
+            effects=(),
+            occurred_at=NOW,
+            source="ds-world",
+        )
+    )
+    assert not isinstance(landed, Err), (
+        landed.error if isinstance(landed, Err) else ""
+    )
+
+
+def test_the_active_zero_segment_scene_recovers_through_the_opening(
+    env: tuple,
+) -> None:
+    """DS-4 钉 1 — the user's live shape: scene row ACTIVE, zero
+    committed segments, one landed world δ. The next face must answer
+    the OPENING button (the judgment is the committed-segment count,
+    never the scene row's status), and settle must stay OFF (settling
+    a chapter with nothing on the ground is the meaningless shape).
+    The old PLANNED-only guard left this shape mute — no open button,
+    a lit settle button; reverting to it re-reds this pin."""
+
+    db, face, _completion = env
+    assert face.start()["ok"] is True
+    scene_id = _advance_scene_row_to_active(db)
+    _land_one_world_delta(db, scene_id)
+    payload = face.state()
+    assert payload["next"]["kind"] == "opening"
+    assert payload["controls"].get("can_open") is True
+    assert payload["controls"].get("can_settle") is False
+    assert payload["controls"].get("can_reply") is False
+
+
+def test_a_scene_with_committed_segments_keeps_your_turn(
+    env: tuple,
+) -> None:
+    """DS-4 钉 2 — the anti-misopen side: once segments ARE on the
+    ground the face stays your_turn, the open button stays off and the
+    settle button stays lit (a committed scene drives on and may
+    settle; it never re-opens)."""
+
+    db, face, _completion = env
+    assert face.start()["ok"] is True
+    run = face.drive_beat("open", _queue())
+    assert run["ok"] is True, run["error"]
+    payload = face.state()
+    assert payload["passages"], "the scripted drive landed its segments"
+    assert payload["next"]["kind"] == "your_turn"
+    assert payload["controls"].get("can_open") is False
+    assert payload["controls"].get("can_reply") is True
+    assert payload["controls"].get("can_settle") is True
+
+
+class _FlakyInner:
+    """The retry law's scripted seam: a fixed outcome queue, every
+    call recorded, optional streaming increments per attempt."""
+
+    def __init__(
+        self,
+        outcomes: list[CompletionOutcome],
+        *,
+        stream_chunks: list[list[str]] | None = None,
+    ) -> None:
+        self._outcomes = list(outcomes)
+        self._stream_chunks = stream_chunks or []
+        self.calls: list[str] = []
+        self.wired: list[object] = []
+
+    def complete(self, prompt: str) -> CompletionOutcome:
+        self.calls.append(prompt)
+        return self._outcomes.pop(0)
+
+    def complete_streaming(
+        self, prompt: str, on_chunk: Any
+    ) -> CompletionOutcome:
+        self.calls.append(prompt)
+        self.wired.append(on_chunk)
+        chunks = (
+            self._stream_chunks.pop(0)
+            if self._stream_chunks
+            else []
+        )
+        for chunk in chunks:
+            on_chunk(chunk)
+        return self._outcomes.pop(0)
+
+
+def test_the_retry_wrapper_redials_a_transport_death_once() -> None:
+    """DS-4 钉 3a — one timeout gets exactly one re-dial after the
+    ~2s pause; the second result rides out whatever it is."""
+
+    slept: list[float] = []
+    inner = _FlakyInner(
+        [
+            CompletionOutcome(text=None, error="timeout"),
+            CompletionOutcome(text="the whole answer", error=None),
+        ]
+    )
+    wrapper = RetryingTextCompletion(inner, sleep=slept.append)
+    outcome = wrapper.complete("one prompt")
+    assert outcome.text == "the whole answer"
+    assert outcome.error is None
+    assert len(inner.calls) == 2
+    assert slept == [2.0]
+
+
+def test_the_retry_wrapper_never_retries_an_answer_failure() -> None:
+    """DS-4 钉 3b — bad-shape is the model's considered verdict, not a
+    transient: one call, no pause, the failure rides out as is (the
+    fail-closed semantics are untouched)."""
+
+    slept: list[float] = []
+    inner = _FlakyInner(
+        [CompletionOutcome(text=None, error="bad-shape")]
+    )
+    wrapper = RetryingTextCompletion(inner, sleep=slept.append)
+    outcome = wrapper.complete("one prompt")
+    assert outcome.error == "bad-shape"
+    assert len(inner.calls) == 1
+    assert slept == []
+
+
+def test_the_retry_wrapper_returns_the_second_death_honestly() -> None:
+    """DS-4 钉 3c — two transport deaths in a row: exactly one re-dial,
+    the second failure returned as is (the manual retry law stays the
+    second layer)."""
+
+    slept: list[float] = []
+    inner = _FlakyInner(
+        [
+            CompletionOutcome(text=None, error="transport-error"),
+            CompletionOutcome(text=None, error="timeout"),
+        ]
+    )
+    wrapper = RetryingTextCompletion(inner, sleep=slept.append)
+    outcome = wrapper.complete("one prompt")
+    assert outcome.error == "timeout"
+    assert len(inner.calls) == 2
+    assert slept == [2.0]
+
+
+def test_the_retry_wrapper_reruns_a_dead_stream_whole() -> None:
+    """DS-4 钉 3d — a mid-stream transport death re-runs the WHOLE
+    call once: the first attempt's half-rendered prose has already
+    reached the wire (the original on_chunk keeps exactly that), the
+    retry's own increments are withheld (the re-dial carries a
+    swallowing sink, never the user's wire again), and the returned
+    outcome is the retry's honest whole for the parser and the final
+    render."""
+
+    slept: list[float] = []
+    received: list[str] = []
+    inner = _FlakyInner(
+        [
+            CompletionOutcome(text=None, error="transport-error"),
+            CompletionOutcome(text="the whole prose", error=None),
+        ],
+        stream_chunks=[["half a sentence"], ["the whole prose"]],
+    )
+    wrapper = RetryingTextCompletion(inner, sleep=slept.append)
+    outcome = wrapper.complete_streaming("one prompt", received.append)
+    assert outcome.text == "the whole prose"
+    assert outcome.error is None
+    assert len(inner.calls) == 2
+    assert slept == [2.0]
+    # the user's wire saw only the dead attempt's half; the retry's
+    # sink is a different callable (the increments went nowhere)
+    assert received == ["half a sentence"]
+    assert inner.wired[1] is not received.append

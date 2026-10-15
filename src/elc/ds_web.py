@@ -62,6 +62,7 @@ from __future__ import annotations
 import json
 import queue
 import sqlite3
+import time
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -93,6 +94,7 @@ from elc.world.ds_situation import (
 from elc.world.harness import Principal, Tool, authorize
 from elc.world.llm_providers import (
     PROSE_LANGUAGE_DEFAULT,
+    CompletionOutcome,
     LlmBatchAdjudicatorProvider,
     LlmCharacterProvider,
     LlmDispatcherProvider,
@@ -124,6 +126,7 @@ __all__ = [
     "DS_REPLY_GRAMMAR",
     "DS_STOP_NOTE_KEY",
     "DualSeatWebFace",
+    "RetryingTextCompletion",
     "ds_state_ro",
     "ds_turn_request",
 ]
@@ -214,6 +217,72 @@ _STATE_READ_FAILED = (
     "沉浸状态的这一次读取没有成功（app.db 打不开或不可读）——"
     "下一个轮询会再试。"
 )
+
+#: The transport-class failure reasons one automatic retry buys (the
+#: DS-4 law, the technical definition §8): a mid-call transport death
+#: is the endpoint's transient, not the answer's verdict. The
+#: answer-class failures (``bad-shape`` / ``bad-payload`` /
+#: ``no-output`` / ``http-4xx`` / ``missing-secret`` …) are NOT
+#: retried — they are the fail-closed semantics' own verdicts.
+_RETRYABLE_REASONS = frozenset({"timeout", "transport-error"})
+
+#: The one pause between the first attempt and its single re-dial.
+_RETRY_DELAY_SECONDS = 2.0
+
+
+class RetryingTextCompletion:
+    """The transport-class single retry over a ``TextCompletion`` seam
+    (the DS-4 law, the technical definition §8).
+
+    2026-10-15's endpoint windows hiccuped three times mid-drive (SSL
+    EOF / empty answers) and every hiccup died straight into the user's
+    drive: the scene row had already advanced, the prose had not
+    landed, and the face went mute. This wrapper answers one
+    ``timeout`` / ``transport-error`` outcome with a ~2s pause and
+    exactly ONE re-dial — the second result rides out whatever it is
+    (a second death is the honest refusal, the manual retry law stays
+    as the second layer). The streaming face retries the WHOLE call (a
+    mid-stream death is the same transport class; the narration is not
+    landed yet, regenerating is harmless): the first attempt's
+    half-rendered prose is already on the wire and stays there, the
+    retry's own increments are withheld so the page never shows the
+    same prose twice, and the final frame's authoritative state
+    re-renders the flow whole.
+
+    Only the DS arms dial this (the face's two tiers below); the
+    persona shared transport and the V3 paths are untouched."""
+
+    def __init__(
+        self,
+        inner: Any,
+        *,
+        sleep: Callable[[float], None] | None = None,
+    ) -> None:
+        self._inner = inner
+        self._sleep = sleep if sleep is not None else time.sleep
+
+    def complete(self, prompt: str) -> CompletionOutcome:
+        """One prompt's completion with the one transport-class retry."""
+
+        outcome = self._inner.complete(prompt)
+        if outcome.error not in _RETRYABLE_REASONS:
+            return outcome
+        self._sleep(_RETRY_DELAY_SECONDS)
+        return self._inner.complete(prompt)
+
+    def complete_streaming(
+        self, prompt: str, on_chunk: Callable[[str], None]
+    ) -> CompletionOutcome:
+        """The streaming face's whole-call retry — the dead first
+        attempt's streamed increments are dropped on the floor (they
+        already reached the wire), the retry streams nowhere and
+        returns the honest whole for the parser and the final render."""
+
+        outcome = self._inner.complete_streaming(prompt, on_chunk)
+        if outcome.error not in _RETRYABLE_REASONS:
+            return outcome
+        self._sleep(_RETRY_DELAY_SECONDS)
+        return self._inner.complete_streaming(prompt, lambda _chunk: None)
 
 
 def _utc_now() -> str:
@@ -349,9 +418,16 @@ class DualSeatWebFace:
         # The two tiers ride the ONE egress adapter: the main tier for
         # the character / narrator arms, the light tier (when the
         # setting names a word) for the dispatch / adjudication arms.
-        self._completion = PersonaEgressCompletion(self._provider_of)
-        self._light_completion = PersonaEgressCompletion(
-            self._provider_of, model_of=self._light_model
+        # Both dial through the DS-4 transport-class retry — the
+        # endpoint's transient deaths pause ~2s and re-dial exactly
+        # once before the refusal reaches the user.
+        self._completion = RetryingTextCompletion(
+            PersonaEgressCompletion(self._provider_of)
+        )
+        self._light_completion = RetryingTextCompletion(
+            PersonaEgressCompletion(
+                self._provider_of, model_of=self._light_model
+            )
         )
         self._clock = clock if clock is not None else _utc_now
 
@@ -1111,7 +1187,13 @@ def _next_face(
     reads: TurnReads, status: str
 ) -> tuple[dict[str, Any], dict[str, bool]]:
     """The next-step face and the control bits — the durable
-    position's own sentences (the immersion face's voice)."""
+    position's own sentences (the immersion face's voice). The DS-4
+    law: the judgment is the committed-segment count, never the scene
+    row's status — zero committed segments IS the opening's position
+    (a mid-opening transport death leaves the row ACTIVE with no prose
+    on the ground, and the opening button is the recovery path; the
+    engine re-runs the beat from the last committed δ), and settling a
+    chapter with no landed segment is refused the button at all."""
 
     controls = {
         "can_start": False,
@@ -1139,12 +1221,16 @@ def _next_face(
             controls,
         )
     passages = reads.committed_segments(scene.scene_id)
-    if not passages and scene.status.value == "PLANNED":
+    if not passages:
+        # DS-4 据浅场回收: zero committed segments — the opening
+        # button, whatever the scene row says (PLANNED or the
+        # crash-advanced ACTIVE alike). settle stays off: there is
+        # nothing on the ground to settle.
         controls["can_open"] = True
         return (
             {
                 "kind": "opening",
-                "detail": "本章起了头——点「开篇」，世界落第一笔。",
+                "detail": "世界还没落第一笔——点「开篇」重新落笔。",
             },
             controls,
         )

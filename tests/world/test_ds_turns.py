@@ -90,6 +90,7 @@ from elc.world.llm_providers import (
 )
 from elc.world.memory import MemoryKind, v3_memory_view
 from elc.world.narrative import SqliteNarrativeStore
+from elc.world.scene import ScenePlanner
 from elc.world.store import SqliteWorldStore
 from elc.world.turns import (
     DRIVE_BEAT_CEILING,
@@ -100,6 +101,7 @@ from elc.world.turns import (
     TurnEngine,
     turn_steps_of,
 )
+from elc.world.types import WorldEvent
 
 NOW = "2026-10-14T00:00:00+00:00"
 
@@ -1253,6 +1255,68 @@ def test_a_world_beat_replays_from_its_stored_delta(
     # the beat still landed its prose
     assert len(rerun.turns) == 1
     assert rerun.turns[0].proposals == ()
+
+
+def test_open_beat_drives_an_active_zero_segment_scene(
+    planned: sqlite3.Connection, stores: tuple
+) -> None:
+    """DS-4 — the user's live crash shape (2026-10-15): the opening
+    beat died mid-transport AFTER the scene row had advanced to ACTIVE
+    and its world δ had landed, with zero committed segments (one δ at
+    tick 5 on the real app.db). The engine's open drive must run that
+    shape as is — the ACTIVE scene rides its adopted dossier (the
+    ``_ensure_scene_open`` two doors), the stored δ replays (no second
+    adjudication, no second dispatch), and the first segment lands:
+    the recovery path the opening button now hands the user."""
+
+    conn = planned
+    world_store, cast_store, bible_store, narrative = stores
+    scene_row = conn.execute(
+        "SELECT scene_id FROM world_scene ORDER BY scene_id LIMIT 1"
+    ).fetchone()
+    assert scene_row is not None
+    scene_id = str(scene_row[0])
+    opened = ScenePlanner(
+        conn,
+        world_store=world_store,
+        cast_store=cast_store,
+        bible_store=bible_store,
+        narrative_store=narrative,
+    ).open_scene(scene_id, NOW)
+    assert not isinstance(opened, Err), opened.error
+    # the δ the dying beat had already landed (the engine's own event
+    # id at the zero-segment position)
+    landed = world_store.record_event(
+        WorldEvent(
+            event_id=f"{scene_id}:beat-1",
+            world_id=DS_WORLD_ID,
+            kind="world",
+            narration="the fog closed the crossing before dawn",
+            effects=(),
+            occurred_at=NOW,
+            source="ds-world",
+        )
+    )
+    assert not isinstance(landed, Err), landed.error
+    completion = ScriptedDSCompletion(**_default_queues())
+    engine = _engine(conn, stores, completion)
+    run = engine.drive(DS_WORLD_ID, OpenBeat(), NOW)
+    assert run.error is None, run.error
+    assert len(run.fresh_passage_ids) == 1
+    # the stored δ was NOT re-judged — the beat resumed from the
+    # durable position (the replay arm)
+    assert completion.count("adjudicate") == 0
+    assert completion.count("dispatch") == 0
+    assert any(
+        "replayed from its stored δ" in note for note in run.notes
+    )
+    # the prose is on the ground — the face's recovery aim
+    row = conn.execute(
+        "SELECT COUNT(*) FROM segment_commit"
+        " WHERE scene_id = ? AND kind = 'SEGMENT'",
+        (scene_id,),
+    ).fetchone()
+    assert row is not None and int(row[0]) == 1
 
 
 def test_the_dispatch_input_carries_the_situation_plan(
