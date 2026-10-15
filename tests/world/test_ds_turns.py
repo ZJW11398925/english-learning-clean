@@ -659,6 +659,12 @@ def test_press_continues_to_the_beat_ceiling(
     assert run.stopped_on == "beat_ceiling"
     assert run.note is not None
     assert "3 拍" in run.note
+    # the ceilings are PURE guardrails under the rhythm law: the stop
+    # carries the anomaly signal (the normal path never touches one)
+    assert any(
+        "dispatch anomaly" in note and "beat" in note
+        for note in run.notes
+    )
     assert len(run.turns) == 3  # reply + two advances, the reasoned stop
     # every world beat ran the FULL chain (DS-3 跳①不跳④): the reply
     # and the two advances each spent dispatch + 2 characters +
@@ -1205,7 +1211,7 @@ def test_a_world_beat_replays_from_its_stored_delta(
     queues = _default_queues()
     queues["narrator"] = [
         _narration_payload(),
-        _narration_payload(addresses_you=False, beat_complete=True),
+        _narration_payload(),
     ]
     completion = ScriptedDSCompletion(**queues)
     engine = _engine(planned, stores, completion)
@@ -1388,3 +1394,76 @@ def test_the_narration_prompt_carries_the_sovereignty_contract(
     assert "身体主权" in zh_prompt
     assert "留白待你" in zh_prompt
     assert "Body sovereignty" not in zh_prompt
+
+
+# ---------------------------------------------------------------------------
+# 14 — the rhythm law (DS-3, §4: the ceilings are pure guardrails)
+# ---------------------------------------------------------------------------
+
+
+def test_the_rhythm_law_drives_to_a_natural_stop(
+    planned: sqlite3.Connection, stores: tuple
+) -> None:
+    """§4's default: the drive continues past ``beat_complete`` beats
+    and stops at the natural hanging point — 「轮到你了」 is the ONLY
+    routine stop. Two complete beats, then an address: three turns,
+    stopped on the marker, no ceiling touched."""
+
+    queues = _default_queues()
+    queues["narrator"] = [
+        _narration_payload(addresses_you=False, beat_complete=True),
+        _narration_payload(addresses_you=False, beat_complete=True),
+        _narration_payload(),
+    ]
+    completion = ScriptedDSCompletion(**queues)
+    completion._queues["dispatch"] = [_dispatch_payload()] * 3
+    completion._queues["character"] = [_proposal_payload()] * 6
+    completion._queues["adjudicate"] = [_adjudication_payload()] * 3
+    engine = _engine(planned, stores, completion)
+    run = engine.drive(
+        DS_WORLD_ID,
+        ReplyBeat(submission_id="sub-1", intent_text="…"),
+        NOW,
+    )
+    assert run.error is None
+    assert run.stopped_on == "addresses_you"
+    assert len(run.turns) == 3
+    assert run.note is None  # a natural stop carries no guardrail note
+    assert run.stop_log[0].reason == "beat_complete"
+    assert run.stop_log[0].stopped is False
+    assert run.stop_log[-1].reason == "addresses_you"
+
+
+def test_a_hold_pacing_no_longer_stops(
+    planned: sqlite3.Connection, stores: tuple
+) -> None:
+    """变异预演（回退修复→红）：under the old law a ``hold`` dispatch
+    word stopped the drive (「三段一停」's sibling) — under the rhythm
+    law the pacing word is a scheduling signal only: the hold beat
+    continues and the drive stops at the NEXT natural hanging point."""
+
+    queues = _default_queues()
+    queues["narrator"] = [
+        _narration_payload(addresses_you=False, beat_complete=True),
+        _narration_payload(),
+    ]
+    completion = ScriptedDSCompletion(**queues)
+    completion._queues["dispatch"] = [
+        _dispatch_payload(pacing="hold"),
+        _dispatch_payload(),
+    ]
+    completion._queues["character"] = [_proposal_payload()] * 4
+    completion._queues["adjudicate"] = [_adjudication_payload()] * 2
+    engine = _engine(planned, stores, completion)
+    run = engine.drive(
+        DS_WORLD_ID,
+        ReplyBeat(submission_id="sub-1", intent_text="…"),
+        NOW,
+    )
+    assert run.error is None
+    # the hold beat continued — the stop is the next address, not the
+    # pacing word
+    assert run.stopped_on == "addresses_you"
+    assert len(run.turns) == 2
+    assert run.stop_log[0].pacing == "hold"
+    assert run.stop_log[0].reason == "beat_complete"

@@ -236,13 +236,18 @@ def test_start_seeds_and_plans_then_the_face_opens(
     assert '"first_words"' in prompt
     assert "NO literary structure" in prompt
     assert payload["controls"].get("can_open") is True
-    # the opening beat drives through the face (the scripted completion)
+    # the opening beat drives through the face (the scripted completion).
+    # Under the DS-3 rhythm law the scripted narrations (beat_complete,
+    # never a marker) drive on — the pure guardrail stops the drive at
+    # three beats, each a full world beat (dispatch + characters +
+    # adjudication + narration).
     run = face.drive_beat("open", _queue())
     assert run["ok"] is True, run["error"]
-    assert run["did"]["segments_written"] == 1
+    assert run["did"]["segments_written"] == 3
+    assert run["did"]["stopped_on"] == "beat_ceiling"
     after = face.state()
     assert after["chapter"]["status"] == "ACTIVE"  # the first landing activated
-    assert len(after["passages"]) == 1
+    assert len(after["passages"]) == 3
     assert after["controls"].get("can_reply") is True
 
 
@@ -299,9 +304,13 @@ def test_the_stop_note_persists_and_the_state_reads_it(
     face.start()
     face.drive_beat("open", _queue())
     state = face.state()
-    # the scripted opening stops on pacing_hold — the stop line rode
+    # the scripted narrations never offer a natural stop, so the drive
+    # runs to the pure guardrail (the DS-3 节奏律): the reasoned stop
+    # line rode, the last beat's own verdict is beat_complete
     assert state["stop"] is not None
-    assert state["stop"]["last"]["reason"] in ("pacing_hold", "pacing_settle")
+    assert state["stop"]["stopped_on"] == "beat_ceiling"
+    assert state["stop"]["last"]["reason"] == "beat_complete"
+    assert "3 拍" in state["stop"]["note"]
     # and the light-model word rides the state after a save
     face.set_light_model("deepseek-chat")
     state = face.state()

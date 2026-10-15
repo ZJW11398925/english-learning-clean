@@ -50,20 +50,23 @@ committed segments) and executes the next beat. The replay anchor is
 segment / action lineage read back in canonical order; the full
 turn-log resume stays §10's registered post-POC blade).
 
-**The guardrails ride from day one** (§1 F7): one drive runs at most
-:data:`DRIVE_BEAT_CEILING` beats and at most :data:`DRIVE_CALL_CEILING`
-model calls; hitting either is a *reasoned* stop (the sentence rides
-``DriveRun.note`` — 「有故之停，不得无解释之停」).
+**The guardrails ride from day one** (§1 F7, the DS-3 节奏律): one
+drive runs at most :data:`DRIVE_BEAT_CEILING` beats and at most
+:data:`DRIVE_CALL_CEILING` model calls — BOTH are **pure guardrails**:
+they bound the 「一直写个没完」 accident, they are never routine stops.
+Hitting either is a *reasoned* stop (the sentence rides
+``DriveRun.note`` — 「有故之停，不得无解释之停」) and an anomaly signal
+(the note rides ``DriveRun.notes`` — the normal path drives to a
+natural hanging point and never touches a ceiling).
 
-**The stop law** (§4): the narration arm's own markers
-(``addresses_you`` / ``impends_on_you`` / ``beat_complete``) + the
-dispatch pacing; the first two stop the drive at 「轮到你了」,
-``beat_complete`` continues per pacing (press advances once more,
-hold and settle stop gently) — always inside the ceilings. Every stop
-decision is recorded (:class:`StopDecision`; the drive's answer
-carries the full log — the measurement face the POC acceptance
-reviews; the durable per-row log table is the registered migration
-blade's).
+**The stop law** (§4 + the DS-3 节奏律): the narration arm's own
+markers — ``addresses_you`` / ``impends_on_you`` are the natural
+hanging points and the ONLY routine stops (「轮到你了」);
+``beat_complete`` never stops (the drive continues — the default is
+推进到自然悬点). The dispatch pacing word stays a scheduling signal,
+never a stop. Every stop decision is recorded
+(:class:`StopDecision`; the drive's answer carries the full log — the
+measurement face the POC acceptance reviews).
 
 **The harness registry is the only door to a privileged act** (§3):
 each execution point authorizes through :mod:`elc.world.harness` first
@@ -166,14 +169,17 @@ __all__ = [
 ]
 
 
-#: One drive's beat ceiling (DS-1 §1 F7: 「建议 3 拍」) — the reasoned
-#: stop's bound; hitting it is never a silent halt.
+#: One drive's beat ceiling (§1 F7: 「建议 3 拍」) — a PURE guardrail
+#: under the DS-3 节奏律 (§4): it bounds the runaway accident, it is
+#: never a routine stop; hitting it carries the sentence AND the
+#: anomaly note (the normal path stops at a natural hanging point).
 DRIVE_BEAT_CEILING = 3
 
-#: One drive's model-call ceiling (DS-1 §1 F7: 「建议 12 次」) — the cost
-#: guardrail; a reply beat spends ~4 (dispatch + k characters +
-#: adjudication + narration), so twelve covers one reply plus two
-#: advances with retry headroom.
+#: One drive's model-call ceiling (§1 F7: 「建议 12 次」) — the cost
+#: guardrail, likewise PURE under the rhythm law: a reply or world beat
+#: spends ~5 calls (dispatch + k characters + adjudication +
+#: narration), so twelve covers one beat plus one more with retry
+#: headroom; hitting it is the reasoned stop + the anomaly signal.
 DRIVE_CALL_CEILING = 12
 
 #: The character pack's memory cap (DS-1 §2 F5: 「建议 ≤24 条」) — the
@@ -192,7 +198,10 @@ MOOD_KEY_PREFIX = "protagon."
 _TAIL_CHARS = 1200
 
 #: The reasoned stops' own sentences (zh — the immersion face's own
-#: voice, the reading-face note family's posture).
+#: voice, the reading-face note family's posture). Under the DS-3 rhythm
+#: law (§4) these are PURE guardrails: hitting either is a *reasoned*
+#: stop the normal path should never reach — the anomaly note rides
+#: beside the sentence.
 _BEAT_CEILING_SENTENCE = (
     "本次已连走 {written} 拍（一次驱动至多 {ceiling} 拍）——世界停在这，"
     "轮到你了。"
@@ -200,6 +209,16 @@ _BEAT_CEILING_SENTENCE = (
 _CALL_CEILING_SENTENCE = (
     "这一次驱动用满了模型调用预算（{ceiling} 次）——世界先停在这，"
     "轮到你了。"
+)
+
+#: The ceilings' anomaly note (DS-3 §4 节奏律): a ceiling stop is a
+#: dispatch-anomaly signal — the normal path drives to a natural
+#: hanging point, so a ceiling stop means the narration never offered
+#: one. Rides :data:`DriveRun.notes`, never the user-facing note.
+_CEILING_ANOMALY_NOTE = (
+    "dispatch anomaly: the drive hit the {which} ceiling — the rhythm"
+    " law expects a natural stop (addresses_you / impends_on_you),"
+    " and the narration offered none in {written} beat(s)"
 )
 
 
@@ -233,13 +252,16 @@ class ReplyBeat:
 
 @dataclass(frozen=True)
 class StopDecision:
-    """One beat's stop verdict (DS-1 §4) — the markers, the pacing that
-    informed it, the verdict and its reason. The drive's answer carries
-    the whole log (the measurement face). The reason vocabulary:
-    ``addresses_you`` / ``impends_on_you`` / ``pacing_press`` (the
-    drive continues) / ``pacing_hold`` / ``pacing_settle`` /
-    ``gate_awaiting`` (a standing gate awaits the reader — the durable
-    stop)."""
+    """One beat's stop verdict (DS-1 §4 + the DS-3 节奏律) — the
+    markers, the pacing that informed it, the verdict and its reason.
+    The drive's answer carries the whole log (the measurement face).
+    The reason vocabulary under the rhythm law:
+    ``addresses_you`` / ``impends_on_you`` (the natural hanging points
+    — the ONLY routine stops; 「轮到你了」) / ``beat_complete`` (the
+    drive continues — the ceilings are pure guardrails, never routine
+    stops). The drive-level words (``beat_ceiling`` / ``call_ceiling``)
+    stay the reasoned guardrail stops, each carrying its sentence and
+    the anomaly note."""
 
     beat_kind: str
     addresses_you: bool
@@ -654,11 +676,23 @@ class TurnEngine:
                     note = _BEAT_CEILING_SENTENCE.format(
                         written=len(turns), ceiling=DRIVE_BEAT_CEILING
                     )
+                    self._notes.append(
+                        _CEILING_ANOMALY_NOTE.format(
+                            which="beat",
+                            written=len(turns),
+                        )
+                    )
                     break
                 if self._calls >= DRIVE_CALL_CEILING:
                     stopped_on = "call_ceiling"
                     note = _CALL_CEILING_SENTENCE.format(
                         ceiling=DRIVE_CALL_CEILING
+                    )
+                    self._notes.append(
+                        _CEILING_ANOMALY_NOTE.format(
+                            which="call",
+                            written=len(turns),
+                        )
                     )
                     break
                 if self._reads.continuation_owed(scene.scene_id):
@@ -683,9 +717,10 @@ class TurnEngine:
                 if record.stop.stopped:
                     stopped_on = record.stop.reason
                     break
-                if record.stop.reason in ("pacing_settle", "pacing_hold"):
-                    stopped_on = record.stop.reason
-                    break
+                # the rhythm law (§4): beat_complete NEVER stops — the
+                # drive continues (as the world) until a natural hanging
+                # point, a guardrail, or a refusal; the pacing word is a
+                # scheduling signal, not a stop.
         except TurnRefusal as refusal:
             return self._answer(
                 world_id, chapter_id, scene_id, turns, fresh, "refused",
@@ -1239,7 +1274,7 @@ class TurnEngine:
                 if narration.addresses_you
                 else "impends_on_you"
                 if narration.impends_on_you
-                else "pacing_hold"
+                else "beat_complete"
             ),
         )
         return TurnRecord(
@@ -1845,10 +1880,12 @@ class TurnEngine:
     def _stop_decision(
         self, beat_kind: str, narration: NarrationResult, pacing: str
     ) -> StopDecision:
-        """⑧ the stop law (§4): the markers first — an address or an
-        impend stops at 「轮到你了」; ``beat_complete`` continues per
-        pacing (press advances once more, hold / settle stop gently).
-        The whole verdict rides the log (the measurement face)."""
+        """⑧ the stop law (§4 + the DS-3 节奏律): the natural hanging
+        points stop at 「轮到你了」 — an address or an impend;
+        ``beat_complete`` NEVER stops (the drive continues, the ceilings
+        are the pure guardrails). The pacing word rides the verdict as
+        the scheduling signal it is. The whole verdict rides the log
+        (the measurement face)."""
 
         addresses = narration.addresses_you
         impends = narration.impends_on_you
@@ -1862,12 +1899,9 @@ class TurnEngine:
                 beat_kind, addresses, impends, narration.beat_complete,
                 pacing, True, "impends_on_you",
             )
-        word = {"press": "pacing_press", "hold": "pacing_hold"}.get(
-            pacing, "pacing_settle"
-        )
         return StopDecision(
             beat_kind, addresses, impends, narration.beat_complete,
-            pacing, word != "pacing_press", word,
+            pacing, False, "beat_complete",
         )
 
     def _stored_ruling(
