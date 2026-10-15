@@ -1062,7 +1062,11 @@ def test_the_driven_prompts_carry_the_arms_contracts(
 
     narrator_prompt = completion.prompts["narrator"][0]
     assert "SECOND PERSON" in narrator_prompt
-    assert "Never decide, speak" in narrator_prompt
+    # the body sovereignty law rides the prompt (DS-3 §12.8 — the
+    # negative half the old clause carried, now with the perceptual
+    # face and the 留白 half)
+    assert "Body sovereignty" in narrator_prompt
+    assert "PERCEIVES" in narrator_prompt
     # the proposals ride their PUBLIC face only
     assert "watch whether the painter flinches" not in narrator_prompt
     assert "lifts the lantern" in narrator_prompt
@@ -1332,3 +1336,55 @@ def test_a_legacy_blueprint_plan_renders_no_plan_block(
     legacy_prompt = legacy_completion.prompts["dispatch"][0]
     assert "The chapter's situation plan" not in legacy_prompt
     assert "must move this plan" not in legacy_prompt
+
+
+# ---------------------------------------------------------------------------
+# 13 — the body sovereignty law (DS-3, §12.8)
+# ---------------------------------------------------------------------------
+
+
+def test_the_narration_prompt_carries_the_sovereignty_contract(
+    planned: sqlite3.Connection, stores: tuple
+) -> None:
+    """§12.8 in the prompt itself, both wording faces (V3-8g 措辞律):
+    the perceptual face only (看到/听到/感觉到/被作用), the world's own
+    actions allowed, the reader's spontaneous acts entering only
+    through their typed words or staying unwritten, and the definition's
+    own violation/compliance example pair. 拔句→红（评审变异组「主权拔
+    除」型的自证面）：the contract rides ONE constant — the driven
+    prompt pin above redds the moment the prompt stops carrying it; this
+    test pins the constant's both faces and the load-bearing example."""
+
+    from elc.world.llm_providers import _SOVEREIGNTY_SENTENCE
+
+    en = _SOVEREIGNTY_SENTENCE["en"]
+    zh = _SOVEREIGNTY_SENTENCE["zh"]
+    # the three halves of the law, en
+    assert "PERCEIVES" in en
+    assert "the world's own action" in en
+    assert "stay unwritten, awaiting them" in en
+    # the definition's own violation / compliance pair
+    assert "you hold your breath" in en
+    assert "the lamp moved over" in en
+    # the zh face
+    assert "身体主权" in zh
+    assert "感知面" in zh
+    assert "留白待你" in zh
+    assert "你屏住呼吸" in zh
+    assert "灯移了过去" in zh
+
+    # the zh wording face rides the driven prompt at language="zh"
+    queues = _default_queues()
+    queues["narrator"] = [_narration_payload()]
+    completion = ScriptedDSCompletion(**queues)
+    engine = _engine(planned, stores, completion, language="zh")
+    run = engine.drive(
+        DS_WORLD_ID,
+        ReplyBeat(submission_id="sub-zh", intent_text="…"),
+        NOW,
+    )
+    assert run.error is None
+    zh_prompt = completion.prompts["narrator"][0]
+    assert "身体主权" in zh_prompt
+    assert "留白待你" in zh_prompt
+    assert "Body sovereignty" not in zh_prompt

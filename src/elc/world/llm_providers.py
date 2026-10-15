@@ -2002,6 +2002,36 @@ _PROPOSAL_FIDELITY_SENTENCE = {
 }
 
 
+#: The body sovereignty law's sentence per word (DS-3, the technical
+#: definition §12.8 — 二人称叙述只写「你」的感知面：看到/听到/感觉到/
+#: 被作用；世界与他人对你做的事可写〔那是世界的行动〕；你的自发行为只能
+#: 出自你的输入或留白待你；违约例与合规例照定义原文入 prompt). Replaces
+#: the single clause the prompt carried before DS-3 (the negative half
+#: alone) — the affirmative perceptual face and the 留白 half ride with
+#: it. The word is the prompt's own (the V3-8g wording-law posture).
+_SOVEREIGNTY_SENTENCE = {
+    "en": (
+        "Body sovereignty: write only what the reader's character"
+        " PERCEIVES — what they see, hear and feel, and what is done"
+        " to them. The world and other people may act on the reader's"
+        " character (that is the world's own action); you never decide"
+        " the reader's character's own actions, words or emotional"
+        " reactions — their spontaneous acts enter the prose only"
+        " through their own typed words, or stay unwritten, awaiting"
+        ' them. Never write "you hold your breath" or "you move the'
+        ' lamp over" — write "the lamp moved over, and the light fell'
+        ' across the back of your hand."'
+    ),
+    "zh": (
+        "身体主权：只写「你」的感知面——你看到、听到、感觉到的事，以及"
+        "发生在你身上的事。世界与他人可以对你做事（那是世界的行动）；"
+        "绝不替你决定你自己的行动、言语或情绪反应——你的自发行为只能"
+        "来自你输入的话，否则留白待你。绝不写「你屏住呼吸」「你把灯移"
+        "了过去」——要写「灯移了过去，光落在你手背上」。"
+    ),
+}
+
+
 def _world_adjudicator_prompt(
     context: WorldAdjudicationContext, *, language: str
 ) -> str:
@@ -2538,9 +2568,8 @@ def _narrator_prompt(context: NarrationContext) -> str:
         '"you", and presents only what they can perceive, know or',
         "remember (their own limited-knowledge face below is the whole",
         "of what may be presented as known; another person's intent or",
-        "private thought never enters the prose). Never decide, speak",
-        "or act with intent for the reader's character: the words below",
-        "are theirs alone.",
+        "private thought never enters the prose).",
+        _SOVEREIGNTY_SENTENCE[_prose_language_word(context.language)],
         f"{_WRITER_PROSE_LINE[_prose_language_word(context.language)]}",
         f"- {_CONTINUITY_SENTENCE}",
         "",
