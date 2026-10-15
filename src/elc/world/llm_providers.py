@@ -235,6 +235,7 @@ __all__ = [
     "SituationPlanContext",
     "StreamingTextCompletion",
     "TextCompletion",
+    "WorldAdjudicationContext",
 ]
 
 
@@ -1646,6 +1647,16 @@ class DispatchContext:
     premise: str
     hard_rules: str
     language: str = PROSE_LANGUAGE_DEFAULT
+    # -- the chapter's situation plan (DS-3 §6, ③不退化) ---------------------
+    # The scheduling input carries the plan; the decision must use it
+    # (the 登场 / 逼近 choices stay cross-checkable against the plan's
+    # own fields). Empty defaults render no plan block — a legacy
+    # blueprint row (the retired test face) keeps today's prompt.
+    plan_where: str = ""
+    plan_pressing: str = ""
+    plan_open_question: str = ""
+    plan_pacing: str = ""
+    plan_candidates: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -1736,6 +1747,11 @@ class NarrationContext:
     world_event: str | None
     recent_narration: str
     language: str = PROSE_LANGUAGE_DEFAULT
+    # A world beat's own ruling (DS-3 §1 跳①不跳④): the δ that landed
+    # for THIS beat — the prose presents it as what happens (a reply's
+    # committed_outcome is instead resumed, never re-told). ``None``
+    # renders today's prompt (additive, the reply path untouched).
+    world_outcome: str | None = None
 
 
 @dataclass(frozen=True)
@@ -1839,6 +1855,30 @@ class SituationPlan:
     settlement_expectation: str
 
 
+@dataclass(frozen=True)
+class WorldAdjudicationContext:
+    """A world beat's adjudication input (DS-3 §1, 跳①不跳④) — the
+    same world-authoritative read the batch face keeps, minus the user
+    submission: no user action rides an ``open`` / ``advance`` beat
+    (the user's words are their own); the k character proposals beside
+    the dispatch arm's optional world event synthesize ONE δ. The
+    seven-field :class:`~elc.world.action.Adjudication` shape verbatim,
+    the batch riding ``state_effects``."""
+
+    scene_id: str
+    bible: BibleRevision | None
+    current_facts: tuple[WorldStateFact, ...]
+    place: str
+    participants: tuple[str, ...]
+    counterparts: tuple[ActorProfileRecord, ...]
+    pov_actor_id: str
+    cognition: V3CognitionView
+    memory: V3MemoryView
+    current_tick: int
+    proposals: tuple[CharacterProposal, ...]
+    world_event: str | None = None
+
+
 #: The dispatch arm's pacing vocabulary (DS-1 §1 ③) — three words, the
 #: parser's enum.
 _PACING_WORDS = ("hold", "press", "settle")
@@ -1939,6 +1979,110 @@ _SITUATION_TEXT_KEYS = (
     "pacing",
     "settlement_expectation",
 )
+
+
+#: The proposal-fidelity law's sentence per word (DS-3 §1, 面B's
+#: 验收面): a world beat's prose may only give a responder the words and
+#: deeds that responder's own proposal carries — the narration arm
+#: inventing speech or action for a character is the cut's named
+#: violation. Stated in the narrator prompt beside the public-face
+#: block; the negative-assertion pin reads the sentence.
+_PROPOSAL_FIDELITY_SENTENCE = {
+    "en": (
+        "Every line you give a responder below must be one of their"
+        " listed speech / action values — never invent further words,"
+        " deeds or reactions for any character beyond the proposals"
+        " themselves."
+    ),
+    "zh": (
+        "下文每位回应者的每一句话、每一个动作，都必须出自其列出的"
+        " speech / action 值——绝不在提案之外替任何角色发明言语、行为"
+        "或反应。"
+    ),
+}
+
+
+def _world_adjudicator_prompt(
+    context: WorldAdjudicationContext, *, language: str
+) -> str:
+    """A world beat's adjudication prompt (DS-3 §1) — the batch face's
+    world-authoritative read with NO user submission: the k proposals
+    (and the dispatch arm's optional world event) synthesize ONE δ; the
+    seven-key shape is the batch prompt's own, verbatim."""
+
+    proposal_lines = [
+        f"- {proposal.actor_id}: speech={proposal.speech!r},"
+        f" action={proposal.action!r}, intent={proposal.intent!r},"
+        f" private_thought={proposal.private_thought!r}"
+        for proposal in context.proposals
+    ]
+    lines = [
+        "You are the resolver of a two-seat story world: NO user action",
+        "rides this beat — the world pressed forward and the characters",
+        "present answered with their own proposals; you synthesize ONE",
+        "authoritative outcome — what actually happens. Answer with one",
+        "JSON object and nothing else, carrying exactly these keys.",
+        _JSON_PROSE_LINE[_prose_language_word(language)],
+        _PROSE_TYPE_SENTENCE,
+        _IDENTITY_SENTENCE,
+        '- "interpretation": one JSON string — what this beat is (the',
+        "  world's move, one sentence).",
+        '- "outcome": one JSON string — what actually happens, as world',
+        "  fact (weighing the proposals AND the world's own pressure).",
+        '- "actual_action": one JSON string — the action that actually',
+        "  unfolds.",
+        '- "consequences": one JSON string — what changes because of it.',
+        '- "state_effects": a JSON array of {"key": <one JSON string>,',
+        '  "statement": <one JSON string>} objects — the BATCH: one',
+        "  object per changed fact (dotted keys such as a place fact or",
+        "  one character's mood / goal), never the same key twice; an",
+        "  empty array when nothing changes.",
+        '- "participants": a JSON array of participant identity strings',
+        "  the outcome is about — the ids this prompt lists.",
+        '- "replan_scope": exactly "NONE" — a world beat lands no replan',
+        "  obligation (the situation plan absorbs the pressure at the",
+        "  next chapter).",
+        "",
+        "Hard rules:",
+        "- The proposals are the characters' own attempts, not facts:",
+        "  you weigh them against the world's real rules, its physics",
+        "  and the participants' abilities and limits — a proposal the",
+        "  world refuses simply does not happen.",
+        "- No user character acts this beat: the reader's own character",
+        "  is present and perceives, but nothing in the outcome may",
+        "  decide, speak or act for them.",
+        "- Rule by the world authority below; a soft expectation is",
+        "  never a condition.",
+        "",
+        "The world authority:",
+        "- Bible (the world's rules and setting):",
+        _render_bible(context.bible),
+        "- settled facts (the current world state):",
+        _render_facts(context.current_facts),
+        f"- place: {context.place}",
+        f"- participants: {', '.join(context.participants)}",
+        "- the scene's counterpart profiles:",
+        _render_profiles(context.counterparts),
+        "",
+        "The responders' proposals (their own attempts, private faces",
+        "included — you weigh all of it; the story never narrates an",
+        "intent or a private thought):",
+        _render_list(proposal_lines),
+    ]
+    if context.world_event:
+        lines.extend(
+            [
+                "A world event inserts itself this beat (already decided):",
+                f"- {context.world_event!r}",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            f"current_tick: {context.current_tick}",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def _parse_situation_plan(
@@ -2088,6 +2232,19 @@ def _render_card(context: CharacterContext) -> str:
     )
 
 
+#: The dispatch arm's situation-plan block (DS-3 §6, ③不退化): the
+#: scheduling input carries the chapter's situation plan and the
+#: decision must use it — the 登场 / 逼近 choices stay cross-checkable
+#: against the plan's own fields. Rendered only when the compiled
+#: context carries a plan (a legacy blueprint row renders no block).
+_DISPATCH_PLAN_SENTENCE = (
+    "Your decision must move this plan: choose the world event and"
+    " the responders so the plan's pressure visibly advances — a"
+    " reading that cannot name which part of the plan it advances is"
+    " a wasted beat."
+)
+
+
 def _dispatch_prompt(context: DispatchContext) -> str:
     """The dispatch arm's prompt (DS-1 §1 ③) — one structured scheduling
     decision; the intent reading rides the same answer (the light-tier
@@ -2120,13 +2277,41 @@ def _dispatch_prompt(context: DispatchContext) -> str:
         f"current_tick: {context.current_tick}, beat: {context.beat_kind}",
         "Chapter's goal (a soft expectation, never a condition):",
         f"- {context.chapter_goal}",
-        "World premise:",
-        f"- {context.premise}",
-        "The world's hard rules:",
-        f"- {context.hard_rules}",
-        "The scene right now:",
-        f"- {context.situation}",
     ]
+    if (
+        context.plan_pressing
+        or context.plan_where
+        or context.plan_candidates
+        or context.plan_open_question
+        or context.plan_pacing
+    ):
+        lines.extend(
+            [
+                "The chapter's situation plan (the four questions — the",
+                "world's pressure on the reader's character):",
+                f"- where they stand: {context.plan_where}",
+                f"- what presses on them: {context.plan_pressing}",
+                f"- the act's open question: {context.plan_open_question}",
+                f"- the pacing note: {context.plan_pacing}",
+                "- world events that may close in (advance one of these,",
+                "  or what the pressing event does next — never ignore",
+                "  them):",
+            ]
+        )
+        lines.extend(
+            f"  - {candidate}" for candidate in context.plan_candidates
+        )
+        lines.append(f"- {_DISPATCH_PLAN_SENTENCE}")
+    lines.extend(
+        [
+            "World premise:",
+            f"- {context.premise}",
+            "The world's hard rules:",
+            f"- {context.hard_rules}",
+            "The scene right now:",
+            f"- {context.situation}",
+        ]
+    )
     if context.user_utterance is not None:
         lines.extend(
             [
@@ -2329,6 +2514,14 @@ def _narrator_prompt(context: NarrationContext) -> str:
             f"- actual_action: {context.committed_actual_action!r}",
             f"- consequences: {context.committed_consequences!r}",
         ]
+    elif context.world_outcome is not None:
+        event_block = [
+            "What actually happens this beat (the world's own ruling —",
+            "already canon; present it as what happens, through the",
+            "reader's character's own perceivable face below, and never",
+            "contradict it):",
+            f"- outcome: {context.world_outcome!r}",
+        ]
     else:
         event_block = [
             "No committed ruling rides this beat — write what the world",
@@ -2367,6 +2560,7 @@ def _narrator_prompt(context: NarrationContext) -> str:
         *event_block,
         "The responders' public face (speech and visible action only):",
         _render_list(proposals),
+        _PROPOSAL_FIDELITY_SENTENCE[_prose_language_word(context.language)],
     ]
     if context.world_event:
         lines.extend(
@@ -2636,6 +2830,21 @@ class LlmBatchAdjudicatorProvider:
             _complete_text(
                 self._completion,
                 _batch_adjudicator_prompt(
+                    context, language=self._language
+                ),
+            )
+        )
+
+    def adjudicate_world(
+        self, context: WorldAdjudicationContext
+    ) -> Adjudication:
+        """A world beat's one synthesized δ (DS-3 §1 跳①不跳④) — the
+        same seven-field shape, no user submission in the read."""
+
+        return _parse_adjudication(
+            _complete_text(
+                self._completion,
+                _world_adjudicator_prompt(
                     context, language=self._language
                 ),
             )

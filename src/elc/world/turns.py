@@ -86,7 +86,7 @@ from __future__ import annotations
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Callable
+from typing import Any, Callable
 
 from elc.platform.types import Err, Result
 from elc.world import harness
@@ -108,6 +108,7 @@ from elc.world.bible import SqliteBibleStore
 from elc.world.cast import SqliteCastStore
 from elc.world.cognition import v3_cognition_view
 from elc.world.director import Director
+from elc.world.ds_situation import situation_face_of
 from elc.world.llm_providers import (
     BatchAdjudicationContext,
     CharacterContext,
@@ -120,6 +121,7 @@ from elc.world.llm_providers import (
     LlmNarratorProvider,
     NarrationContext,
     NarrationResult,
+    WorldAdjudicationContext,
     pack_memories,
 )
 from elc.world.memory import MemoryKind, record_belief, v3_memory_view
@@ -950,7 +952,11 @@ class TurnEngine:
         on_chunk: Callable[[str], None] | None,
         on_stage: Callable[[str], None] | None = None,
     ) -> TurnRecord:
-        """One beat through the §1 order (see the module docstring)."""
+        """One beat through the §1 order (see the module docstring).
+        The world beats skip ① only (DS-3: 跳①不跳④) — the dispatch
+        decision, the present characters' proposals, ONE world
+        adjudication into δ, then the narration; nobody decides for the
+        user, and nobody stands idle."""
 
         if isinstance(beat, ReplyBeat):
             return self._drive_reply(
@@ -960,13 +966,58 @@ class TurnEngine:
         calls_at_entry = self._calls
         dossier = self._ensure_scene_open(scene, now)
         tick = self._tick(world_id)
-        if on_stage is not None:
-            on_stage("dispatching")
-        decision = self._dispatch(
-            world_id, dossier, tick, beat_kind, chapter_id, None
-        )
+        # the world δ's replay anchor: the event id derives from the
+        # segment position this beat lands at — a crash after the δ
+        # landed answers the stored outcome on the re-drive (§10 F8:
+        # the turn re-runs from the last committed δ; the narration
+        # regenerates, the canon never re-lands)
+        segment_seq = self._reads.next_segment_seq(scene.scene_id)
+        event_id = f"{scene.scene_id}:beat-{segment_seq}"
+        world_outcome = self._reads.offstage_narration(event_id)
+        decision: DispatchDecision | None = None
+        proposals: tuple[CharacterProposal, ...] = ()
+        if world_outcome is None:
+            if on_stage is not None:
+                on_stage("dispatching")
+            decision = self._dispatch(
+                world_id, dossier, tick, beat_kind, chapter_id, None
+            )
+            # ④ does not skip: every present protagonist's own model
+            # runs, each deciding what she does and says (§1 跳①不跳④)
+            if on_stage is not None:
+                on_stage("responding")
+            proposals = self._gather_proposals(
+                world_id, dossier, decision, None
+            )
+            if on_stage is not None:
+                on_stage("adjudicating")
+            ruling = self._adjudicate_world(
+                world_id, dossier, proposals, decision.world_event
+            )
+            self._land_world_event(
+                world_id, event_id, ruling, proposals, now
+            )
+            self._land_private_thoughts(world_id, event_id, proposals)
+            world_outcome = ruling.outcome
+            if ruling.replan_scope is not ReplanScope.NONE:
+                self._notes.append(
+                    "world ruling asked replan scope"
+                    f" {ruling.replan_scope.value} — a world beat lands"
+                    " no replan obligation (the situation plan absorbs"
+                    " the pressure at the next chapter)"
+                )
+        else:
+            self._notes.append(
+                f"world beat replayed from its stored δ ({event_id})"
+            )
         context = self._narration_context(
-            world_id, dossier, beat_kind, decision, (), ruling=None
+            world_id,
+            dossier,
+            beat_kind,
+            decision,
+            proposals,
+            ruling=None,
+            world_outcome=world_outcome,
         )
         narration = self._narrate(context, on_chunk, on_stage)
         commit = self._write_segment(
@@ -977,14 +1028,18 @@ class TurnEngine:
             now,
             outcome_ref=None,
         )
-        stop = self._stop_decision(beat_kind, narration, decision.pacing)
+        stop = self._stop_decision(
+            beat_kind,
+            narration,
+            "" if decision is None else decision.pacing,
+        )
         return TurnRecord(
             beat_kind=beat_kind,
             narration=narration.prose,
             passage_id=commit.passage_id,
             gate_id=None,
             dispatch=decision,
-            proposals=(),
+            proposals=proposals,
             stop=stop,
             calls_used=self._calls - calls_at_entry,
         )
@@ -1229,6 +1284,26 @@ class TurnEngine:
             for participant in dossier.participants
             if participant != player_id
         )
+        plan_fields: dict[str, Any] = {}
+        doc = situation_face_of(plan)
+        if doc is not None:
+            # ③不退化 (DS-3): the scheduling input carries the chapter's
+            # situation plan — the 登场 / 逼近 choices stay cross-
+            # checkable against the plan's own fields
+            candidates = doc.get("world_event_candidates")
+            plan_fields = {
+                "plan_where": str(doc.get("where_you_stand", "")),
+                "plan_pressing": str(doc.get("what_presses_on_you", "")),
+                "plan_open_question": str(doc.get("open_question", "")),
+                "plan_pacing": str(doc.get("pacing", "")),
+                "plan_candidates": tuple(
+                    str(candidate)
+                    for candidate in (
+                        candidates if isinstance(candidates, list) else ()
+                    )
+                    if str(candidate).strip()
+                ),
+            }
         return self._dispatcher.decide(
             DispatchContext(
                 world_id=world_id,
@@ -1248,6 +1323,7 @@ class TurnEngine:
                 premise="" if bible is None else bible.premise,
                 hard_rules="" if bible is None else bible.hard_rules,
                 language=self._language,
+                **plan_fields,
             )
         )
 
@@ -1256,14 +1332,16 @@ class TurnEngine:
         world_id: str,
         dossier: WorldSceneDossierRecord,
         decision: DispatchDecision,
-        user_utterance: str,
+        user_utterance: str | None,
     ) -> tuple[CharacterProposal, ...]:
         """④ the responding character arms **in parallel** (§2) — the
         spine dispatches each pack-compiled private seat
         (``dispatch_character`` is the spine's tool; the packs are one
         character's own faces, the shape is the door). The responder
         ids are validated against the scene's own participants first
-        (the namespace discipline the identity contract rides)."""
+        (the namespace discipline the identity contract rides).
+        ``user_utterance`` is ``None`` on a world beat (DS-3 跳①不跳④:
+        the same arms run with no words of the user's to read)."""
 
         player = self._casts.player_character(world_id)
         player_id = None if player is None else player.player_character_id
@@ -1306,7 +1384,7 @@ class TurnEngine:
         dossier: WorldSceneDossierRecord,
         tick: int,
         decision: DispatchDecision,
-        user_utterance: str,
+        user_utterance: str | None,
     ) -> CharacterContext:
         """One private seat's context pack (§2) — the card, the durable
         profile, the retrieved memory (layered + recency-truncated),
@@ -1342,10 +1420,26 @@ class TurnEngine:
             for fact in self._worlds.current_facts(world_id)
             if fact.canonical_key.startswith(prefix)
         ]
-        event = (
-            f"the user's words, just now: {user_utterance!r}"
-            f" — read as: {decision.reading}"
-        )
+        if user_utterance is None:
+            # a world beat (DS-3 跳①不跳④): the pack reads the world's
+            # own move — nobody's words to answer, the beat itself
+            event = (
+                "a world beat (no words of the user's) — the dispatch"
+                f" reads it as: {decision.reading}"
+            )
+            situation = (
+                f"{dossier.place} — the reader's character is present,"
+                " mid-scene; the world is moving around them"
+            )
+        else:
+            event = (
+                f"the user's words, just now: {user_utterance!r}"
+                f" — read as: {decision.reading}"
+            )
+            situation = (
+                f"{dossier.place} — the reader's character is present"
+                " and has just spoken"
+            )
         if decision.world_event:
             event += f"; a world event inserts: {decision.world_event!r}"
         return CharacterContext(
@@ -1370,10 +1464,7 @@ class TurnEngine:
             memories=pack_memories(memory_read.value, DS_MEMORY_CAP),
             place=dossier.place,
             current_tick=tick,
-            situation=(
-                f"{dossier.place} — the reader's character is present"
-                " and has just spoken"
-            ),
+            situation=situation,
             event=event,
             perceivable=cognition_read.value,
             recent_narration=self._reads.last_narration(dossier.scene_id),
@@ -1469,6 +1560,99 @@ class TurnEngine:
             )
         )
 
+    def _adjudicate_world(
+        self,
+        world_id: str,
+        dossier: WorldSceneDossierRecord,
+        proposals: tuple[CharacterProposal, ...],
+        world_event: str | None,
+    ) -> Adjudication:
+        """⑤ for a world beat (DS-3 §1 跳①不跳④) — the ONE batch
+        adjudication over the k proposals beside the dispatch arm's
+        optional world event, the world-authoritative arms the same
+        :meth:`_adjudicate` keeps (the POV's own views, the bible, the
+        settled facts), minus the user submission: no user action rides
+        an ``open`` / ``advance`` beat."""
+
+        player = self._casts.player_character(world_id)
+        player_id = None if player is None else player.player_character_id
+        pov_read = v3_cognition_view(
+            self._conn, world_id=world_id, viewer_id=dossier.pov_actor_id
+        )
+        if isinstance(pov_read, Err):
+            raise TurnRefusal(pov_read.error.code.value, pov_read.error.message)
+        pov_memory = v3_memory_view(
+            self._conn, world_id=world_id, viewer_id=dossier.pov_actor_id
+        )
+        if isinstance(pov_memory, Err):
+            raise TurnRefusal(
+                pov_memory.error.code.value, pov_memory.error.message
+            )
+        counterparts = tuple(
+            profile
+            for profile in (
+                self._casts.actor_profile(participant)
+                for participant in dossier.participants
+                if participant != player_id
+            )
+            if profile is not None
+        )
+        self._calls += 1
+        return self._adjudicator.adjudicate_world(
+            WorldAdjudicationContext(
+                scene_id=dossier.scene_id,
+                bible=self._bibles.current_bible(world_id),
+                current_facts=self._worlds.current_facts(world_id),
+                place=dossier.place,
+                participants=dossier.participants,
+                counterparts=counterparts,
+                pov_actor_id=dossier.pov_actor_id,
+                cognition=pov_read.value,
+                memory=pov_memory.value,
+                current_tick=self._tick(world_id),
+                proposals=proposals,
+                world_event=world_event,
+            )
+        )
+
+    def _land_world_event(
+        self,
+        world_id: str,
+        event_id: str,
+        ruling: Adjudication,
+        proposals: tuple[CharacterProposal, ...],
+        now: str,
+    ) -> None:
+        """⑥ for a world beat — the δ lands as one chronicle event
+        (the settle arm's own atomic landing face; ``canon_delta`` is
+        the adjudicator principal's tool and the ruling is its
+        product). Idempotent by event id: a replayed id with the same
+        shape answers the stored event, a different shape is the loud
+        conflict."""
+
+        harness.authorize(
+            harness.Tool.CANON_DELTA, harness.Principal.ADJUDICATOR
+        )
+        participants = tuple(
+            dict.fromkeys(proposal.actor_id for proposal in proposals)
+        )
+        landed = self._worlds.record_event(
+            WorldEvent(
+                event_id=event_id,
+                world_id=world_id,
+                kind="world",
+                narration=ruling.outcome,
+                effects=tuple(ruling.state_effects),
+                occurred_at=now,
+                source="ds-world",
+                participants=participants,
+            )
+        )
+        if isinstance(landed, Err):
+            raise TurnRefusal(
+                landed.error.code.value, landed.error.message
+            )
+
     def _land_private_thoughts(
         self,
         world_id: str,
@@ -1536,6 +1720,7 @@ class TurnEngine:
         proposals: tuple[CharacterProposal, ...],
         *,
         ruling: Adjudication | None,
+        world_outcome: str | None = None,
     ) -> NarrationContext:
         """The narration arm's compiled input (§12 item 2) — the
         player's own limited-knowledge face is the whole of what the
@@ -1599,6 +1784,7 @@ class TurnEngine:
             world_event=None if decision is None else decision.world_event,
             recent_narration=self._reads.last_narration(dossier.scene_id),
             language=self._language,
+            world_outcome=world_outcome,
         )
 
     # -- the shared small faces ----------------------------------------------

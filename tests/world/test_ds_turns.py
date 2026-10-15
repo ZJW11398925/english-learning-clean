@@ -646,8 +646,8 @@ def test_press_continues_to_the_beat_ceiling(
     ] * 4
     completion = ScriptedDSCompletion(**queues)
     completion._queues["dispatch"] = [_dispatch_payload()] * 3
-    completion._queues["character"] = [_proposal_payload()] * 2
-    completion._queues["adjudicate"] = [_adjudication_payload()]
+    completion._queues["character"] = [_proposal_payload()] * 6
+    completion._queues["adjudicate"] = [_adjudication_payload()] * 3
     engine = _engine(planned, stores, completion)
     run = engine.drive(
         DS_WORLD_ID,
@@ -660,6 +660,12 @@ def test_press_continues_to_the_beat_ceiling(
     assert run.note is not None
     assert "3 拍" in run.note
     assert len(run.turns) == 3  # reply + two advances, the reasoned stop
+    # every world beat ran the FULL chain (DS-3 跳①不跳④): the reply
+    # and the two advances each spent dispatch + 2 characters +
+    # adjudication + narration
+    assert completion.count("character") == 6
+    assert completion.count("adjudicate") == 3
+    assert run.calls_used == 15
 
 
 # ---------------------------------------------------------------------------
@@ -1100,3 +1106,229 @@ def test_the_opening_seed_is_a_draft_and_replays_idempotent(
     )
 
     assert not isinstance(outcome, Err)
+
+
+# ---------------------------------------------------------------------------
+# 12 — the world beats' own minds (DS-3, §1 跳①不跳④ / ③不退化)
+# ---------------------------------------------------------------------------
+
+
+def test_an_advance_beat_runs_the_character_arms(
+    planned: sqlite3.Connection, stores: tuple
+) -> None:
+    """§1's world beat skips ① only: the dispatch decides, EVERY
+    responding protagonist's own model proposes (④ does not skip), ONE
+    world adjudication synthesizes the δ (⑤), the δ lands as a
+    chronicle event (⑥), the private thoughts anchor to it, and the
+    narration renders the outcome beside the proposals' public face —
+    with the proposal-fidelity law stated in the prompt itself."""
+
+    queues = _default_queues()
+    queues["narrator"] = [_narration_payload()]
+    completion = ScriptedDSCompletion(**queues)
+    engine = _engine(planned, stores, completion)
+    run = engine.drive(DS_WORLD_ID, AdvanceBeat(), NOW)
+    assert run.error is None
+    assert run.stopped_on == "addresses_you"
+    turn = run.turns[0]
+    assert turn.beat_kind == "advance"
+    # the proposals ride the turn record — the traceability face
+    assert [p.actor_id for p in turn.proposals] == [WENQ, "han"]
+    # ⑤⑥: the δ landed as a world chronicle event with its effects
+    event = planned.execute(
+        "SELECT kind, narration, source FROM world_event"
+        " WHERE event_id = ?",
+        (f"{turn_event_scene_id(planned)}:beat-1",),
+    ).fetchone()
+    assert event is not None
+    assert event[0] == "world"
+    assert "steward accepts" in event[1]
+    assert event[2] == "ds-world"
+    fact = planned.execute(
+        "SELECT statement FROM world_state_fact"
+        " WHERE canonical_key = 'bridge.mark' AND status = 'CURRENT'"
+    ).fetchone()
+    assert fact is not None and "vermilion" in fact[0]
+    # the private thoughts anchor to the world event (the characters'
+    # OWN memory rows)
+    for actor in (WENQ, "han"):
+        read = v3_memory_view(planned, world_id=DS_WORLD_ID, viewer_id=actor)
+        assert not isinstance(read, Err)
+        assert any(
+            memory.kind is MemoryKind.INFERRED
+            and "fresh" in memory.content
+            for memory in read.value.memories
+        ), actor
+    # the prompts: the world adjudicator carries NO user submission; the
+    # narrator carries the outcome, the public proposals and the
+    # fidelity law
+    world_prompt = completion.prompts["adjudicate"][0]
+    assert "NO user action" in world_prompt
+    assert "user's own submission" not in world_prompt
+    assert "nothing in the outcome may" in world_prompt
+    assert "decide, speak or act for them" in world_prompt
+    narrator_prompt = completion.prompts["narrator"][0]
+    assert "What actually happens this beat" in narrator_prompt
+    assert "steward accepts" in narrator_prompt
+    assert "lifts the lantern" in narrator_prompt
+    assert "never invent further words" in narrator_prompt
+    assert (
+        "watch whether the painter flinches" not in narrator_prompt
+    )  # the private face never rides
+    # the whole chain: dispatch + 2 characters + adjudication + narration
+    assert run.calls_used == 5
+
+
+def turn_event_scene_id(conn: sqlite3.Connection) -> str:
+    """The planned world's one scene id (the world event's id prefix)."""
+
+    return str(
+        conn.execute(
+            "SELECT scene_id FROM world_scene"
+            " WHERE chapter_id = (SELECT MAX(chapter_id) FROM world_chapter)"
+        ).fetchone()[0]
+    )
+
+
+def test_a_world_beat_replays_from_its_stored_delta(
+    planned: sqlite3.Connection, stores: tuple
+) -> None:
+    """§10 F8 for the world beats: a crash after the δ landed but before
+    the segment committed re-runs the beat from the stored δ — the
+    adjudication is NOT re-judged (the replay read answers the stored
+    outcome) and the honest note rides the answer."""
+
+    queues = _default_queues()
+    queues["narrator"] = [
+        _narration_payload(),
+        _narration_payload(addresses_you=False, beat_complete=True),
+    ]
+    completion = ScriptedDSCompletion(**queues)
+    engine = _engine(planned, stores, completion)
+    first = engine.drive(DS_WORLD_ID, AdvanceBeat(), NOW)
+    assert first.error is None
+    assert len(first.turns) == 1
+    scene_id = turn_event_scene_id(planned)
+    # the crash window: the segment never committed (its passage, its
+    # commit row and the SEGMENT COMMIT's own chronicle line are gone;
+    # the world δ's event row stays — the replay anchor)
+    planned.execute(
+        "DELETE FROM segment_commit WHERE scene_id = ? AND kind = 'SEGMENT'",
+        (scene_id,),
+    )
+    planned.execute(
+        "DELETE FROM narrative_passage WHERE scene_id = ?", (scene_id,)
+    )
+    planned.execute(
+        "DELETE FROM actor_memory WHERE source_event_id LIKE ?",
+        (f"{scene_id}-e%",),
+    )
+    planned.execute(
+        "DELETE FROM world_event WHERE event_id LIKE ?",
+        (f"{scene_id}-e%",),
+    )
+    planned.commit()
+    rerun = engine.drive(DS_WORLD_ID, AdvanceBeat(), NOW)
+    assert rerun.error is None
+    # the stored δ was NOT re-judged — one adjudication total
+    assert completion.count("adjudicate") == 1
+    assert any(
+        "replayed from its stored δ" in note for note in rerun.notes
+    )
+    # the beat still landed its prose
+    assert len(rerun.turns) == 1
+    assert rerun.turns[0].proposals == ()
+
+
+def test_the_dispatch_input_carries_the_situation_plan(
+    seeded: sqlite3.Connection, stores: tuple
+) -> None:
+    """③不退化 (DS-3 §6): the scheduling input carries the chapter's
+    situation plan and the prompt demands the decision move it — the
+    登场 / 逼近 choices stay cross-checkable against the plan's own
+    fields. 拔 plan 块（变异预演「拔臂」型）：a legacy blueprint row
+    carries no plan, and the prompt renders no block — the block is
+    load-bearing, not decoration."""
+
+    from elc.world.ds_situation import plan_situation_chapter
+    from elc.world.llm_providers import LlmSituationPlannerProvider
+
+    class _SituationCompletion(ScriptedDSCompletion):
+        def complete(self, prompt: str) -> CompletionOutcome:
+            if "situation planner of a two-seat" in prompt:
+                self.prompts.setdefault("situation", []).append(prompt)
+                return CompletionOutcome(
+                    text=json.dumps(
+                        {
+                            "where_you_stand": "the bridge head, lantern"
+                                " light, the town's question on you",
+                            "place": "the bridge head",
+                            "what_presses_on_you": "the county clerk"
+                                " arrives at dawn",
+                            "first_speaker": WENQ,
+                            "first_words": "Was it there when you"
+                                " crossed?",
+                            "open_question": "will your answer keep you"
+                                " out of the water gate",
+                            "world_event_candidates": [
+                                "the fog closes the crossing before"
+                                " dawn",
+                            ],
+                            "protagonist_goals": {
+                                WENQ: "keep the ledger clean",
+                                "han": "keep the water's secret",
+                            },
+                            "pacing": "tighter every hour",
+                            "settlement_expectation": "where the answer"
+                                " left you",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    error=None,
+                )
+            return super().complete(prompt)
+
+    completion = _SituationCompletion(**_default_queues())
+    world_store, cast_store, bible_store, narrative = stores
+    outcome = plan_situation_chapter(
+        seeded,
+        world_store=world_store,
+        cast_store=cast_store,
+        bible_store=bible_store,
+        narrative_store=narrative,
+        planner=LlmSituationPlannerProvider(completion),
+        world_id=DS_WORLD_ID,
+        now=NOW,
+    )
+    assert not isinstance(outcome, Err), outcome.error
+    assert outcome.value.fresh_plan is True
+    engine = _engine(seeded, stores, completion)
+    run = engine.drive(DS_WORLD_ID, AdvanceBeat(), NOW)
+    assert run.error is None
+    dispatch_prompt = completion.prompts["dispatch"][0]
+    # the plan rides the input, field for field
+    assert "The chapter's situation plan" in dispatch_prompt
+    assert "the county clerk arrives at dawn" in dispatch_prompt
+    assert "the fog closes the crossing before dawn" in dispatch_prompt
+    assert "will your answer keep you" in dispatch_prompt
+    # the decision must move it
+    assert "must move this plan" in dispatch_prompt
+
+
+def test_a_legacy_blueprint_plan_renders_no_plan_block(
+    planned: sqlite3.Connection, stores: tuple
+) -> None:
+    """变异预演（拔臂→红）：the plan block rides the situation document
+    — a legacy blueprint row (the retired test face's own storage)
+    carries no document, and the prompt renders no block. The block is
+    load-bearing, not decoration."""
+
+    queues = _default_queues()
+    queues["narrator"] = [_narration_payload()]
+    legacy_completion = ScriptedDSCompletion(**queues)
+    legacy_engine = _engine(planned, stores, legacy_completion)
+    legacy_run = legacy_engine.drive(DS_WORLD_ID, AdvanceBeat(), NOW)
+    assert legacy_run.error is None
+    legacy_prompt = legacy_completion.prompts["dispatch"][0]
+    assert "The chapter's situation plan" not in legacy_prompt
+    assert "must move this plan" not in legacy_prompt
