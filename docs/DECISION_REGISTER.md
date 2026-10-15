@@ -595,3 +595,18 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 **结论**：用户 2026-10-15 裁定修复优先级＝**双线并行**（机械刀 DS-2 先行＋核心刀呈设计），四律补写案**照准落正典**＋开局三裁（**换西方奇幻／异世界**——青溪渡草稿退役；**开头第一拍＝危机进行中**〔判据④「像个像样的开头」形态〕；**正文中文**〔亲验手感优先，语言面已可切〕）。**合同增量（总控亲写，本提交）＝技术定义篇 v0.4**：§1「世界拍主角心智」（跳①不跳④——凡在场主角模型照常运转、提案过⑤裁定；③不退化——导演世界拍同样产调度决定；旧文「跳①④」「既定编排」废止；验收面＝advance 拍主角言行可追溯当拍提案）、§6「情境计划机细则」（必答四问：这一幕你在哪／什么事冲你来／谁对你说第一句话／第一幕交互悬点；旧 V3 文学 blueprint 机 /ds 产品路径停用为测试面——同 §10.6 范式）、§4「节奏律」（双上限退纯护栏、默认推进到自然悬点、触顶记调度异常信号）、§12.8「身体主权律」（感知可写、行动不可替你决定；「你屏息」违约例入册）＋§15 增量记录。**硬纪律**：削生命感裁决必呈用户＋魂检门（2026-10-14 会话自束）；验收终门＝用户判据四条。
 
 授权：用户 2026-10-15 四问呈裁（四律照准／西方奇幻／危机进行中／中文）；DMCP 开工裁决 `DEC-OPI-a7409b71-5b0e-4c0a-94a4-716daf7e31b9.9`（rev 853；含时序律——DS-2 执行期只铸裁不触树）；实现三件（TASK/VAL）随 DS-3 派单补铸。
+
+### v1.7.20 — 2026-10-15 DS-2 独立评审处置与收口（ACCEPT 零阻断零 MAJOR；F1–F6 全登记；授权：评审结论转呈）
+
+**结论**：交付 `9a1e530`（面 1+2+钉+SPEC，6 文件 +266/−19）＋`8170253`（REGISTER v1.7.18）。**面 1 闪烁**：dualseat.js `flowFingerprint` 九项貌签（world.exists/draft/chapter 双元/plan 之问/passages 双元组/settlement.summary/next.kind/can_open）——同貌拍整块跳过 renderFlow/开始卡/开篇卡/章末面 DOM 重建（每 3s 全量清空重建＝闪烁根因），态变迁四类（种世界/开篇/落段/章末）必改貌必重绘；次生同根——设定面板编辑中（`.ds-sedit` 在场）轮询拍不重建（编辑不被抹）。**面 2 热修 4 遗稿吸收**：红条粘住（唯 beginBusy 可隐藏）＋失败拍半截流式段收尾＋renderLang/switchLanguage＋`/api/ds/language`（v3_language_request 文法＋set_language 写面，共享 `v3_prose_language`）＋空态 PROSE_LANGUAGE_DEFAULT 替硬编码 en。4 新钉＋旧开篇卡钉随迁；FRONTEND_SPEC §8.2.14 三处随迁。
+
+1. **四门双路**：pytest **6362/0/0**（总控 769.97s＋执行者 743.75s；基线 6358＋4 钉算术吻合）/ ruff / mypy 209 / compileall / drift 22。
+2. **评审 ACCEPT（executor-pro 新上下文只读，范围钉 `3cf672c..8170253`）**：貌签完备性穷举通过（四渲染函数实际读数 ⊆ 九项貌签）；busy/红条/设定守卫状态机通过；语言面 fail-closed＋幂等＋零 passage 改写；禁改面零触碰（diff 含 world/ 文件数＝0）。**六变异验齿全红**（M1 回退型全量重绘/M2 删 can_open/M3 拔 setFault/M4 删编辑守卫/M5 硬编码回填/M6 恒真化）＋**M7 实锤貌签值污染盲区（→F1）**。
+3. **魂检**：「活，且全部改动方向是增命不是削命」——失败态诚实/阅读优先/语言律三面兑现，未发现任何削生命感的简化。
+4. **处置（全登记零代码改动）**：**F1**（MINOR）貌签值污染盲区 → **防坑区新条㊶**＋维护须知（现状九项皆低频态变量、无实路）；**F2**（MINOR）SSE final 丢失窗口（服务端 exactly-one-final 保证下不可达）后刀可选补（final=null 按失败分支收尾）；F3/F4 貌签冗余项 nit；F5 设定面板手动重绘拆编辑行（DS-1 既有面）后刀可选；F6 setFault 尾缀语义宽 nit；执行者自报 switchLanguage 成功句被 next.detail 覆盖 nit。
+5. **纪律留痕**：执行者 Bash 零写通道（清单在案）；评审员主仓零写入（总控 git status 实锤）；**首投评审遭账号 5 小时额度阵亡（防坑㊲型）——额度重置后重派、范围钉固定哈希**（总控同时在树上叠 DS-3 合同增量 `dfdee12`，评审未受影响）。
+6. **盖章与收口**：VR `VR-OPI-74be5bf3-…6`（**PASS**，盖于 `8170253`，pytest_failures=0）；收口 DEC `DEC-OPI-74be5bf3-…7`（rev 856）；design_sync REBUILD+CHECK＝**SYNCED**（853 对象/rev 856）。
+7. **scratch 处置（防坑㊵）**：`D:\elc-scratch\ds2\` 保留 pytest_full.log/pytest_master.log/rev\（mutation-log.md＋两快照）；删除 m1–m5/ruff×2/mypy/compileall/drift/pytest_ds/pytest_ds2 中间日志；`ds1-hotfix4\partial.diff` 遗稿已吸收、原件留档（v1.7.18 所引）。
+8. **下一动 = DS-3 生成核心重造执行**（DEC `OPI-a7409b71-…9`/TASK `74be5bf3-…2`/VAL `…4` 在册；技术定义 v0.4 四律已落正典 `dfdee12`；executor-pro 派单）。
+
+授权：独立评审（executor-pro 新上下文只读＋仓外 `D:\elc-scratch\ds2\rev\`，2026-10-15）＋魂检同卷；本条目为收口留痕。
