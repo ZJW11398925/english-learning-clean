@@ -626,3 +626,19 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 9. **下一动 = 用户重启 8760（Ctrl+C 旧进程 → `python -m elc web --app-db ./app.db`）打开 /ds 亲验四判据**（正文是「你」的发动机/话被世界接住并改变走向/每次停都轮到你/像个像样的开头）；F4 专属模型口径同场裁。
 
 授权：用户 2026-10-15 四问呈裁（四律照准/西方奇幻/危机进行中/中文）；独立评审＋魂检同卷；本条目为收口留痕。
+
+### v1.7.22 — 2026-10-15 DS-4 根治刀全链收口（据浅场状态回收＋transport 单次自动重试；ACCEPT-WITH-FINDINGS 零阻断；实况治愈实证；授权：用户「必须根治」明令）
+
+**结论**：用户亲验两连实败取证定案双层根因——①开篇拍 transport 中途死把场景行推进 ACTIVE/零段落，`_next_face` 只认 PLANNED 给开篇钮⇒用户被擅在「世界动过、无字无钮」死房（用户 app.db 只读取证：场景 ACTIVE、一条 δ tick5、零段落；青溪渡旧世界同死形）；②模型端点当日三窗间歇抖动（SSL EOF/空答/900s 无答）无自动重试，每次直接砸用户。交付 `6befe37`（4 文件 +373/−7）：**面A** `_next_face` 改「零已落段」判定（不问场景状态回开篇钮；detail「世界还没落第一笔——点『开篇』重新落笔」；零段落 `can_settle` 自然 False）；**面B** `RetryingTextCompletion` 接线 DS 两档（`timeout`/`transport-error` 词表闭集恰一次重拨 ~2s、第二次结果照返；bad-shape 等答案类 fail-closed 不重试；流臂整次重调吞增量、final 权威态自愈；persona 共享传输/V3 零改）；**面C** 技术定义 §8/§10-F8 补写同刀；钉 7 枚（实况夹具 ACTIVE+零段+δ⇒opening；有段落⇒can_open=False 防误开；重试器四形；OpenBeat 于 ACTIVE 零段场真实落段＋δ replay 不重判）。
+
+1. **四门双路**：pytest **6384/0/0**（总控 732.79s＋执行者 726.00s；基线 6377＋7 钉）/ ruff / mypy 210 / compileall / drift 22。
+2. **实况治愈实证（收口关键证）**：用户 app.db 经 sqlite backup API 副本（零触碰活库）在新代码下 `next.kind=opening`、`can_open=True`、`can_settle=False`——被擅世界可恢复。
+3. **评审 ACCEPT-WITH-FINDINGS 零阻断零 MAJOR**：到达态全覆盖表核过（current_scene 只返 ACTIVE/PLANNED）；重试器流式面三大疑点（裸抛穿透/半截重复/marker 泄漏）实读排除；四变异独立复演全红（拔面A/清词表/拒 ACTIVE 场/无条件 can_open）。
+4. **魂检**：「修复的不是按钮的显示条件，是用户在世界里的可恢复位。重试诚实——没有一处把失败洗成静默的成功。」
+5. **处置登记**：F1（MINOR）引擎层零段 settle 门仅面控位（UI 不可达，直呼 API 可产 CLOSED+零段永久态）→与 DS-3 F2/F3/F5 窄窗打包归下个触 turns.py 的刀；F2/F3 NIT（detail 语义偏差/inner:Any）；F4 观察（5xx/429 不在重试词表——与 §8 合同严格一致，放宽须同步合同＋钉）；F5 观察（预算注释半句差）；流臂重拨期间无「重拨中」信号（final 自愈兜底，可选增强）。
+6. **纪律**：执行者零通道违规（DS-3 训诫后首次全净）；评审自报仓外探针 heredoc ×1（训诫留痕）。
+7. **盖章与收口**：VR `VR-OPI-6cb9104c-…8`（**PASS**，盖于 `6befe37`）；收口 DEC `DEC-OPI-6cb9104c-…9`（rev 861）；design_sync REBUILD+CHECK＝**SYNCED**（858 对象/rev 861）。
+8. **scratch 处置（防坑㊵）**：`D:\elc-scratch\ds4\` 保留 pytest_master.log/heal_probe.py/rev\full_suite.txt；**删除 heal_copy.db**（用户库副本——证据已入 VR/REGISTER，不留用户数据副本）＋中间日志。
+9. **下一动 = 用户重启 8760（Ctrl+C → `python -m elc web --app-db ./app.db`）→开篇钮回归→点开篇从世界真实位置（布丽恩问话悬着/玩家手艺已递）继续落笔→亲验四判据**；F4 专属模型口径同场可裁。
+
+授权：用户 2026-10-15「必须根治」明令＋两连实败取证；独立评审＋魂检同卷；本条目为收口留痕。
