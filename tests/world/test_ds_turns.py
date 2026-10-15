@@ -656,7 +656,11 @@ def test_press_continues_to_the_beat_ceiling(
         NOW,
     )
     assert DRIVE_BEAT_CEILING == 3
-    assert DRIVE_CALL_CEILING == 12
+    # DS-3 评审 F1 处置：call cap must sit ABOVE the beat ceiling's
+    # worst case (3 beats × ~6 calls = 18) or it silently shrinks the
+    # beat ceiling — at 12 the k=3 drive quietly became a 2-beat one.
+    assert DRIVE_CALL_CEILING == 20
+    assert DRIVE_CALL_CEILING > DRIVE_BEAT_CEILING * 6
     assert run.stopped_on == "beat_ceiling"
     assert run.note is not None
     assert "3 拍" in run.note

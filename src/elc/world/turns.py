@@ -175,12 +175,17 @@ __all__ = [
 #: anomaly note (the normal path stops at a natural hanging point).
 DRIVE_BEAT_CEILING = 3
 
-#: One drive's model-call ceiling (§1 F7: 「建议 12 次」) — the cost
-#: guardrail, likewise PURE under the rhythm law: a reply or world beat
-#: spends ~5 calls (dispatch + k characters + adjudication +
-#: narration), so twelve covers one beat plus one more with retry
-#: headroom; hitting it is the reasoned stop + the anomaly signal.
-DRIVE_CALL_CEILING = 12
+#: One drive's model-call ceiling — the cost guardrail, likewise PURE
+#: under the rhythm law (§4 + §8 「随实测调」): a beat spends ~5 calls
+#: (dispatch + k characters + adjudication + narration; ~6 at k=3), so
+#: the call cap must sit ABOVE the beat ceiling's worst case (3 beats ×
+#: ~6 = 18) or it silently shrinks the beat ceiling instead — the
+#: review-measured arithmetic (DS-3 评审 F1): at 12 the cap either died
+#: as a guardrail (k=2: beat ceiling always fired first) or quietly
+#: cut the drive to 2 beats (k=3). 20 keeps the BEAT ceiling the
+#: binding product guardrail while the call cap stays the k-inflation
+#: / cost backstop; hitting it is the reasoned stop + anomaly signal.
+DRIVE_CALL_CEILING = 20
 
 #: The character pack's memory cap (DS-1 §2 F5: 「建议 ≤24 条」) — the
 #: recency truncation applied to every pack.
