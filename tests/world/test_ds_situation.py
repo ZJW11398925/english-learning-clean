@@ -64,7 +64,7 @@ def _situation_payload() -> str:
                 "the county clerk arrives at dawn and the mark must"
                 " have an answer — yours"
             ),
-            "first_speaker": "wenq",
+            "first_speaker": "bryn",
             "first_words": "The clerk comes at dawn. Was it there when"
                 " you crossed?",
             "open_question": (
@@ -75,8 +75,8 @@ def _situation_payload() -> str:
                 "the clerk's boat is sighted an hour early",
             ],
             "protagonist_goals": {
-                "wenq": "keep the ledger clean through the dawn",
-                "han": "keep the water's secret one more night",
+                "bryn": "keep the ledger clean through the dawn",
+                "corvin": "keep the water's secret one more night",
             },
             "pacing": "the pressure tightens with every hour of fog",
             "settlement_expectation": (
@@ -184,9 +184,9 @@ def _context() -> SituationPlanContext:
         hard_rules="no boat crosses in fog",
         place="",
         recent_narration="",
-        cast_members=(("wenq", "温秋蘅"), ("han", "韩老倌")),
-        player_id="ache",
-        player_name="阿澈",
+        cast_members=(("bryn", "布丽恩·灰隼"), ("corvin", "科尔文")),
+        player_id="chenyu",
+        player_name="陈屿",
     )
 
 
@@ -207,8 +207,8 @@ def test_the_prompt_carries_the_four_questions_and_the_ban() -> None:
     ):
         assert key in prompt, key
     # the identity vocabulary renders with display names
-    assert "wenq (温秋蘅)" in prompt
-    assert "ache" in prompt
+    assert "bryn (布丽恩·灰隼)" in prompt
+    assert "chenyu" in prompt
     # the structural ban: no 门拍 / user_present / literary 章法
     assert "NO literary structure" in prompt
     assert "dramatic question" in prompt
@@ -224,9 +224,9 @@ def test_the_prompt_carries_the_four_questions_and_the_ban() -> None:
             hard_rules="r",
             place="the steps",
             recent_narration="tail",
-            cast_members=(("wenq", "温"),),
-            player_id="ache",
-            player_name="阿澈",
+            cast_members=(("bryn", "布丽恩·灰隼"),),
+            player_id="chenyu",
+            player_name="陈屿",
             author_direction="let the mark fade",
         )
     )
@@ -251,38 +251,35 @@ def test_the_ban_sentence_is_load_bearing_mutation_preview() -> None:
 
 
 def test_the_situation_parser_demands_concrete_answers() -> None:
-    plan = _parse_situation_plan(
-        _situation_payload(),
-        (("wenq", "温秋蘅"), ("han", "韩老倌")),
-    )
-    assert plan.first_speaker == "wenq"
+    vocabulary = (("bryn", "布丽恩·灰隼"), ("corvin", "科尔文"))
+    plan = _parse_situation_plan(_situation_payload(), vocabulary)
+    assert plan.first_speaker == "bryn"
     assert plan.first_words.startswith("The clerk")
     assert len(plan.world_event_candidates) == 2
-    assert dict(plan.protagonist_goals)["han"]
+    assert dict(plan.protagonist_goals)["corvin"]
 
     # a rendered composite first_speaker normalizes to its bare id
     composite = _situation_payload().replace(
-        '"first_speaker": "wenq"', '"first_speaker": "wenq (温秋蘅)"'
+        '"first_speaker": "bryn"', '"first_speaker": "bryn (布丽恩·灰隼)"'
     )
-    assert _parse_situation_plan(
-        composite, (("wenq", "温秋蘅"), ("han", "韩老倌"))
-    ).first_speaker == "wenq"
+    assert _parse_situation_plan(composite, vocabulary).first_speaker == (
+        "bryn"
+    )
 
     def _refused(payload: str) -> None:
         with pytest.raises(LlmProviderError, match="bad-shape"):
-            _parse_situation_plan(
-                payload, (("wenq", "温"), ("han", "韩"))
-            )
+            _parse_situation_plan(payload, vocabulary)
 
     # an empty four-question answer is not a plan
     _refused(_situation_payload().replace(
         "will your answer keep you out of the water gate", "  "
     ))
     # an unknown first speaker is outside the vocabulary
-    _refused(_situation_payload().replace('"wenq"', '"stranger"'))
+    _refused(_situation_payload().replace('"bryn"', '"stranger"'))
     # a goalless protagonist is a hole in the plan
     _refused(_situation_payload().replace(
-        '"han": "keep the water\'s secret one more night"', '"han": ""'
+        '"corvin": "keep the water\'s secret one more night"',
+        '"corvin": ""',
     ))
     # a candidate list with no live entry carries no pressure
     _refused(_situation_payload().replace(
@@ -326,8 +323,8 @@ def test_plan_situation_chapter_lands_the_four_questions(
         assert key in element, key
     for key in SITUATION_DOC_KEYS:
         assert key in element, key
-    assert element["pov_actor_id"] == "ache"
-    assert element["participants"] == ["ache", "wenq", "han"]
+    assert element["pov_actor_id"] == "chenyu"
+    assert element["participants"] == ["chenyu", "bryn", "corvin"]
     # the read face reads the document back — 四问字段非空且具体
     doc = situation_face_of(plan)
     assert doc is not None
@@ -338,7 +335,7 @@ def test_plan_situation_chapter_lands_the_four_questions(
         "open_question",
     ):
         assert isinstance(doc[key], str) and doc[key].strip(), key
-    assert doc["first_speaker"] in {"wenq", "han"}
+    assert doc["first_speaker"] in {"bryn", "corvin"}
     assert opening.scene.status.value == "PLANNED"
     # the prompt asked the four questions of the scripted arm
     prompt = completion.prompts["situation"][0]

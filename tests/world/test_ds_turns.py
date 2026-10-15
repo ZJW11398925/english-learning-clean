@@ -61,10 +61,11 @@ from elc.world.bible import SqliteBibleStore
 from elc.world.cast import SqliteCastStore
 from elc.world.director import Director
 from elc.world.ds_opening import (
+    BRYN,
+    CORVIN,
     DS_OPENING_IS_DRAFT,
     DS_WORLD_ID,
     PLAYER,
-    WENQ,
     seed_ds_world,
 )
 from elc.world.harness import (
@@ -150,7 +151,7 @@ class ScriptedDSCompletion:
 
 
 def _dispatch_payload(
-    responders: tuple[str, ...] = (WENQ, "han"),
+    responders: tuple[str, ...] = (BRYN, CORVIN),
     pacing: str = "press",
     options: tuple[str, ...] = ("Ask her again", "Hold your tongue"),
     world_event: str | None = None,
@@ -232,7 +233,7 @@ def _adjudication_payload(
             if effects is not None
             else [
                 {
-                    "key": "protagon.wenq.mood",
+                    "key": "protagon.bryn.mood",
                     "statement": "publicly composed, privately shaken",
                 },
                 {
@@ -240,7 +241,7 @@ def _adjudication_payload(
                     "statement": "the vermilion mark stays for now",
                 },
             ],
-            "participants": [PLAYER, WENQ, "han"],
+            "participants": [PLAYER, BRYN, CORVIN],
             "replan_scope": "NONE",
         },
         ensure_ascii=False,
@@ -296,7 +297,7 @@ BLUEPRINT: dict[str, Any] = {
             "purpose": "the public question and the painter's answer",
             "place": "the ferry house steps, lantern light",
             "pov_actor_id": PLAYER,
-            "participants": [PLAYER, WENQ, "han"],
+            "participants": [PLAYER, BRYN, CORVIN],
             "planned_start_tick": 1310,
             "entry_goals": "the steward's question hangs on you",
             "exit_condition": "the bridge walk ends or the fog turns all",
@@ -414,10 +415,10 @@ def test_a_violation_is_the_loud_programmer_error() -> None:
 def test_the_dispatch_parser_carries_the_decision() -> None:
     decision = _parse_dispatch(
         _dispatch_payload(world_event="a lantern gutters out"),
-        (WENQ, "han"),
+        (BRYN, CORVIN),
     )
     assert decision.reading.startswith("the painter")
-    assert decision.responders == (WENQ, "han")
+    assert decision.responders == (BRYN, CORVIN)
     assert decision.world_event == "a lantern gutters out"
     assert decision.pacing == "press"
     assert decision.options == ("Ask her again", "Hold your tongue")
@@ -428,10 +429,10 @@ def test_the_dispatch_parser_refuses_outside_words() -> None:
 
     with pytest.raises(LlmProviderError, match="bad-shape"):
         _parse_dispatch(
-            _dispatch_payload(responders=(WENQ, "stranger")), (WENQ, "han")
+            _dispatch_payload(responders=(BRYN, "stranger")), (BRYN, CORVIN)
         )
     with pytest.raises(LlmProviderError, match="bad-shape"):
-        _parse_dispatch(_dispatch_payload(pacing="rush"), (WENQ, "han"))
+        _parse_dispatch(_dispatch_payload(pacing="rush"), (BRYN, CORVIN))
 
 
 def test_the_proposal_parser_private_thought_is_optional_by_shape() -> None:
@@ -444,10 +445,10 @@ def test_the_proposal_parser_private_thought_is_optional_by_shape() -> None:
                 "private_thought": None,
             }
         ),
-        WENQ,
+        BRYN,
     )
     assert proposal.private_thought == ""
-    assert proposal.actor_id == WENQ
+    assert proposal.actor_id == BRYN
 
 
 def test_the_narration_parser_demands_the_marker_tail() -> None:
@@ -532,9 +533,9 @@ def test_pack_memories_truncates_to_the_recent_cap() -> None:
 
     def row(ordinal: int, tick: int) -> ActorMemoryRecord:
         return ActorMemoryRecord(
-            memory_id=f"mem:e{ordinal}:wenq:INFERRED",
+            memory_id=f"mem:e{ordinal}:bryn:INFERRED",
             world_id=DS_WORLD_ID,
-            participant_id=WENQ,
+            participant_id=BRYN,
             kind=MemoryKind.INFERRED,
             content=f"memory {ordinal}",
             source_event_id=f"e{ordinal}",
@@ -546,7 +547,7 @@ def test_pack_memories_truncates_to_the_recent_cap() -> None:
         )
 
     rows = tuple(row(i, i) for i in range(30))
-    view = V3MemoryView(viewer_id=WENQ, memories=rows)
+    view = V3MemoryView(viewer_id=BRYN, memories=rows)
     packed = pack_memories(view, 24)
     assert len(packed.memories) == 24
     assert all(
@@ -593,7 +594,7 @@ def test_the_reply_drive_runs_the_whole_chain(
     assert passage is not None
     assert passage[0] == turn.narration
     # the private thoughts landed as the characters' OWN memory rows
-    for actor in (WENQ, "han"):
+    for actor in (BRYN, CORVIN):
         read = v3_memory_view(planned, world_id=DS_WORLD_ID, viewer_id=actor)
         assert not isinstance(read, Err), read.error
         view = read.value
@@ -618,7 +619,7 @@ def test_the_reply_drive_runs_the_whole_chain(
     # the mood fact landed through the ruling's δ
     facts = planned.execute(
         "SELECT statement FROM world_state_fact"
-        " WHERE canonical_key = 'protagon.wenq.mood' AND status = 'CURRENT'"
+        " WHERE canonical_key = 'protagon.bryn.mood' AND status = 'CURRENT'"
     ).fetchall()
     assert facts and facts[0][0] == "publicly composed, privately shaken"
 
@@ -733,7 +734,7 @@ def _precommit_ruling(conn: sqlite3.Connection) -> str:
         actual_action="a",
         consequences="c",
         state_effects=(StateEffect(key="k", statement="s"),),
-        participants=(PLAYER, WENQ, "han"),
+        participants=(PLAYER, BRYN, CORVIN),
         replan_scope=ReplanScope.NONE,
     )
     committed = commit_action(
@@ -885,7 +886,7 @@ def test_a_scene_scope_ruling_consumes_its_replan(
     _planner_answer = json.dumps(
         {
             "pov_actor_id": PLAYER,
-            "participants": [PLAYER, WENQ, "han"],
+            "participants": [PLAYER, BRYN, CORVIN],
             "planned_start_tick": 1320,
             "place": "the bridge head, lantern light",
             "entry_goals": "the walk tests the painter's story",
@@ -926,7 +927,7 @@ def test_a_scene_scope_ruling_consumes_its_replan(
     assert run.error is None
     obligation = planned.execute(
         "SELECT status FROM action_replan"
-        " WHERE replan_request_id = 'rp:qingxi-ds-01-ch01-s01-g01:sub-scene'"
+        " WHERE replan_request_id = 'rp:emberkeep-ds-01-ch01-s01-g01:sub-scene'"
     ).fetchone()
     assert obligation is not None
     assert obligation[0] == "APPLIED"  # consumed in the same drive
@@ -992,9 +993,9 @@ def test_the_settlement_lands_the_offstage_delta(
     assert row[1] == "offstage"
     assert "fog closes" in row[0]
     for key in (
-        "protagon.wenq.goal",
-        "protagon.wenq.mood",
-        "protagon.han.goal",
+        "protagon.bryn.goal",
+        "protagon.bryn.mood",
+        "protagon.corvin.goal",
     ):
         fact = planned.execute(
             "SELECT statement FROM world_state_fact"
@@ -1004,7 +1005,7 @@ def test_the_settlement_lands_the_offstage_delta(
         assert fact is not None, key
     # the consolidation anchored to the offstage event
     han_read = v3_memory_view(
-        planned, world_id=DS_WORLD_ID, viewer_id="han"
+        planned, world_id=DS_WORLD_ID, viewer_id=CORVIN
     )
     assert not isinstance(han_read, Err)
     assert any(
@@ -1054,7 +1055,7 @@ def test_the_driven_prompts_carry_the_arms_contracts(
         NOW,
     )
     dispatch_prompt = completion.prompts["dispatch"][0]
-    assert f"- {WENQ} (温秋蘅)" in dispatch_prompt
+    assert f"- {BRYN} (布丽恩·灰隼)" in dispatch_prompt
     assert '"options"' in dispatch_prompt  # the 2–4 natural actions face
     assert '"reading"' in dispatch_prompt  # the intent reading rides the same answer
     assert "I did not paint it." in dispatch_prompt  # the user's own words
@@ -1080,7 +1081,7 @@ def test_the_driven_prompts_carry_the_arms_contracts(
     assert "committed ruling" in narrator_prompt
 
     adjudicate_prompt = completion.prompts["adjudicate"][0]
-    assert f"- {WENQ}:" in adjudicate_prompt  # the k proposals block
+    assert f"- {BRYN}:" in adjudicate_prompt  # the k proposals block
     assert "private_thought" in adjudicate_prompt  # the judge weighs it all
     assert "MUST" in adjudicate_prompt  # the player id is demanded
     assert "I did not paint it." in adjudicate_prompt
@@ -1099,11 +1100,11 @@ def test_the_opening_seed_is_a_draft_and_replays_idempotent(
     row = seeded.execute(
         "SELECT name FROM world WHERE world_id = ?", (DS_WORLD_ID,)
     ).fetchone()
-    assert row is not None and row[0] == "青溪渡 · 雾季"
+    assert row is not None and row[0] == "灰隼要塞 · 龙焰夜"
     actors = {
         actor.actor_id for actor in world_store.actors_of(DS_WORLD_ID)
     }
-    assert actors == {WENQ, "han"}
+    assert actors == {BRYN, CORVIN}
     player = cast_store.player_character(DS_WORLD_ID)
     assert player is not None and player.player_character_id == PLAYER
     # a same-shape replay is the zero-write no-op
@@ -1143,7 +1144,7 @@ def test_an_advance_beat_runs_the_character_arms(
     turn = run.turns[0]
     assert turn.beat_kind == "advance"
     # the proposals ride the turn record — the traceability face
-    assert [p.actor_id for p in turn.proposals] == [WENQ, "han"]
+    assert [p.actor_id for p in turn.proposals] == [BRYN, CORVIN]
     # ⑤⑥: the δ landed as a world chronicle event with its effects
     event = planned.execute(
         "SELECT kind, narration, source FROM world_event"
@@ -1161,7 +1162,7 @@ def test_an_advance_beat_runs_the_character_arms(
     assert fact is not None and "vermilion" in fact[0]
     # the private thoughts anchor to the world event (the characters'
     # OWN memory rows)
-    for actor in (WENQ, "han"):
+    for actor in (BRYN, CORVIN):
         read = v3_memory_view(planned, world_id=DS_WORLD_ID, viewer_id=actor)
         assert not isinstance(read, Err)
         assert any(
@@ -1275,7 +1276,7 @@ def test_the_dispatch_input_carries_the_situation_plan(
                             "place": "the bridge head",
                             "what_presses_on_you": "the county clerk"
                                 " arrives at dawn",
-                            "first_speaker": WENQ,
+                            "first_speaker": BRYN,
                             "first_words": "Was it there when you"
                                 " crossed?",
                             "open_question": "will your answer keep you"
@@ -1285,8 +1286,8 @@ def test_the_dispatch_input_carries_the_situation_plan(
                                 " dawn",
                             ],
                             "protagonist_goals": {
-                                WENQ: "keep the ledger clean",
-                                "han": "keep the water's secret",
+                                BRYN: "keep the ledger clean",
+                                CORVIN: "keep the water's secret",
                             },
                             "pacing": "tighter every hour",
                             "settlement_expectation": "where the answer"

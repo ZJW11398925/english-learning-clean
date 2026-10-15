@@ -327,7 +327,7 @@ function renderChapterEnd(payload) {
   const input = document.createElement("input");
   input.id = "ds-direction";
   input.type = "text";
-  input.placeholder = "例：让那道符在雨夜里自己淡去";
+  input.placeholder = "例：让守军把伤兵先撤进粮塔";
   label.appendChild(labelName);
   label.appendChild(input);
   card.appendChild(label);
@@ -504,7 +504,7 @@ function render(payload, isFinal) {
         ? "" : "　·　tick " + world.current_tick) +
       (payload.draft ? "　·　开局草稿（待定调）" : "");
   } else if (world && !world.exists) {
-    el("ds-world").textContent = "雾季 · 青溪渡尚未落笔";
+    el("ds-world").textContent = "龙焰夜 · 灰隼要塞尚未落笔";
   }
   // 正文面铸貌签（§12.2 呈现律的拍间律，DS-2）：renderFlow/开始卡/
   // 开篇卡/章末面依赖的全部输入（世界、草稿旗、章、计划之问、已落
@@ -699,9 +699,10 @@ function syncGearBadge(payload) {
 
 // ── 引导（§12.7 首开引导）───────────────────────────────────────
 const GUIDE = [
-  { h: "你是谁", t: "你叫阿澈，一个远道来的年轻画师，受雇为新桥画落成图。"
-    + "今晚，桥基石栏上多了一道没人认领的朱砂符——管事温秋蘅当众问你："
-    + "你过桥的时候，它已经在了吗？这一章，就从这个等你回答的问题开始。" },
+  { h: "你是谁", t: "你叫陈屿，来自另一个世界的普通人——加班晚归、过天桥时脚下一空，"
+    + "再睁眼就在灰隼要塞烽火台的封印阵上。西墙正在烧，红龙「烬喉」的夜袭进行到一半，"
+    + "守备官布丽恩的剑已经指着你的喉咙：龙焰把天都烧红了，你从封了百年的阵眼里走出来——"
+    + "说，你是什么东西？这一章，就从这个等你回答的问题开始。" },
   { h: "输入框永远开着", t: "底部的输入框任何时候都能用——包括世界正在落笔的时候。"
     + "那一拍会「听见」你：你的话会变成一枚待落的签，落进下一拍的正文里。"
     + "落定之前，随时可以编辑、可以撤回。" },
@@ -727,7 +728,7 @@ function renderGuide() {
     if (i === guideStep) dot.className = "on";
     dots.appendChild(dot);
   });
-  el("ds-gnext").textContent = guideStep === GUIDE.length - 1 ? "进入青溪渡" : "下一步";
+  el("ds-gnext").textContent = guideStep === GUIDE.length - 1 ? "走进火光里" : "下一步";
 }
 el("ds-gnext").addEventListener("click", () => {
   if (guideStep < GUIDE.length - 1) { guideStep += 1; renderGuide(); return; }
@@ -785,7 +786,7 @@ function renderStartCard(payload) {
   inner.textContent = "";
   const p = document.createElement("p");
   p.className = "ds-startline";
-  p.textContent = "雾季的青溪渡还没有落笔——";
+  p.textContent = "龙焰把天烧红了，你站在封印阵上——";
   const btn = document.createElement("button");
   btn.className = "btn btn--ink";
   btn.type = "button";

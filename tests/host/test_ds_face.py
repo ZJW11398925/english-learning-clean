@@ -59,7 +59,7 @@ SITUATION_PLAN: dict[str, Any] = {
         "the county clerk arrives at dawn and the mark must have an"
         " answer — yours"
     ),
-    "first_speaker": "wenq",
+    "first_speaker": "bryn",
     "first_words": "The clerk comes at dawn. Was it there when you"
         " crossed?",
     "open_question": "will your answer keep you out of the water gate",
@@ -67,8 +67,8 @@ SITUATION_PLAN: dict[str, Any] = {
         "the fog closes the crossing before dawn",
     ],
     "protagonist_goals": {
-        "wenq": "keep the ledger clean through the dawn",
-        "han": "keep the water's secret one more night",
+        "bryn": "keep the ledger clean through the dawn",
+        "corvin": "keep the water's secret one more night",
     },
     "pacing": "the pressure tightens with every hour of fog",
     "settlement_expectation": "where the mark's answer has left you",
@@ -115,7 +115,7 @@ def _dispatch_payload() -> str:
     return json.dumps(
         {
             "reading": "the painter answers",
-            "responders": ["wenq"],
+            "responders": ["bryn"],
             "world_event": None,
             "pacing": "hold",
             "options": ["Ask", "Wait"],
@@ -152,7 +152,7 @@ def _adjudication_payload() -> str:
             "actual_action": "a",
             "consequences": "c",
             "state_effects": [],
-            "participants": ["ache", "wenq"],
+            "participants": ["chenyu", "bryn"],
             "replan_scope": "NONE",
         },
         ensure_ascii=False,
@@ -224,7 +224,7 @@ def test_start_seeds_and_plans_then_the_face_opens(
         payload["plan"]["what_presses_on_you"]
         == SITUATION_PLAN["what_presses_on_you"]
     )
-    assert payload["plan"]["first_speaker"] == "wenq"
+    assert payload["plan"]["first_speaker"] == "bryn"
     assert payload["plan"]["open_question"] == (
         SITUATION_PLAN["open_question"]
     )
@@ -236,6 +236,12 @@ def test_start_seeds_and_plans_then_the_face_opens(
     assert '"first_words"' in prompt
     assert "NO literary structure" in prompt
     assert payload["controls"].get("can_open") is True
+    # the user's own ruling (DS-3): seeding the world plants the prose
+    # word zh — the SHARED v3_prose_language key (the language button
+    # keeps its switch; the V3 reading face reads the same key)
+    assert db.execute(
+        "SELECT value FROM app_setting WHERE key = 'v3_prose_language'"
+    ).fetchone()[0] == "zh"
     # the opening beat drives through the face (the scripted completion).
     # Under the DS-3 rhythm law the scripted narrations (beat_complete,
     # never a marker) drive on — the pure guardrail stops the drive at
@@ -282,7 +288,7 @@ def test_the_graded_bible_edit_lands_now_and_parks_next(
         " WHERE world_id = ? AND status = 'CURRENT'",
         (DS_WORLD_ID,),
     ).fetchone()
-    assert "青溪渡" in premise[0]
+    assert "灰隼要塞" in premise[0]
     # a structural edit parks
     landed = face.bible_edit("geography", "the bridge is washed out", "next")
     assert landed["ok"] is True

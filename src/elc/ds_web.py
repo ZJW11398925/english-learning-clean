@@ -68,6 +68,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from elc.narrative_web import (
+    V3_PROSE_LANGUAGE_KEY,
     PersonaEgressCompletion,
     prose_language_of,
 )
@@ -199,7 +200,7 @@ _EMPTY_STATE: dict[str, Any] = {
     "pending_bible": [],
     "light_model": "",
     "draft": DS_OPENING_IS_DRAFT,
-    "next": {"kind": "start", "detail": "点「开始」，种下青溪渡。"},
+    "next": {"kind": "start", "detail": "点「开始」，种下灰隼要塞。"},
     "controls": {},
     "note": None,
 }
@@ -637,6 +638,11 @@ class DualSeatWebFace:
                     "开局世界没能落下去："
                     f"{created.error.code.value}: {created.error.message}"
                 )
+            # the user's own ruling (DS-3, 2026-10-15): the opening's
+            # prose is Chinese — the SHARED word lands once, at the seed
+            # (the language button keeps its switch; the V3 reading face
+            # reads the same key; existing passages never rewrite)
+            self._write_bookkeeping(V3_PROSE_LANGUAGE_KEY, "zh")
         if not self._narrative.chapters_of(DS_WORLD_ID):
             refusal = self._egress_refusal()
             if refusal is not None:
@@ -941,7 +947,7 @@ def _derive_state(
         }
         payload["next"] = {
             "kind": "start",
-            "detail": "点「开始」，种下青溪渡。",
+            "detail": "点「开始」，种下灰隼要塞。",
         }
         payload["controls"] = {"can_start": True}
         return payload
