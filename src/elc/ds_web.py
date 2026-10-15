@@ -643,7 +643,18 @@ class DualSeatWebFace:
             # (the language button keeps its switch; the V3 reading face
             # reads the same key; existing passages never rewrite)
             self._write_bookkeeping(V3_PROSE_LANGUAGE_KEY, "zh")
-        if not self._narrative.chapters_of(DS_WORLD_ID):
+        if not self._narrative.chapters_of(DS_WORLD_ID) or (
+            self._narrative.adopted_plan(
+                self._narrative.chapters_of(DS_WORLD_ID)[
+                    -1
+                ].chapter_id
+            )
+            is None
+        ):
+            # no chapter yet, or the latest chapter holds no ADOPTED plan
+            # (a crashed open — the situation machine's residue law
+            # reuses that chapter and re-casts; a start after the crash
+            # must never be a permanent no-op)
             refusal = self._egress_refusal()
             if refusal is not None:
                 return self._refuse(refusal)

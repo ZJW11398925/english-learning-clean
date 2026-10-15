@@ -263,6 +263,36 @@ def _queue() -> "object":
     return _queue_module.Queue()
 
 
+def test_start_recasts_a_crashed_plan(env: tuple) -> None:
+    """2026-10-15 real-model smoke's catch: a start that crashed mid-
+    plan (the chapter row landed, the plan never did) made every later
+    start a permanent no-op — the page stuck at 「no drivable scene」
+    forever. The guard now asks the ADOPTED plan, and the situation
+    machine's residue law reuses the crashed chapter and re-casts."""
+
+    db, face, completion = env
+    assert face.start()["ok"] is True
+    # the crash window: roll the adopted plan back (the chapter row and
+    # its scene anchor stay — exactly the crashed-open shape)
+    db.execute(
+        "DELETE FROM world_scene WHERE chapter_id = ("
+        " SELECT chapter_id FROM world_chapter ORDER BY chapter_index"
+        " DESC LIMIT 1)"
+    )
+    db.execute(
+        "DELETE FROM world_chapter_plan"
+        " WHERE chapter_id = (SELECT chapter_id FROM world_chapter"
+        " ORDER BY chapter_index DESC LIMIT 1)"
+    )
+    db.commit()
+    # the re-start must RE-CAST (not answer the empty no-op)
+    landed = face.start()
+    assert landed["ok"] is True, landed["error"]
+    assert completion.count("situation") == 2
+    assert landed["plan"] is not None
+    assert landed["plan"]["what_presses_on_you"]
+
+
 def test_the_graded_bible_edit_lands_now_and_parks_next(
     env: tuple,
 ) -> None:
