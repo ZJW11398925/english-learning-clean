@@ -2116,14 +2116,22 @@ def _world_adjudicator_prompt(
 
 
 def _parse_situation_plan(
-    text: str, cast_members: tuple[tuple[str, str], ...]
+    text: str,
+    cast_members: tuple[tuple[str, str], ...],
+    player_id: str = "",
 ) -> SituationPlan:
     """One chapter's situation plan (see :class:`SituationPlan`) — the
     four questions answered concretely and the minimal field set filled.
     ``first_speaker`` obeys the identity contract (the bare id token
     from the listed vocabulary); ``protagonist_goals`` must cover every
-    listed character (各主角目标 — a goalless protagonist is a hole in
-    the plan, not an empty map entry)."""
+    listed CAST character (各主角目标 — a goalless protagonist is a
+    hole in the plan, not an empty map entry). The reader's own
+    character is NOT a plan protagonist (their goals are theirs to
+    play, not the world's to schedule — 身体主权同源): the prompt says
+    so, and because a real model still names the player among the
+    listed ids (the 2026-10-15 smoke specimens did, ~always), an entry
+    keyed by ``player_id`` is accepted and DROPPED here — every other
+    unknown id stays ``bad-shape`` (fail-closed)."""
 
     payload = _payload_object(text)
     values: dict[str, str] = {}
@@ -2145,12 +2153,15 @@ def _parse_situation_plan(
         raise LlmProviderError("bad-shape")
     goals: list[tuple[str, str]] = []
     for actor_id, goal in raw_goals.items():
-        if actor_id not in vocabulary:
+        head = str(actor_id).split(" (", 1)[0].strip()
+        if head == player_id:
+            continue
+        if head not in vocabulary:
             raise LlmProviderError("bad-shape")
         if not isinstance(goal, str) or not goal.strip():
             raise LlmProviderError("bad-shape")
-        goals.append((actor_id, goal))
-    if len(goals) != len(vocabulary):
+        goals.append((head, goal))
+    if {actor_id for actor_id, _goal in goals} != vocabulary:
         raise LlmProviderError("bad-shape")
     return SituationPlan(
         where_you_stand=values["where_you_stand"],
@@ -2434,8 +2445,10 @@ def _situation_plan_prompt(context: SituationPlanContext) -> str:
         "The situation's minimal fields:",
         '- "world_event_candidates": a JSON array of 1-4 concrete world',
         "  events that may close in this chapter (each one sentence).",
-        '- "protagonist_goals": a JSON object — EVERY listed character',
-        "  id maps to what they are trying to do this chapter.",
+        '- "protagonist_goals": a JSON object — EVERY listed CAST',
+        "  character id maps to what they are trying to do this",
+        "  chapter. The reader's own character is NEVER a key here",
+        "  (their goals are theirs to play, not the plan's to set).",
         '- "pacing": one short sentence — how the pressure should move.',
         '- "settlement_expectation": one short sentence — what this',
         "  chapter's closing settlement should take stock of.",
@@ -2466,7 +2479,8 @@ def _situation_plan_prompt(context: SituationPlanContext) -> str:
             "The cast (the identity vocabulary — ids with display names):",
             _render_list(members),
             f"The reader's own character: {context.player_name}"
-            f" ({context.player_id}) — never the first_speaker.",
+            f" ({context.player_id}) — never the first_speaker and"
+            " never a protagonist_goals key.",
             "",
             "The narration so far (its tail):",
             _render_list([context.recent_narration])
@@ -2906,4 +2920,5 @@ class LlmSituationPlannerProvider:
                 self._completion, _situation_plan_prompt(context)
             ),
             context.cast_members,
+            player_id=context.player_id,
         )

@@ -288,6 +288,57 @@ def test_the_situation_parser_demands_concrete_answers() -> None:
     ))
 
 
+def test_the_player_goal_entry_is_dropped_not_refused() -> None:
+    """钉（2026-10-15 冒烟标本）：真模型会把读者角色也列进
+    protagonist_goals——prompt 列了三张脸、模型守约给三人写目标；
+    解析器词表只有两主角时 len 钉即恒 bad-shape（冒烟两连败、标本
+    specimen_140551/140628 实证）。玩家目标不是计划的料（身体主权
+    同源——他们的目标归他们演，不归世界排）：玩家键**接受并丢弃**，
+    主角覆盖仍是硬钉；玩家当 first_speaker、漏主角、陌生 id 仍拒。"""
+
+    vocabulary = (("bryn", "布丽恩·灰隼"), ("corvin", "科尔文"))
+    specimen = json.loads(_situation_payload())
+    specimen["protagonist_goals"]["chenyu"] = (
+        "survive the night and be believed"
+    )
+    plan = _parse_situation_plan(
+        json.dumps(specimen, ensure_ascii=False), vocabulary,
+        player_id="chenyu",
+    )
+    assert dict(plan.protagonist_goals).keys() == {"bryn", "corvin"}
+
+    def _refused(payload: dict[str, object]) -> None:
+        with pytest.raises(LlmProviderError, match="bad-shape"):
+            _parse_situation_plan(
+                json.dumps(payload, ensure_ascii=False), vocabulary,
+                player_id="chenyu",
+            )
+
+    # the player may never be the first speaker
+    spoke = dict(specimen, first_speaker="chenyu")
+    _refused(spoke)
+    # a goalless protagonist is still a hole (the player entry cannot
+    # paper over it)
+    holed = dict(specimen)
+    holed["protagonist_goals"] = {
+        "bryn": "keep the ledger clean",
+        "chenyu": "be believed",
+    }
+    _refused(holed)
+    # an unknown identity is still outside the vocabulary
+    stranger = dict(specimen)
+    stranger["protagonist_goals"] = {
+        **specimen["protagonist_goals"],  # type: ignore[dict-item]
+        "guard-captain": "hold the line",
+    }
+    _refused(stranger)
+    # without the player id the strict vocabulary stands (old callers)
+    with pytest.raises(LlmProviderError, match="bad-shape"):
+        _parse_situation_plan(
+            json.dumps(specimen, ensure_ascii=False), vocabulary
+        )
+
+
 # ---------------------------------------------------------------------------
 # 3 — the landing (the adopted plan carries the document)
 # ---------------------------------------------------------------------------
